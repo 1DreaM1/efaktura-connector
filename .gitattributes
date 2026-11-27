@@ -7,7 +7,6 @@
 # Repository tooling, development configuration and the project website are not part of the Composer distribution.
 # The maintained package documentation (docs/) is distributed intentionally.
 /AGENTS.md export-ignore
-/docs/RELEASE-CHECKLIST.md export-ignore
 /infection.json5 export-ignore
 /.codex/ export-ignore
 /.editorconfig export-ignore
