@@ -1,0 +1,8 @@
+title = "efaktura-connector gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Synthetic URL used as a test fixture, not a credential"
+regexes = ['''https://API\.example:443/integrator/v1''']

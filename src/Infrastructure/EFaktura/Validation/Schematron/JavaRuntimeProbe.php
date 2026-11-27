@@ -93,6 +93,12 @@ final class JavaRuntimeProbe
      */
     public function assertSupportedVersion(string $binary): int
     {
+        // proc_open() reports a missing explicit path differently across PHP versions (a failure before PHP 8.3,
+        // a child exit code afterwards), so reject it up front with one consistent message.
+        if (strpbrk($binary, '/\\') !== false && ! is_file($binary)) {
+            throw new LocalValidationInfrastructureException('The Java executable could not be started.');
+        }
+
         $temporaryFiles = [];
         $process        = null;
 

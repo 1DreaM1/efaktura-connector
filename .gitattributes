@@ -1,5 +1,9 @@
 * text=auto eol=lf
 
+# Bundled third-party validation artifacts are stored byte-for-byte: the SHA-256 hashes in
+# resources/validation/rules-manifest.json describe the original bytes, so line endings must not be converted.
+/resources/validation/** -text
+
 # Repository tooling, development configuration and the project website are not part of the Composer distribution.
 # The maintained package documentation (docs/) is distributed intentionally.
 /AGENTS.md export-ignore
@@ -7,6 +11,7 @@
 /infection.json5 export-ignore
 /.codex/ export-ignore
 /.editorconfig export-ignore
+/.gitleaks.toml export-ignore
 /.github/ export-ignore
 /.gitignore export-ignore
 /.php-cs-fixer.dist.php export-ignore

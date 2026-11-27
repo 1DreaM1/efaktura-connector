@@ -56,6 +56,19 @@
         },
         "platform": {
             "php": "7.4.7"
+        },
+        "audit": {
+            "abandoned": "report",
+            "ignore": {
+                "PKSA-yxbx-3c9s-cjt9": "Dev-only Laravel 8 bridge test dependency (PHP 7.4 lock); Laravel 8 is end-of-life with no fix, and the package neither requires nor ships it.",
+                "PKSA-b41t-wbzk-9q51": "Dev-only Laravel 8 bridge test dependency (PHP 7.4 lock); Laravel 8 is end-of-life with no fix, and the package neither requires nor ships it.",
+                "PKSA-d5tc-s1qs-h781": "Dev-only Laravel 8 bridge test dependency (PHP 7.4 lock); Laravel 8 is end-of-life with no fix, and the package neither requires nor ships it.",
+                "PKSA-m5cs-t1y6-qpcs": "Dev-only Laravel 8 bridge test dependency (PHP 7.4 lock); Laravel 8 is end-of-life with no fix, and the package neither requires nor ships it.",
+                "PKSA-3r5d-mb8f-1qw9": "Dev-only Laravel 8 bridge test dependency (PHP 7.4 lock); Laravel 8 is end-of-life with no fix, and the package neither requires nor ships it.",
+                "PKSA-8qx3-n5y5-vvnd": "Dev-only Laravel 8 bridge test dependency (PHP 7.4 lock); Laravel 8 is end-of-life with no fix, and the package neither requires nor ships it.",
+                "PKSA-w7xr-vk7n-rstm": "Dev-only Laravel 8 bridge test dependency (PHP 7.4 lock); Laravel 8 is end-of-life with no fix, and the package neither requires nor ships it.",
+                "PKSA-w9tt-7782-78jx": "Dev-only league/flysystem 1.x pulled in by the Laravel 8 bridge test dependency; no fix exists for the PHP 7.4 line, and the package neither requires nor ships it."
+            }
         }
     },
     "extra": {

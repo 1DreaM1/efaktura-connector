@@ -41,7 +41,7 @@ try {
         'src', 'integrations', 'config', 'resources', 'docs'
     )
     $forbiddenInDist = @(
-        '.github', '.codex', '.editorconfig', '.gitignore', '.php-cs-fixer.dist.php', 'AGENTS.md', 'infection.json5',
+        '.github', '.codex', '.gitleaks.toml', '.editorconfig', '.gitignore', '.php-cs-fixer.dist.php', 'AGENTS.md', 'infection.json5',
         'composer.lock', 'phpcs.xml.dist', 'phpstan.neon.dist', 'phpstan-baseline.neon', 'phpunit.xml.dist',
         'tests', 'tools', 'web', 'vendor'
     )
