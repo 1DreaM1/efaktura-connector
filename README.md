@@ -26,7 +26,7 @@ Hostiteľská aplikácia vlastní obchodné workflow, databázu, plánovanie a H
 
 ## Inštalácia
 
-Po zverejnení balíka na [Packagist](https://packagist.org/packages/dream1/efaktura-connector) ho nainštalujte v koreňovom adresári Composer projektu:
+Balík je zverejnený na [Packagist](https://packagist.org/packages/dream1/efaktura-connector). Nainštalujte ho v koreňovom adresári Composer projektu:
 
 ~~~sh
 composer require dream1/efaktura-connector

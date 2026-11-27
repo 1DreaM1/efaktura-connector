@@ -5,7 +5,7 @@
 
 - [Požiadavky](#požiadavky)
 - [Inštalácia cez Composer](#inštalácia-cez-composer)
-- [Inštalácia z GitHubu pred zverejnením na Packagist](#inštalácia-z-githubu-pred-zverejnením-na-packagist)
+- [Vývojová verzia z vetvy main](#vývojová-verzia-z-vetvy-main)
 - [Po inštalácii](#po-inštalácii)
 - [Autoload](#autoload)
 - [Overenie balíka](#overenie-balíka)
@@ -25,29 +25,21 @@ Java sa hľadá najprv v `JAVA_HOME/bin` (na Windows `java.exe`) a potom v `PATH
 
 ## Inštalácia cez Composer
 
-Po zverejnení balíka na [Packagist](https://packagist.org/packages/dream1/efaktura-connector) ho nainštalujte v koreňovom adresári hostiteľskej aplikácie:
+Balík je zverejnený na [Packagist](https://packagist.org/packages/dream1/efaktura-connector). Nainštalujte ho v koreňovom adresári hostiteľskej aplikácie:
 
 ```sh
 composer require dream1/efaktura-connector
 ```
 
-## Inštalácia z GitHubu pred zverejnením na Packagist
+## Vývojová verzia z vetvy main
 
-Kým balík nie je na Packagist-e, pridajte repozitár do `composer.json` hostiteľskej aplikácie a vyžiadajte vetvu `main`:
-
-```json
-{
-    "repositories": [
-        { "type": "vcs", "url": "https://github.com/1DreaM1/efaktura-connector" }
-    ]
-}
-```
+Nevydanú verziu z vetvy `main` môžete vyžiadať explicitne; Packagist ju ponúka ako `dev-main`:
 
 ```sh
 composer require dream1/efaktura-connector:dev-main
 ```
 
-Explicitná požiadavka `:dev-main` funguje aj pri `minimum-stability` nastavenom na `stable`. Po vydaní verzie prejdite na `composer require dream1/efaktura-connector` a odstráňte `repositories`.
+Explicitná požiadavka `:dev-main` funguje aj pri `minimum-stability` nastavenom na `stable`. Vývojová verzia nemá záruku kompatibility; v produkcii používajte vydané verzie.
 
 ## Po inštalácii
 
