@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  PHP_EXTENSIONS: ctype, curl, dom, hash, json, libxml, mbstring, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
+  PHP_EXTENSIONS: ctype, curl, dom, fileinfo, hash, json, libxml, mbstring, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
 
 jobs:
   actionlint:

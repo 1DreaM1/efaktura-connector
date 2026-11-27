@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PHP_EXTENSIONS: ctype, curl, dom, hash, json, libxml, mbstring, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
+  PHP_EXTENSIONS: ctype, curl, dom, fileinfo, hash, json, libxml, mbstring, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
 
 jobs:
   coverage:
