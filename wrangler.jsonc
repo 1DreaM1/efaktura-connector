@@ -1,0 +1,10 @@
+{
+  // Cloudflare Workers Builds: serves the generated website (web/) as static assets.
+  // The empty "previews" block lets `wrangler preview` build previews of pull request branches.
+  "name": "efaktura-connector",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./web"
+  },
+  "previews": {}
+}
