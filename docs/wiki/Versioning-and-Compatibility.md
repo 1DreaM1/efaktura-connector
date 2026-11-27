@@ -2,7 +2,7 @@
 
 ## Prvé vydanie
 
-Prvé verejné vydanie je plánované ako `0.1.0`. V sérii `0.x` môže minor vydanie obsahovať zmenu spätnej kompatibility; patch vydanie má zachovať kompatibilitu. Pred prvým vydaním neexistoval Git tag ani zverejnená kompatibilná verzia.
+Prvé verejné vydanie je `0.1.0`. V sérii `0.x` môže minor vydanie obsahovať zmenu spätnej kompatibility; patch vydanie má zachovať kompatibilitu. Pred prvým vydaním neexistoval Git tag ani zverejnená kompatibilná verzia.
 
 ## Verejné a interné API
 

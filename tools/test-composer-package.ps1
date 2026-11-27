@@ -43,7 +43,7 @@ try {
     $forbiddenInDist = @(
         '.github', '.codex', '.gitleaks.toml', '.editorconfig', '.gitignore', '.php-cs-fixer.dist.php', 'AGENTS.md', 'infection.json5',
         'composer.lock', 'phpcs.xml.dist', 'phpstan.neon.dist', 'phpstan-baseline.neon', 'phpunit.xml.dist',
-        'tests', 'tools', 'web', 'vendor'
+        'tests', 'tools', 'web', 'wrangler.jsonc', 'vendor'
     )
 
     $missingFromDist = @($requiredInDist | Where-Object { $distTopLevel -notcontains $_ })

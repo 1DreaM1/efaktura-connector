@@ -43,7 +43,8 @@ class JavaRuntimeProbeTest extends TestCase
             $this->markTestSkipped('proc_open is unavailable.');
         }
 
-        $probe  = new JavaRuntimeProbe();
+        // A cold JVM start on a loaded CI runner can exceed the default 5 second limit, which would skip this test.
+        $probe  = new JavaRuntimeProbe(30);
         $binary = $probe->find(null);
 
         if ($binary === null) {
