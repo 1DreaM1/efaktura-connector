@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Peppol Gateway poskytuje doplňujúce operácie nad SAPI: vyhľadanie prijímacej schopnosti, profil participanta, stav odoslaného dokladu, Message Level Status (MLS) a správu webhookov.">
+<title>Stav, Discovery a webhooky – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html" aria-current="page">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Tracking-and-Webhooks.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Tracking-and-Webhooks.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Tracking-and-Webhooks.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-práca-s-dokladmi">Práca s dokladmi</a></div><h1 class="title">Stav, Discovery a webhooky</h1><div class="sub"><span class="chip">Čítanie ≈ 11 min</span><span class="chip">7 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead">Peppol Gateway poskytuje doplňujúce operácie nad SAPI: vyhľadanie prijímacej schopnosti, profil participanta, stav odoslaného dokladu, Message Level Status (MLS) a správu webhookov.</p>
+<h2 id="discovery-a-profil-participanta"><span class="mw-h">Discovery a profil participanta</span><a class="anchor" href="#discovery-a-profil-participanta" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Tracking-and-Webhooks.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<div class="tw"><table class="wikitable"><thead><tr><th>Funkcia</th><th>Endpoint</th></tr></thead><tbody><tr><td>Prijímač podporuje typ a proces</td><td><code>POST /<wbr>v1/<wbr>discovery/<wbr>receives</code></td></tr><tr><td>Profil participanta</td><td><code>GET /<wbr>v1/<wbr>participants/<wbr>{participantId}</code></td></tr></tbody></table></div>
+<p><code class="nb">PeppolGatewayDiscoveryProvider</code> implementuje <code class="nb">DocumentDiscoveryProviderInterface</code>. Request obsahuje participant, document type ID a process ID. Provider kontroluje, že identifikátor participanta vo výsledku odpovedá požadovanému účastníkovi.</p>
+<h2 id="stav-odoslaného-dokladu-a-mls"><span class="mw-h">Stav odoslaného dokladu a MLS</span><a class="anchor" href="#stav-odoslaného-dokladu-a-mls" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Tracking-and-Webhooks.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<div class="tw"><table class="wikitable"><thead><tr><th>Funkcia</th><th>Endpoint</th></tr></thead><tbody><tr><td>Stav odoslaného dokladu</td><td><code>GET /<wbr>v1/<wbr>sent-documents/<wbr>{identifier}</code></td></tr><tr><td>Zoznam MLS potvrdení</td><td><code>GET /<wbr>v1/<wbr>sent-documents/<wbr>{identifier}/<wbr>message-level-statuses</code></td></tr><tr><td>Obsah konkrétneho MLS</td><td><code>GET /<wbr>v1/<wbr>sent-documents/<wbr>{identifier}/<wbr>message-level-statuses/<wbr>{statusIdentifier}/<wbr>content</code></td></tr></tbody></table></div>
+<p><code class="nb">PeppolGatewayDocumentTrackingProvider</code> implementuje <code class="nb">DocumentTrackingProviderInterface</code>. <code class="nb">SentDocumentReference</code> nesie participant, <code class="nb">ProviderDocumentId</code> a logovací kontext a používa sa pri stave dokladu aj zozname Message Level Status.</p>
+<p>Adaptér ho odovzdá endpointu, ktorý prevedie ID cez <code class="nb">value()</code> do URL cesty.</p>
+<p><code class="nb">SentDocumentStatus::identifier()</code> vracia <code class="nb">ProviderDocumentId</code>, ak poskytovateľ pole uviedol; <code class="nb">documentId()</code> vracia nullable <code class="nb">SubmittedDocumentId</code> odosielateľa. Reťazec získate cez <code class="nb">value()</code>. <code class="nb">status()</code> vracia nullable <code class="nb">ProviderDocumentStatus</code>.</p>
+<p>Neznámy neprázdny status provideru sa zachová a hostiteľ ho skontroluje cez <code class="nb">isKnown()</code>; pri neznámom stave <code class="nb">isOutboundStatus()</code> vráti <code class="nb">false</code>. Rovnaký hodnotový objekt stavu vracajú výsledky odoslania a potvrdenia príjmu.</p>
+<p>Metódy <code class="nb">sender()</code> a <code class="nb">receiver()</code> vracajú príslušné <code class="nb">Participant</code> objekty.</p>
+<p><code class="nb">SentDocumentStatus::payloadFormat()</code> vracia providerový reťazec bez uzavretého zoznamu hodnôt, aby hostiteľ mohol spracovať aj nový formát.</p>
+<p>Referencia downstream poskytovateľa sprístupňuje <code class="nb">name</code>, typované <code class="nb">documentId</code> a <code class="nb">messageId</code> (<code class="nb">ProviderMessageId</code>); chyba sprístupňuje <code class="nb">message</code> a položky <code class="nb">details</code> (<code class="nb">field</code>, <code class="nb">issue</code>, <code class="nb">value</code>).</p>
+<p>MLS položky cez <code class="nb">ProviderMessageLevelStatus</code> zachovávajú nullable <code class="nb">MessageLevelStatusIdentifier</code> v <code class="nb">identifier()</code>, <code class="nb">messageId</code> (<code class="nb">ProviderMessageId</code>), <code class="nb">MessageLevelStatusCode</code> v <code class="nb">responseCode()</code>, <code class="nb">responseDescription</code>, <code class="nb">reasons</code>, <code class="nb">documentTypeId</code> a <code class="nb">receivedAt</code>.</p>
+<p>Metódy <code class="nb">sender()</code> a <code class="nb">receiver()</code> vracajú participant objekty. MLS obsah môže byť XML a vracia sa cez <code class="nb">MessageLevelStatusContent</code>.</p>
+<p><code>DocumentTrackingProviderInterface::<wbr>downloadMessageLevelStatus()</code> prijíma <code class="nb">MessageLevelStatusIdentifier</code>. Načítaný MLS záznam poskytuje toto ID cez <code>ProviderMessageLevelStatus::<wbr>identifier()</code>; pre jeho obsah odovzdajte rovnaký objekt.</p>
+<p>Endpoint ho prevedie cez <code class="nb">value()</code> a bezpečne URL-kóduje ako parameter cesty.</p>
+<p><code>ProviderMessageLevelStatus::<wbr>responseCode()</code> vracia nullable <code class="nb">MessageLevelStatusCode</code>. <code class="nb">value()</code> poskytne kód ako reťazec; objekt ho normalizuje na veľké písmená a zachová aj neznáme hodnoty, aby ich hostiteľ mohol vyhodnotiť.</p>
+<p>Technické prijatie SAPI a stav prenosu v Peppol sú samostatné informácie. Konektor klasifikuje <code class="nb">AP</code> (<code class="nb">MessageLevelStatusCode::DELIVERED</code>) ako potvrdené doručenie, <code class="nb">RE</code> (<code class="nb">DELIVERY_FAILED</code>) ako neúspešné doručenie a <code class="nb">AB</code> (<code class="nb">FORWARDED</code>) ako preposlanie bez konečného výsledku.</p>
+<p>Pomocné metódy <code class="nb">isSuccess()</code>, <code class="nb">isFailure()</code> a <code class="nb">isForwarded()</code> vrátia <code class="nb">true</code> iba pre príslušný kód. Iné hodnoty vrátane <code class="nb">ERROR</code> zostávajú týmito metódami neklasifikované; hostiteľská aplikácia určuje ich obchodný význam a zobrazenie.</p>
+<h2 id="správa-webhookov"><span class="mw-h">Správa webhookov</span><a class="anchor" href="#správa-webhookov" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Tracking-and-Webhooks.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">PeppolGatewayWebhookRegistry</code> implementuje <code class="nb">WebhookRegistryInterface</code>. Endpointy balíka pokrývajú tieto operácie:</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Funkcia</th><th>Endpoint</th></tr></thead><tbody><tr><td>Registrácia</td><td><code>POST /<wbr>v1/<wbr>webhooks</code></td></tr><tr><td>Zoznam</td><td><code>GET /<wbr>v1/<wbr>webhooks</code></td></tr><tr><td>Detail</td><td><code>GET /<wbr>v1/<wbr>webhooks/<wbr>{webhookId}</code></td></tr><tr><td>Úprava</td><td><code>PATCH /<wbr>v1/<wbr>webhooks/<wbr>{webhookId}</code></td></tr><tr><td>Odstránenie</td><td><code>DELETE /<wbr>v1/<wbr>webhooks/<wbr>{webhookId}</code></td></tr></tbody></table></div>
+<p>Webhook register je vzdialená konfigurácia u poskytovateľa.</p>
+<div class="alert info" role="note"><div class="ai" aria-hidden="true">i</div><div class="ac"><div class="at">Poznámka</div><p>Konektor neposkytuje web server ani trvalé úložisko udalostí pre hostiteľskú aplikáciu.</p></div></div>
+<p>Core registry kontrakt podporuje načítanie jedného webhooku cez <code>get($participant, $webhookId)</code>, registráciu, stránkovaný zoznam, úpravu a odstránenie. Identifikátor pre <code class="nb">get()</code> vytvoríte cez <code class="nb">WebhookIdentifier::fromString()</code>.</p>
+<p><code class="nb">delete()</code> vráti <code class="nb">false</code>, ak poskytovateľ odpovie <code class="nb">404</code>, <code class="nb">true</code> po potvrdenom odstránení a ostatné chyby nechá prejsť ako API výnimky.</p>
+<p><code class="nb">listPage()</code> prijíma <code class="nb">ListWebhooksRequest</code>; jeho kurzor a veľkosť stránky sú voliteľné <code class="nb">PageToken</code> a <code class="nb">PageSize</code> hodnoty. Výsledok vracia ďalší kurzor cez <code class="nb">WebhookRegistryPage::nextPageToken()</code>.</p>
+<p>Token možno použiť priamo v ďalšom requeste; na uloženie do databázy ho preveďte cez <code class="nb">value()</code> a obnovte cez <code class="nb">PageToken::fromString()</code>.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\Pagination\PageSize;
+use DreaM1\EfakturaConnector\Core\Webhooks\ListWebhooksRequest;
+
+$pageToken = null;
+do {
+    $page = $registry-&gt;listPage(
+        $participant,
+        new ListWebhooksRequest($pageToken, PageSize::fromInt(50))
+    );
+    $pageToken = $page-&gt;nextPageToken();
+
+    foreach ($page-&gt;webhooks()-&gt;items() as $webhook) {
+        // Spracujte registráciu podľa workflow hostiteľa.
+    }
+} while ($pageToken !== null);</code></pre></div>
+<p>Tieto <code class="nb">/v1/webhooks</code> cesty, polia a eventy sú definované v Peppol Gateway v1 OpenAPI. Podporované eventy sú <code class="nb">sent_document.status_changed</code> a <code class="nb">inbox_document.received</code>; registračná odpoveď obsahuje <code class="nb">id</code>, <code class="nb">url</code>, <code class="nb">events</code>, <code class="nb">status</code>, voliteľný <code class="nb">description</code>, časové údaje a <code class="nb">signingSecret</code>.</p>
+<p>Core <code class="nb">WebhookRegistrationResponse</code> vracia URL ako <code class="nb">WebhookUrl</code>, popis ako voliteľný reťazec a tajomstvo ako <code class="nb">WebhookSigningSecret</code>.</p>
+<p>Endpointy mapujú OpenAPI schémy cez <code class="nb">WebhookFactory</code>, <code class="nb">WebhookRegistrationResponseFactory</code> a <code class="nb">WebhookRegistryPageFactory</code> priamo na Core modely.</p>
+<p><code class="nb">get()</code> a <code class="nb">update()</code> vracajú <code class="nb">Webhook</code>, <code class="nb">register()</code> vracia <code class="nb">WebhookRegistrationResponse</code> a <code class="nb">listPage()</code> vracia <code class="nb">WebhookRegistryPage</code>; factory kontrolujú povinné polia a HTTPS URL a zachovávajú neznáme neprázdne statusy a typy udalostí.</p>
+<p>Hostiteľ status klasifikuje cez <code class="nb">WebhookStatus::isKnown()</code> a udalosť cez <code class="nb">WebhookEventType::isSupported()</code>. Požiadavky na registráciu a zmenu naďalej validujú vstupy.</p>
+<p><code class="nb">WebhookUrl::fromString()</code> vytvorí hodnotový objekt callback URL a odmietne URL, ktoré nie sú absolútne HTTPS adresy alebo obsahujú vložené používateľské meno či heslo.</p>
+<p><code class="nb">CreateWebhookRequest</code> prijíma tento objekt spolu s poľom <code class="nb">WebhookEventType</code> hodnôt; <code class="nb">WebhookUpdate::withEvents()</code> používa rovnaký typ. Requesty odmietnu nepodporovaný typ udalosti a prázdny zoznam udalostí je povolený.</p>
+<p>Modely <code class="nb">Webhook</code> a <code class="nb">WebhookRegistrationResponse</code> vracajú typované hodnoty cez <code class="nb">events()</code>; endpoint ich prevedie na reťazce pri zostavení HTTP tela. <code class="nb">WebhookIdentifier::fromString()</code> vytvorí hodnotový objekt ID webhooku a odmietne prázdny reťazec alebo hodnotu tvorenú iba medzerami.</p>
+<p>Modely webhookov vracajú ID aj URL ako tieto objekty; ich pôvodné reťazce sú dostupné cez <code class="nb">value()</code>.</p>
+<p>V lokálnom OpenAPI je <code class="nb">signingSecret</code> súčasťou odpovede na vytvorenie webhooku, nie schém pre jeho neskorší detail alebo zoznam. Uložte ho bezpečne hneď pri registrácii; z neskoršej odpovede ho nemusí byť možné získať.</p>
+<p>Ak sa stratí, riaďte sa postupom poskytovateľa na výmenu alebo novú registráciu tajomstva.</p>
+<p><code>WebhookRegistrationResponse::<wbr>signingSecret()</code> vracia <code class="nb">WebhookSigningSecret</code>. Reťazec odhaľte explicitne cez <code class="nb">reveal()</code> pri overovaní podpisu alebo bezpečnom uložení; výpis objektu cez <code class="nb">var_dump()</code> tajomstvo rediguje.</p>
+<p><code class="nb">serialize()</code> objektu s tajomstvom vyhodí <code class="nb">InvariantViolationException</code>, aby sa secret nedostal v čitateľnej forme do fronty, cache ani session; uložte hodnotu z <code class="nb">reveal()</code> do úložiska tajomstiev.</p>
+<p>Odpovede webhookov vyžadujú <code class="nb">id</code>, <code class="nb">url</code>, <code class="nb">events</code>, <code class="nb">status</code>, <code class="nb">createdAt</code> a <code class="nb">updatedAt</code>; odpoveď pri vytvorení vyžaduje aj <code class="nb">signingSecret</code>. <code class="nb">description</code> a <code class="nb">nextPageToken</code> môžu chýbať alebo byť <code class="nb">null</code>. Ostatné povinné webhookové polia nesmú byť <code class="nb">null</code>.</p>
+<p><code class="nb">UpdateWebhookRequest</code> prijíma <code class="nb">WebhookIdentifier</code> a typovaný <code class="nb">WebhookUpdate</code>. Update sa skladá nemennými <code class="nb">with*()</code> metódami; vynechané pole sa nemení, zatiaľ čo explicitné <code class="nb">null</code> sa odošle ako <code class="nb">null</code> podľa OpenAPI.</p>
+<p>Napríklad <code>WebhookUpdate::<wbr>empty()-&gt;withDescription(null)-&gt;withStatus(null)-&gt;withEvents([])</code> odošle <code class="nb">null</code> pre popis a stav a nastaví prázdny zoznam udalostí.</p>
+<p>URL sa nastavuje cez <code>withUrl(?WebhookUrl $url)</code> a stav cez <code>withStatus(?WebhookStatus $status)</code>; povolené hodnoty vytvoríte cez <code>WebhookStatus::<wbr>fromString(&#39;ACTIVE&#39;)</code> alebo <code>WebhookStatus::<wbr>fromString(&#39;DISABLED&#39;)</code>.</p>
+<p>Detail, úprava aj odstránenie odmietnu ID webhooku, ktoré je prázdne alebo obsahuje iba medzery, cez <code class="nb">InvalidInputException</code> ešte pred HTTP volaním. Neprázdna hodnota sa pred odoslaním netrimuje.</p>
+<p>Webhook requesty a modely používajú validované objekty <code class="nb">WebhookUrl</code>, <code class="nb">WebhookIdentifier</code> a <code class="nb">WebhookEventType</code>; úpravy používajú <code class="nb">WebhookUpdate</code>. Getter <code class="nb">WebhookEventPayload::eventId()</code>/<code class="nb">eventType()</code> a <code>SentDocumentStatusChangedEvent::<wbr>documentId()</code>/<code class="nb">status()</code> vracajú hodnotové objekty.</p>
+<p>Reťazcovú hodnotu získate cez <code class="nb">value()</code>.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\Webhooks\CreateWebhookRequest;
+use DreaM1\EfakturaConnector\Core\Webhooks\DeleteWebhookRequest;
+use DreaM1\EfakturaConnector\Core\Webhooks\UpdateWebhookRequest;
+use DreaM1\EfakturaConnector\Core\Webhooks\WebhookUpdate;
+use DreaM1\EfakturaConnector\Core\Webhooks\WebhookUrl;
+use DreaM1\EfakturaConnector\Domain\EFaktura\Webhooks\WebhookIdentifier;
+use DreaM1\EfakturaConnector\Domain\EFaktura\Webhooks\WebhookEventType;
+
+$url = WebhookUrl::fromString('https://example.test/webhooks');
+$event = WebhookEventType::fromString(WebhookEventType::SENT_DOCUMENT_STATUS_CHANGED);
+$create = new CreateWebhookRequest($url, [$event]);
+$id = WebhookIdentifier::fromString('webhook-123');
+$delete = new DeleteWebhookRequest($id);
+$update = new UpdateWebhookRequest(
+    $id,
+    WebhookUpdate::empty()-&gt;withDescription('Invoice notifications')
+);
+$callbackUrl = $webhook-&gt;url()-&gt;value();
+$webhookId = $webhook-&gt;id()-&gt;value();</code></pre></div>
+<h2 id="podpis-udalostí-z-registrácie-v1webhooks"><span class="mw-h">Podpis udalostí z registrácie <code class="nb">/v1/webhooks</code></span><a class="anchor" href="#podpis-udalostí-z-registrácie-v1webhooks" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Tracking-and-Webhooks.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">WebhookRegistrationResponseFactory</code> parsuje a validuje odpoveď registrácie podľa Peppol Gateway OpenAPI a vracia Core model vrátane <code class="nb">signingSecret</code>. Táto registrácia sa týka udalostí, ktoré Gateway odosiela na URL hostiteľa.</p>
+<p>Dostupný Gateway snapshot opisuje správu registrácie a <code class="nb">signingSecret</code>, nie však kontrakt ich HTTP doručenia ani podpisový algoritmus.</p>
+<p>Test webhooku od DataHosting potvrdil hlavičky <code class="nb">x-sapi-webhook-event</code>, <code class="nb">x-sapi-webhook-id</code>, <code class="nb">x-sapi-webhook-timestamp</code> a <code class="nb">x-sapi-webhook-signature</code> s hodnotou <code class="nb">t=&lt;unix&gt;,v1=&lt;hex&gt;</code>.</p>
+<p>Podpísaná správa je <code class="nb">{t}.{x-sapi-webhook-id}.{rawBody}</code> a podpis je hex HMAC-SHA256 s celým <code class="nb">signingSecret</code> vrátane prefixu <code class="nb">whsec_</code>. Verifikátor vyžaduje 64 hex znakov vo <code class="nb">v1</code>, zhodu <code class="nb">t</code> s <code class="nb">x-sapi-webhook-timestamp</code> a počíta podpis nad presnými raw body bajtmi.</p>
+<p><code>PeppolWebhookEventFactory::<wbr>fromSignedJson()</code> prijíma raw telo, <code class="nb">PeppolWebhookHeaders</code> a uložený <code class="nb">WebhookSigningSecret</code>. Vyžaduje explicitný <code>PeppolWebhookSignatureVerifierInterface</code> a zavolá ho pred parsovaním JSON.</p>
+<p>Pre potvrdený Gateway kontrakt použite <code>PeppolWebhookHmacSha256SignatureVerifier</code>. Podpísaný vstup zahŕňa timestamp aj ID z HTTP hlavičiek.</p>
+<p>Factory mapuje <code class="nb">sent_document.status_changed</code> na <code class="nb">SentDocumentStatusChangedEvent</code>, <code class="nb">inbox_document.received</code> na <code class="nb">ReceivedDocumentMetadata</code> a <code class="nb">webhook.test</code> na validovanú obálku <code class="nb">WebhookEventPayload</code>. Mapovanie vychádza z ukážok callbackov v integračných podkladoch.</p>
+<p>Pri rotácii signing secretu použite <code>fromSignedJsonWithAnySecret($rawBody, $headers, [$newSecret, $previousSecret])</code>. Secrety sa skúšajú v poradí a platí prvý, ktorý podpis overí; mapovanie je rovnaké ako pri <code class="nb">fromSignedJson()</code>.</p>
+<p>Prijíma 1 až <code>PeppolWebhookEventFactory::<wbr>MAX_<wbr>ROTATION_<wbr>SECRETS</code> (5) hodnôt <code class="nb">WebhookSigningSecret</code>. Ak podpis neoverí žiadny secret, vyhodí <code class="nb">InvalidWebhookPayloadException</code> s poslednou chybou verifikátora ako <code class="nb">previous</code>.</p>
+<p>Predchádzajúci secret ponechajte iba dovtedy, kým ešte môžu prísť doručenia podpísané ním.</p>
+<p>Pri registrácii uložte celý <code class="nb">signingSecret</code> bezpečne a bez odstraňovania prefixu <code class="nb">whsec_</code>.</p>
+<div class="alert info" role="note"><div class="ai" aria-hidden="true">i</div><div class="ac"><div class="at">Poznámka</div><p>Hostiteľská aplikácia stále vystavuje HTTP route a vyberá správny secret.</p></div></div>
+<p>Gateway webhook používa HMAC-SHA256 s podpísaným vstupom <code class="nb">{t}.{id}.{rawBody}</code>.</p>
+<h2 id="spracovanie-udalostí-hostiteľom"><span class="mw-h">Spracovanie udalostí hostiteľom</span><a class="anchor" href="#spracovanie-udalostí-hostiteľom" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Tracking-and-Webhooks.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<h3 id="tok-registrácie-a-doručenia-webhooku"><span class="mw-h">Tok registrácie a doručenia webhooku</span><a class="anchor" href="#tok-registrácie-a-doručenia-webhooku" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Webhook má dva odlišné smery: register nastavuje odber udalostí cez Gateway API; samotné HTTP doručenie vykoná poskytovateľ na route hostiteľa.</p>
+<div class="alert info" role="note"><div class="ai" aria-hidden="true">i</div><div class="ac"><div class="at">Poznámka</div><p>Knižnica neposkytuje route ani automatický algoritmus podpisu, ale poskytuje factory, ktorá pred mapovaním vyžaduje injektovaný podpisový verifikátor.</p></div></div>
+<pre class="mermaid">sequenceDiagram
+    participant Host as Hostiteľská aplikácia
+    participant Registry as WebhookRegistryInterface
+    participant Gateway as Peppol Gateway
+    participant Receiver as HTTP route hostiteľa
+    participant Factory as PeppolWebhookEventFactory
+    participant Verifier as PeppolWebhookSignatureVerifierInterface
+    participant Parser as WebhookEventPayload
+    Host-&gt;&gt;Registry: register(participant, CreateWebhookRequest)
+    Registry-&gt;&gt;Gateway: POST /v1/webhooks
+    Gateway--&gt;&gt;Registry: webhook + signingSecret
+    Registry--&gt;&gt;Host: WebhookRegistrationResponse
+    Host-&gt;&gt;Host: bezpečne uložiť signingSecret
+    Gateway-&gt;&gt;Receiver: neskorší HTTP callback
+    Receiver-&gt;&gt;Factory: fromSignedJson(rawBody, headers, signingSecret)
+    Factory-&gt;&gt;Verifier: verify(rawBody, headers, signingSecret)
+    Verifier--&gt;&gt;Factory: podpis platný alebo výnimka
+    Factory-&gt;&gt;Parser: fromJson(rawBody)
+    Parser--&gt;&gt;Factory: validovaná obálka udalosti
+    Factory--&gt;&gt;Receiver: obálka + typovaný event payload
+    Receiver-&gt;&gt;Receiver: deduplikovať a trvalo uložiť udalosť
+    Receiver--&gt;&gt;Gateway: úspešný HTTP status po uložení
+    Receiver-&gt;&gt;Host: odovzdať ďalšie spracovanie do workflow/queue</pre>
+<p>Gateway OpenAPI neuvádza callback podpisový kontrakt ani toleranciu veku timestampu; vzorec <code class="nb">{t}.{id}.{rawBody}</code> a HMAC-SHA256 potvrdil test webhooku DataHosting. Timestamp je podpísaný, no verifikátor bez potvrdenej tolerancie času jeho vek neobmedzuje.</p>
+<p>Hostiteľ môže zapnúť vlastnú politiku čerstvosti cez <code>PeppolWebhookEventFactory::<wbr>withTimestampTolerance(300)</code>: metóda vráti kópiu factory, ktorá po úspešnom overení podpisu odmietne doručenie s timestampom vzdialeným od aktuálneho času o viac než zadaný počet sekúnd (oboma smermi).</p>
+<p>Voliteľný druhý argument <code class="nb">ClockInterface</code> slúži na testy. Kontrola zužuje okno pre replay, deduplikáciu podľa ID nenahrádza. Hostiteľ musí deduplikovať udalosti podľa ID a spracovanie držať idempotentné, keďže polling aj webhook môžu oznámiť rovnaký stav.</p>
+<p><code class="nb">WebhookEventPayload::fromJson()</code> odmietne surové JSON telo väčšie než 1 MiB ešte pred dekódovaním. <code class="nb">fromArray()</code> prijíma už dekódované dáta a nedokáže zistiť veľkosť pôvodného HTTP tela; ak aplikácia používa túto cestu, limit nastavte na serveri ešte pred JSON dekódovaním.</p>
+<p>Obálka vracia <code class="nb">WebhookEventId</code> cez <code class="nb">eventId()</code> a <code class="nb">WebhookEventType</code> cez <code class="nb">eventType()</code>. Typ vytvoríte cez <code class="nb">WebhookEventType::fromString()</code>; neznáme neprázdne názvy zostávajú zachované, aby hostiteľ mohol rozhodnúť, ako s novou udalosťou naložiť.</p>
+<p><code class="nb">isSupported()</code> kontroluje názvy, ktoré knižnica pozná. <code class="nb">WebhookEventPayload</code> kontroluje neprázdny identifikátor, ale neinterpretuje event-specific <code class="nb">data</code>.</p>
+<p>Pole <code class="nb">occurredAt</code> musí byť úplný timestamp vo formáte RFC3339 vrátane časovej zóny, napríklad <code class="nb">2026-11-01T10:00:00Z</code> alebo <code class="nb">2026-11-01T10:00:00.123+01:00</code>. Voľné dátumové zápisy, neúplné timestampy a neplatné kalendárne dátumy sa odmietnu.</p>
+<p><code>Infrastructure\<wbr>EFaktura\<wbr>Webhooks\<wbr>SentDocumentStatusChangedEventFactory</code> parsuje <code class="nb">senderParticipantId</code> a <code class="nb">receiverParticipantId</code> na <code class="nb">Participant</code>; neplatný participant ID odmietne ako <code class="nb">InvalidWebhookPayloadException</code>.</p>
+<p>Udalosť poskytuje objekty cez <code class="nb">sender()</code> a <code class="nb">receiver()</code>, providerové <code class="nb">documentId()</code> vracia <code class="nb">ProviderDocumentId</code> a <code class="nb">status()</code> vracia <code class="nb">ProviderDocumentStatus</code>. Neznámy neprázdny status sa zachová pre hostiteľa; známa hodnota, ktorá nepatrí medzi outbound statusy, sa naďalej odmietne.</p>
+<p><code class="nb">status()-&gt;isKnown()</code> označí známe hodnoty. <code class="nb">hasError()</code> vráti <code class="nb">true</code>, ak <code class="nb">data.error</code> existuje a nie je <code class="nb">null</code>; prázdny objekt sa preto stále považuje za prítomnú chybu. Obsah chyby sa do doménovej udalosti nekopíruje.</p>
+<p>Reťazcové hodnoty objektov získate cez <code class="nb">value()</code>.</p>
+<p>Hostiteľská aplikácia zabezpečí vlastnú prijímaciu route, výber tajomstva, trvalé uloženie a idempotentné spracovanie udalostí. Handler by mal vrátiť úspešný HTTP stav až po uložení a ťažšie spracovanie presunúť do queue.</p>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p>Staršia udalosť nesmie bez kontroly prepísať novší stav.</p></div></div>
+<h2 id="dôležité-prevádzkové-pravidlá"><span class="mw-h">Dôležité prevádzkové pravidlá</span><a class="anchor" href="#dôležité-prevádzkové-pravidlá" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Tracking-and-Webhooks.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<ul>
+<li>Odpoveď SAPI <code class="nb">ACCEPTED</code> nepovažujte za potvrdenie doručenia.</li>
+<li>Pri neistom výsledku odoslania si najprv overte stav cez tracking API.</li>
+<li>Webhooky a polling môžu doručiť ten istý stav; spracovanie musí byť idempotentné.</li>
+<li>Token a signing secret neukladajte do logov ani nevracajte v administračných výpisoch.</li>
+<li>Podpis Gateway sa počíta ako HMAC-SHA256 nad <code class="nb">{t}.{x-sapi-webhook-id}.{rawBody}</code> s celým <code class="nb">signingSecret</code>. Použite presné raw body; neparsujte a nereserializujte ho pred overením.</li>
+</ul>
+<h2 id="zdroje-kontraktu"><span class="mw-h">Zdroje kontraktu</span><a class="anchor" href="#zdroje-kontraktu" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Tracking-and-Webhooks.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>HTTP cesty, polia a podporované eventy registra vychádzajú z <a href="https://test-sapisk.datahosting.sk/swagger-ui/index.html?urls.primaryName=Peppol+Gateway+API+v1" class="ext" rel="noopener">DataHosting Peppol Gateway v1 OpenAPI</a> a z lokálneho <a href="../../docs/eFaktura/api/openapi.json">kombinovaného API snapshotu</a>. PDS subject submission je klientská operácia Integrator API opísaná v <a href="Integrator-API.html">samostatnom návode</a>.</p>
+<p>Gateway špecifikácia opisuje registráciu webhookov, ale nedáva úplný kontrakt pre doručenie a overenie podpisu; túto medzeru nemožno doplniť z normatívnej špecifikácie Peppol.</p>
+<p>Pre interpretáciu sieťových potvrdení pozrite <a href="https://docs.peppol.eu/edelivery/specs/mls/v1.1.0/" class="ext" rel="noopener">oficiálnu špecifikáciu Peppol MLS</a> a <a href="https://docs.peppol.eu/edelivery/guidelines/mls/SPOG%20on%20MLS%201.0.0%202026-07-02.pdf" class="ext" rel="noopener">prevádzkové usmernenie MLS</a>. Tieto dokumenty vysvetľujú Peppol Message Level Status, ale neurčujú DataHosting API ani jeho webhookové hlavičky.</p>
+<p>Ďalšie rozlíšenie zdrojov a obmedzení je v <a href="Source-Alignment.html">Source-Alignment</a>.</p>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li><a href="Receiving-Documents.html">Príjem dokladov</a></li>
+<li><a href="Sending-Documents.html">Odosielanie dokladov</a></li>
+<li><a href="API-Reference.html">Prehľad API</a></li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#discovery-a-profil-participanta"><span class="n">1</span> <span class="x">Discovery a profil participanta</span></a></li><li class="t2"><a href="#stav-odoslaného-dokladu-a-mls"><span class="n">2</span> <span class="x">Stav odoslaného dokladu a MLS</span></a></li><li class="t2"><a href="#správa-webhookov"><span class="n">3</span> <span class="x">Správa webhookov</span></a></li><li class="t2"><a href="#podpis-udalostí-z-registrácie-v1webhooks"><span class="n">4</span> <span class="x">Podpis udalostí z registrácie /v1/webhooks</span></a></li><li class="t2"><a href="#spracovanie-udalostí-hostiteľom"><span class="n">5</span> <span class="x">Spracovanie udalostí hostiteľom</span></a></li><li class="t3"><a href="#tok-registrácie-a-doručenia-webhooku"><span class="n">5.1</span> <span class="x">Tok registrácie a doručenia webhooku</span></a></li><li class="t2"><a href="#dôležité-prevádzkové-pravidlá"><span class="n">6</span> <span class="x">Dôležité prevádzkové pravidlá</span></a></li><li class="t2"><a href="#zdroje-kontraktu"><span class="n">7</span> <span class="x">Zdroje kontraktu</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Receiving-Documents.html"><small>← Predchádzajúca</small><b>Príjem dokladov</b></a><a class="nx" href="API-Reference.html"><small>Ďalšia →</small><b>Prehľad API</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Receiving-Documents.html">Príjem dokladov</a></li><li><a href="API-Reference.html">Prehľad API</a></li><li><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a></li><li><a href="UBL-Documents.html">Čítanie a zápis UBL</a></li><li><a href="Validation.html">Lokálna validácia</a></li><li><a href="Sending-Documents.html">Odosielanie dokladov</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li><li><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a></li><li><a href="Sending-Documents.html">Odosielanie dokladov</a></li><li><a href="Receiving-Documents.html">Príjem dokladov</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-práca-s-dokladmi">Práca s dokladmi</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Tracking-and-Webhooks.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Tracking-and-Webhooks.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

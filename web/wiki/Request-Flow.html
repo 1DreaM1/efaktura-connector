@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Táto stránka zobrazuje všetky vzdialené vetvy requestov konektora: SAPI, Peppol Gateway, Integrator API, PDS a získanie SAPI OAuth tokenu. Lokálne UBL čítanie, zápis a validácia cez API request neposielajú.">
+<title>Graf toku API requestov – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html" aria-current="page">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Request-Flow.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Request-Flow.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Request-Flow.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-referencia">Referencia</a></div><h1 class="title">Graf toku API requestov</h1><div class="sub"><span class="chip">Čítanie ≈ 19 min</span><span class="chip">5 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead">Táto stránka zobrazuje všetky vzdialené vetvy requestov konektora: SAPI, Peppol Gateway, Integrator API, PDS a získanie SAPI OAuth tokenu. Lokálne UBL čítanie, zápis a validácia cez API request neposielajú.</p>
+<h2 id="prehľad-všetkých-vetiev"><span class="mw-h">Prehľad všetkých vetiev</span><a class="anchor" href="#prehľad-všetkých-vetiev" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Request-Flow.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<pre class="mermaid">flowchart TD
+    Host[Hostiteľská aplikácia]
+    SapiCore[Core SAPI/Gateway kontrakt]
+    Adapter[SAPI/Gateway Infrastructure adaptér]
+    IntegratorCore[Core IntegratorAccountClientInterface]
+    IntegratorClient[IntegratorAccountClient + typované facades]
+    SapiEp[SAPI endpoint]
+    GatewayEp[Peppol Gateway endpoint]
+    IntEp[Integrator endpoint]
+    PdsEp[SubmitPdsSubjectsEndpoint]
+    ApiReq[ApiRequest]
+    Connector[ApiConnector]
+    SapiAuth[AuthenticatedRequestSender]
+    TokenProvider[SapiTokenProvider]
+    TokenEndpoint[RequestTokenEndpoint]
+    TokenApi[ApiConnector pre token]
+    IntAuth[IntegratorTokenRequestSender]
+    PdsSign[PdsRequestSigner: HMAC-SHA512]
+    PdsAuth[PdsAuthenticatedRequestSender]
+    SapiTransport[ProviderTransport pre SAPI a Gateway]
+    IntTransport[ProviderTransport pre Integrator]
+    Stack[Executor stack]
+    Provider[SAPI-SK, Peppol Gateway alebo Integrator API]
+    Response[HTTP odpoveď]
+
+    Host --&gt; SapiCore --&gt; Adapter
+    Adapter --&gt; SapiEp
+    Adapter --&gt; GatewayEp
+    SapiEp --&gt; ApiReq
+    GatewayEp --&gt; ApiReq
+    ApiReq --&gt; Connector
+    Connector --&gt; SapiAuth
+    SapiAuth --&gt; TokenProvider
+    TokenProvider --&gt;|token v pamäti alebo cache| SapiAuth
+    TokenProvider --&gt;|token chýba alebo čoskoro expiruje| TokenEndpoint
+    TokenEndpoint --&gt; TokenApi --&gt; SapiTransport
+    SapiAuth --&gt; SapiTransport
+    SapiTransport --&gt; Stack
+
+    Host --&gt; IntegratorCore --&gt; IntegratorClient
+    IntegratorClient --&gt; IntEp --&gt; ApiReq
+    Connector --&gt; IntAuth --&gt; IntTransport
+    IntTransport --&gt; Stack
+
+    IntegratorClient --&gt; PdsEp --&gt; PdsSign --&gt; ApiReq
+    Connector --&gt; PdsAuth --&gt; IntTransport
+
+    Stack --&gt; Provider --&gt; Response
+    Response --&gt; Stack
+    Stack --&gt; SapiTransport
+    Stack --&gt; IntTransport
+    SapiTransport --&gt; SapiAuth
+    SapiTransport --&gt; TokenApi
+    IntTransport --&gt; IntAuth
+    IntTransport --&gt; PdsAuth
+    SapiAuth --&gt; Connector
+    IntAuth --&gt; Connector
+    PdsAuth --&gt; Connector
+    TokenApi --&gt; TokenEndpoint
+    Connector --&gt; Adapter --&gt; SapiCore --&gt; Host
+    Connector --&gt; IntegratorClient --&gt; IntegratorCore --&gt; Host</pre>
+<p>SAPI aj Peppol Gateway používajú rovnaký SAPI OAuth token. Bežné Integrator API requesty používajú <code class="nb">X-Integrator-Token</code>; nejde o token získavaný cez SAPI OAuth.</p>
+<p>PDS submission patrí do Integrator API, ale autentifikuje sa podpisom <code class="nb">X-PDS-Secret</code> vypočítaným nad už zakódovaným JSON telom. Každá vetva používa spoločné <code class="nb">ApiRequest</code> a <code class="nb">ApiConnector</code>; líši sa autentifikačným senderom a transportom.</p>
+<h2 id="sapi-a-peppol-gateway"><span class="mw-h">SAPI a Peppol Gateway</span><a class="anchor" href="#sapi-a-peppol-gateway" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Request-Flow.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<pre class="mermaid">sequenceDiagram
+    participant Caller as Hostiteľ / Core
+    participant Adapter as Infrastructure adaptér
+    participant Endpoint as SAPI alebo Gateway endpoint
+    participant API as ApiConnector
+    participant Auth as AuthenticatedRequestSender
+    participant Tokens as SapiTokenProvider
+    participant Cache as Token cache / voliteľný refresh lock
+    participant TokenEndpoint as RequestTokenEndpoint
+    participant PlainAPI as ApiConnector pre token
+    participant Transport as Transport
+    participant Stack as Executor stack
+    participant Provider as SAPI-SK alebo Peppol Gateway
+
+    Caller-&gt;&gt;Adapter: typovaná operácia
+    Adapter-&gt;&gt;Endpoint: request alebo hodnoty operácie
+    Endpoint-&gt;&gt;API: ApiRequest (metóda, cesta, query, hlavičky, telo)
+    API-&gt;&gt;Auth: HttpExchangeRequest
+    Auth-&gt;&gt;Tokens: getToken()
+    Tokens-&gt;&gt;Cache: kontrola pamäte a cache
+    alt token chýba alebo čoskoro expiruje
+        Tokens-&gt;&gt;TokenEndpoint: OAuthTokenRequest
+        TokenEndpoint-&gt;&gt;PlainAPI: POST /sapi/auth/token bez Bearer tokenu
+        PlainAPI-&gt;&gt;Transport: HttpExchangeRequest
+        Transport-&gt;&gt;Stack: URL, scope a request
+        Stack-&gt;&gt;Provider: HTTPS token request
+        Provider--&gt;&gt;Stack: OAuth odpoveď
+        Stack--&gt;&gt;Transport: HttpExchangeResult
+        Transport--&gt;&gt;PlainAPI: výsledok
+        PlainAPI--&gt;&gt;TokenEndpoint: SapiTokenResponse
+        TokenEndpoint--&gt;&gt;Tokens: SapiToken
+        Tokens-&gt;&gt;Cache: uloženie tokenu
+    end
+    Tokens--&gt;&gt;Auth: SapiToken
+    Auth-&gt;&gt;Transport: request s Authorization: Bearer
+    Transport-&gt;&gt;Stack: URL, scope a request
+    Stack-&gt;&gt;Provider: HTTPS API request
+    Provider--&gt;&gt;Stack: HTTP odpoveď
+    Stack--&gt;&gt;Transport: HttpExchangeResult
+    Transport--&gt;&gt;Auth: výsledok prenosu
+    opt prvý HTTP 401
+        Auth-&gt;&gt;Tokens: forget(token) a getToken()
+        Auth-&gt;&gt;Transport: zopakovanie pôvodného requestu raz
+        Transport-&gt;&gt;Stack: nový transportný pokus
+        Stack-&gt;&gt;Provider: HTTPS API request s novým tokenom
+        Provider--&gt;&gt;Stack: HTTP odpoveď
+        Stack--&gt;&gt;Transport: HttpExchangeResult
+        Transport--&gt;&gt;Auth: konečný výsledok
+    end
+    Auth--&gt;&gt;API: HTTP výsledok
+    API--&gt;&gt;Endpoint: dekódované dáta, XML alebo úspešné dokončenie
+    Endpoint--&gt;&gt;Adapter: Core model (cez Factory alebo Mapper)
+    Adapter--&gt;&gt;Caller: Core výsledok</pre>
+<p>SAPI vetva pokrýva token, odoslanie a príjem dokumentov aj stav tokenu. Gateway vetva pokrýva discovery, kontrolu a odoslanie dokumentov, stav doručenia a správu webhookov. Odpovede <code class="nb">401</code> obnovuje <code class="nb">AuthenticatedRequestSender</code> najviac raz; toto obnovenie je oddelené od HTTP retry.</p>
+<p>V nasledujúcich tabuľkách hlavičky uvádzajú autentifikáciu aj hlavičky špecifické pre operáciu. Transport automaticky pridáva <code>Content-Type: application/<wbr>json</code> pri JSON tele; <code class="nb">Accept</code> je predvolene <code class="nb">application/json</code>.</p>
+<p>Výnimkou je XML obsah MLS, pri ktorom endpoint nastaví <code>Accept: application/<wbr>xml</code>. <code class="nb">—</code> znamená, že query alebo body nie sú definované. Request body, ktorý je uvedený, je podľa OpenAPI povinný; povinnosť jednotlivých polí sa riadi schémou.</p>
+<p>Odpoveď uvádza úspešný HTTP status a PHP návratový typ; ak sa názov líši, nasleduje aj OpenAPI schéma.</p>
+<h3 id="sapi-sk-endpointy"><span class="mw-h">SAPI-SK endpointy</span><a class="anchor" href="#sapi-sk-endpointy" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Okrem tokenového endpointu používajú tieto operácie <code>Authorization: Bearer &lt;SAPI token&gt;</code>. Tokenový request je bez Authorization hlavičky a posiela OAuth client credentials v JSON tele. <code class="nb">X-Peppol-Participant-Id</code> určuje participant scope, nie autentifikáciu.</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Endpoint (HTTP cesta; trieda)</th><th>Hlavičky</th><th>Query parametre</th><th>Request body (povinné / voliteľné)</th><th>Typ odpovede</th></tr></thead><tbody><tr><td><code>POST /<wbr>sapi/<wbr>auth/<wbr>token</code>; <code class="nb">RequestTokenEndpoint</code></td><td>Bez autentifikačnej hlavičky</td><td>—</td><td>Povinný JSON objekt: povinné <code class="nb">client_id</code>, <code class="nb">client_secret</code>, <code class="nb">grant_type</code> (hodnota <code class="nb">client_credentials</code>); voliteľné <code class="nb">scope</code></td><td><code class="nb">200</code> → PHP <code class="nb">SapiTokenResponse</code>; OpenAPI <code class="nb">SapiTokenResponse</code></td></tr><tr><td><code>GET /<wbr>sapi/<wbr>auth/<wbr>token/<wbr>status</code>; <code class="nb">GetTokenStatusEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code></td><td>—</td><td>—</td><td><code class="nb">200</code> → OpenAPI schéma <code class="nb">SapiTokenStatusResponse</code> → Core <code class="nb">TokenStatus</code> (cez <code class="nb">TokenStatusFactory</code>)</td></tr><tr><td><code>POST /<wbr>sapi/<wbr>document/<wbr>send</code>; <code class="nb">SendDocumentEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code>, <code class="nb">Idempotency-Key</code></td><td>—</td><td>Povinný JSON: povinné <code class="nb">metadata</code> (objekt s povinnými <code class="nb">documentId</code>, <code class="nb">documentTypeId</code>, <code class="nb">processId</code>, <code class="nb">senderParticipantId</code>, <code class="nb">receiverParticipantId</code>, <code class="nb">creationDateTime</code>), <code class="nb">payload</code>, <code class="nb">payloadFormat</code> (<code class="nb">XML</code>); voliteľné <code class="nb">payloadEncoding</code> (predvolené UTF-8), <code class="nb">checksum</code></td><td><code class="nb">202</code> → Core <code class="nb">DocumentSubmissionResult</code> (cez <code class="nb">DocumentSubmissionResultFactory</code>); OpenAPI <code class="nb">SapiSendDocumentResponse</code></td></tr><tr><td><code>GET /<wbr>sapi/<wbr>document/<wbr>receive</code>; <code class="nb">ListReceivedDocumentsEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code></td><td><code class="nb">pageToken</code> voliteľný string; <code class="nb">limit</code> voliteľný integer, predvolene 20, rozsah 1–100; <code class="nb">status</code> voliteľný enum <code class="nb">RECEIVED</code> alebo <code class="nb">ACKNOWLEDGED</code></td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">ReceivedDocumentPage</code> (cez <code class="nb">ReceivedDocumentPageFactory</code>); OpenAPI <code class="nb">SapiReceivedDocumentListResponse</code></td></tr><tr><td><code>GET /<wbr>sapi/<wbr>document/<wbr>receive/<wbr>{documentId}</code>; <code class="nb">GetReceivedDocumentEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code></td><td>—</td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">ReceivedDocumentPayload</code> (cez <code class="nb">ReceivedDocumentPayloadFactory</code>); OpenAPI <code class="nb">SapiReceivedDocumentDetailResponse</code></td></tr><tr><td><code>POST /<wbr>sapi/<wbr>document/<wbr>receive/<wbr>{documentId}/<wbr>acknowledge</code>; <code class="nb">AcknowledgeReceivedDocumentEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code></td><td>—</td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">ReceivedDocumentAcknowledgement</code> (cez <code class="nb">ReceivedDocumentAcknowledgementFactory</code>); OpenAPI <code class="nb">SapiAcknowledgeResponse</code></td></tr></tbody></table></div>
+<p>Pri odoslaní a Gateway validácii konektor posiela <code>payloadEncoding: UTF-8</code>, hoci ho OpenAPI označuje ako voliteľné. <code class="nb">checksum</code> odošle iba vtedy, keď ho payload obsahuje.</p>
+<h3 id="peppol-gateway-endpointy"><span class="mw-h">Peppol Gateway endpointy</span><a class="anchor" href="#peppol-gateway-endpointy" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Všetky Gateway endpointy používajú <code>Authorization: Bearer &lt;SAPI token&gt;</code>. <code class="nb">X-Peppol-Participant-Id</code>, ak je uvedený, určuje scope participanta a nie je autentifikačným údajom. Telo každého JSON requestu je povinné tam, kde je uvedené.</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Endpoint (HTTP cesta; trieda)</th><th>Hlavičky</th><th>Query parametre</th><th>Request body (povinné / voliteľné)</th><th>Typ odpovede</th></tr></thead><tbody><tr><td><code>POST /<wbr>v1/<wbr>discovery/<wbr>receives</code>; <code class="nb">CheckReceivingCapabilityEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code></td><td>—</td><td>Povinný JSON objekt: povinné <code class="nb">participantId</code>, <code class="nb">documentTypeId</code>; voliteľné <code class="nb">processId</code></td><td><code class="nb">200</code> → Core <code class="nb">CheckReceivingCapabilityResponse</code> (cez <code>CheckReceivingCapabilityResponseFactory</code>); OpenAPI <code class="nb">DiscoveryReceivesResponse</code></td></tr><tr><td><code>GET /<wbr>v1/<wbr>participants/<wbr>{participantId}</code>; <code class="nb">GetParticipantProfileEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code></td><td>—</td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">ParticipantProfile</code> (cez <code class="nb">ParticipantProfileFactory</code>); OpenAPI <code class="nb">ParticipantResponse</code></td></tr><tr><td><code>POST /<wbr>v1/<wbr>validate-document</code>; <code class="nb">ValidateDocumentEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code></td><td>—</td><td>Povinný JSON: povinné <code class="nb">metadata</code> (<code class="nb">documentId</code>, <code class="nb">documentTypeId</code>, <code class="nb">processId</code>, <code class="nb">senderParticipantId</code>, <code class="nb">receiverParticipantId</code>, <code class="nb">creationDateTime</code>), <code class="nb">payload</code>, <code class="nb">payloadFormat</code> (<code class="nb">XML</code>); voliteľné <code class="nb">payloadEncoding</code> (predvolené UTF-8), <code class="nb">checksum</code></td><td><code class="nb">200</code> → <code class="nb">bool</code> (cez <code class="nb">DocumentValidationVerdictReader</code>); OpenAPI <code class="nb">ValidateDocumentResponse</code></td></tr><tr><td><code>POST /<wbr>v1/<wbr>send-documents</code>; <code class="nb">SendDocumentsEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code>, <code class="nb">Idempotency-Key</code></td><td>—</td><td>Povinný JSON objekt s povinným <code class="nb">documents</code> poľom; položka má povinné <code class="nb">type</code> (<code class="nb">UBL_XML</code> alebo <code class="nb">SBDH_XML</code>) a <code class="nb">payload</code>; <code class="nb">receiverParticipantId</code> je voliteľný v schéme, povinný pre <code class="nb">UBL_XML</code> a odvodený pri <code class="nb">SBDH_XML</code></td><td><code class="nb">200</code> → Core <code class="nb">SendDocumentsResult</code> (cez <code class="nb">SendDocumentsResultFactory</code>); OpenAPI schéma <code class="nb">SendDocumentsResponse</code></td></tr><tr><td><code>GET /<wbr>v1/<wbr>sent-documents/<wbr>{identifier}</code>; <code class="nb">GetSentDocumentEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code></td><td>—</td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">SentDocumentStatus</code> (cez <code class="nb">SentDocumentStatusFactory</code>); OpenAPI <code class="nb">SentDocumentResponse</code></td></tr><tr><td><code>GET /<wbr>v1/<wbr>sent-documents/<wbr>{identifier}/<wbr>message-level-statuses</code>; <code class="nb">ListMessageLevelStatusesEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code></td><td>—</td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">ProviderMessageLevelStatusResponse</code> (cez <code>ProviderMessageLevelStatusResponseFactory</code>); OpenAPI <code class="nb">MessageLevelStatusListResponse</code></td></tr><tr><td><code>GET /<wbr>v1/<wbr>sent-documents/<wbr>{identifier}/<wbr>message-level-statuses/<wbr>{statusIdentifier}/<wbr>content</code>; <code class="nb">GetMessageLevelStatusContentEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code>; <code>Accept: application/<wbr>xml</code></td><td>—</td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">MessageLevelStatusContent</code> (XML, <code class="nb">application/xml</code>)</td></tr><tr><td><code>GET /<wbr>v1/<wbr>webhooks</code>; <code class="nb">ListWebhooksEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code></td><td><code class="nb">pageToken</code> voliteľný string; <code class="nb">limit</code> voliteľný integer (<code class="nb">int32</code>)</td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">WebhookRegistryPage</code> cez <code class="nb">WebhookRegistryPageFactory</code>; OpenAPI <code class="nb">WebhookList</code></td></tr><tr><td><code>POST /<wbr>v1/<wbr>webhooks</code>; <code class="nb">RegisterWebhookEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code></td><td>—</td><td>Povinný JSON objekt: povinné <code class="nb">url</code>, <code class="nb">events</code> (hodnoty <code class="nb">sent_document.status_changed</code> alebo <code class="nb">inbox_document.received</code>); voliteľné <code class="nb">description</code></td><td><code class="nb">201</code> → Core <code class="nb">WebhookRegistrationResponse</code> cez <code class="nb">WebhookRegistrationResponseFactory</code>; OpenAPI <code class="nb">WebhookCreateResponse</code></td></tr><tr><td><code>GET /<wbr>v1/<wbr>webhooks/<wbr>{webhookId}</code>; <code class="nb">GetWebhookEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code></td><td>—</td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">Webhook</code> cez <code class="nb">WebhookFactory</code>; OpenAPI <code class="nb">Webhook</code></td></tr><tr><td><code>PATCH /<wbr>v1/<wbr>webhooks/<wbr>{webhookId}</code>; <code class="nb">UpdateWebhookEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code></td><td>—</td><td>Povinný JSON objekt; voliteľné <code class="nb">url</code>, <code class="nb">events</code> (hodnoty <code class="nb">sent_document.status_changed</code> alebo <code class="nb">inbox_document.received</code>), <code class="nb">status</code> (<code class="nb">ACTIVE</code> alebo <code class="nb">DISABLED</code>), <code class="nb">description</code>; treba zadať aspoň jedno pole</td><td><code class="nb">200</code> → Core <code class="nb">Webhook</code> cez <code class="nb">WebhookFactory</code>; OpenAPI <code class="nb">Webhook</code></td></tr><tr><td><code>DELETE /<wbr>v1/<wbr>webhooks/<wbr>{webhookId}</code>; <code class="nb">DeleteWebhookEndpoint</code></td><td><code>Authorization: Bearer &lt;SAPI token&gt;</code>; povinné <code class="nb">X-Peppol-Participant-Id</code></td><td>—</td><td>—</td><td><code class="nb">204</code> → bez tela (<code class="nb">void</code>)</td></tr></tbody></table></div>
+<h2 id="integrator-api-a-pds"><span class="mw-h">Integrator API a PDS</span><a class="anchor" href="#integrator-api-a-pds" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Request-Flow.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<pre class="mermaid">flowchart LR
+    Caller[Hostiteľ] --&gt; Client[IntegratorAccountClient]
+    Client --&gt; Facade[Typovaná Integrator facade]
+    Facade --&gt; Endpoint[Integrator endpoint]
+    Endpoint --&gt; Request[ApiRequest]
+    Request --&gt; API[ApiConnector]
+    API --&gt; TokenSender[IntegratorTokenRequestSender]
+    TokenSender --&gt;|odstráni Authorization a PDS secret; nastaví X-Integrator-Token| ITransport[ProviderTransport pre Integrator]
+
+    Client --&gt; PdsFacade[Integrator PDS facade]
+    PdsFacade --&gt; PdsEndpoint[SubmitPdsSubjectsEndpoint]
+    PdsEndpoint --&gt; Payload[PdsSubjectPayloadMapper]
+    Payload --&gt; Signer[PdsRequestSigner podpíše zakódované JSON telo]
+    Signer --&gt; PdsRequest[ApiRequest s X-PDS-Secret]
+    PdsRequest --&gt; API
+    API --&gt; PdsSender[PdsAuthenticatedRequestSender]
+    PdsSender --&gt;|overí jeden neprázdny podpis; odstráni Authorization a X-Integrator-Token| ITransport
+
+    ITransport --&gt; Stack[Executor stack]
+    Stack --&gt; Provider[Integrator API]
+    Provider --&gt; Stack
+    Stack --&gt; ITransport
+    ITransport --&gt; TokenSender
+    ITransport --&gt; PdsSender
+    TokenSender --&gt; API
+    PdsSender --&gt; API
+    API --&gt; Endpoint
+    API --&gt; PdsEndpoint
+    Endpoint --&gt; Facade
+    Facade --&gt; Client
+    Client --&gt; Caller
+    PdsEndpoint --&gt; PdsFacade
+    PdsFacade --&gt; Client</pre>
+<p>Bežná vetva zahŕňa správu OAuth klientov, prístupov participantov, aktiváciu, participant list a súhrny dokumentov. PDS vetva odosiela subjecty cez <code>POST /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>pds/<wbr>subjects</code>.</p>
+<p>Obe vetvy zdieľajú <code class="nb">ProviderTransport</code> a executor stack, no každý request dostane iba autentifikáciu zodpovedajúcu svojej vetve.</p>
+<h3 id="integrator-api-endpointy"><span class="mw-h">Integrator API endpointy</span><a class="anchor" href="#integrator-api-endpointy" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Tieto requesty používa <code class="nb">IntegratorTokenRequestSender</code>, ktorý odstráni prípadné <code class="nb">Authorization</code> a <code class="nb">X-PDS-Secret</code> hlavičky a nastaví nakonfigurovaný <code class="nb">X-Integrator-Token</code>.</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Endpoint (HTTP cesta; trieda)</th><th>Hlavičky</th><th>Query parametre</th><th>Request body (povinné / voliteľné)</th><th>Typ odpovede</th></tr></thead><tbody><tr><td><code>GET /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients</code>; <code class="nb">ListClientsEndpoint</code></td><td>Povinné <code class="nb">X-Integrator-Token</code></td><td><code class="nb">pageToken</code> voliteľný string; <code class="nb">limit</code> voliteľný integer (<code class="nb">int32</code>); <code class="nb">status</code> voliteľný enum <code class="nb">APPROVED</code> alebo <code class="nb">DELETED</code></td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">IntegratorClientList</code> (cez <code class="nb">IntegratorClientListFactory</code>); OpenAPI <code class="nb">IntegratorClientListResponse</code></td></tr><tr><td><code>POST /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients</code>; <code class="nb">CreateClientEndpoint</code></td><td>Povinné <code class="nb">X-Integrator-Token</code>, <code class="nb">Idempotency-Key</code></td><td>—</td><td>Povinný JSON objekt; OpenAPI neoznačuje žiadne pole ako povinné.<br>Voliteľné <code class="nb">name</code>, <code class="nb">contact_email</code>, <code class="nb">participants</code>; položky <code class="nb">participants[]</code> majú <code class="nb">participant_id</code>, <code class="nb">can_send</code>, <code class="nb">can_receive</code> (schéma ich neoznačuje ako povinné; konektor pri položke odošle všetky tri)</td><td><code class="nb">200</code> → Core <code class="nb">IntegratorClientCreation</code> (cez <code class="nb">IntegratorClientCreationFactory</code>); OpenAPI <code class="nb">IntegratorClientCreateResponse</code></td></tr><tr><td><code>GET /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients/<wbr>{clientId}</code>; <code class="nb">GetClientEndpoint</code></td><td>Povinné <code class="nb">X-Integrator-Token</code></td><td>—</td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">IntegratorClient</code> (cez <code class="nb">IntegratorClientFactory</code>); OpenAPI <code class="nb">IntegratorClientResponse</code></td></tr><tr><td><code>DELETE /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients/<wbr>{clientId}</code>; <code class="nb">DeleteClientEndpoint</code></td><td>Povinné <code class="nb">X-Integrator-Token</code></td><td>—</td><td>—</td><td><code class="nb">204</code> → bez tela (<code class="nb">void</code>)</td></tr><tr><td><code>PUT /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients/<wbr>{clientId}/<wbr>secret</code>; <code class="nb">RotateClientSecretEndpoint</code></td><td>Povinné <code class="nb">X-Integrator-Token</code></td><td>—</td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">IntegratorClientSecretRotation</code> (cez <code class="nb">IntegratorClientSecretRotationFactory</code>); OpenAPI <code class="nb">IntegratorClientSecretResponse</code></td></tr><tr><td><code>PUT /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients/<wbr>{clientId}/<wbr>participants</code>; <code class="nb">ReplaceClientParticipantAccessEndpoint</code></td><td>Povinné <code class="nb">X-Integrator-Token</code></td><td>—</td><td>Povinný JSON objekt; <code class="nb">participants</code> a polia položiek <code class="nb">participant_id</code>, <code class="nb">can_send</code>, <code class="nb">can_receive</code> nie sú v OpenAPI označené ako povinné; konektor vždy odošle <code class="nb">participants</code> aj všetky tri polia položky</td><td><code class="nb">200</code> → Core <code class="nb">IntegratorClient</code> (cez <code class="nb">IntegratorClientFactory</code>); OpenAPI <code class="nb">IntegratorClientResponse</code></td></tr><tr><td><code>GET /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>participants</code>; <code class="nb">ListParticipantsEndpoint</code></td><td>Povinné <code class="nb">X-Integrator-Token</code></td><td><code class="nb">pageToken</code> voliteľný string; <code class="nb">limit</code> voliteľný integer (<code class="nb">int32</code>)</td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">IntegratorParticipantList</code> (cez <code class="nb">IntegratorParticipantListFactory</code>); OpenAPI <code class="nb">IntegratorParticipantListResponse</code></td></tr><tr><td><code>POST /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>participants/<wbr>{participantId}/<wbr>activations</code>; <code class="nb">RequestParticipantActivationEndpoint</code></td><td>Povinné <code class="nb">X-Integrator-Token</code>, <code class="nb">Idempotency-Key</code></td><td>—</td><td>Povinný JSON objekt: povinné <code class="nb">mode</code> (<code class="nb">SEND_ONLY</code> alebo <code class="nb">SEND_AND_RECEIVE</code>); voliteľné <code class="nb">requested_by_user_id</code></td><td><code class="nb">200</code> → Core <code class="nb">ParticipantActivation</code> (cez <code class="nb">ParticipantActivationFactory</code>); OpenAPI <code class="nb">ParticipantActivationResponse</code></td></tr><tr><td><code>GET /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>document-summary</code>; <code class="nb">GetDocumentSummaryEndpoint</code></td><td>Povinné <code class="nb">X-Integrator-Token</code></td><td><code class="nb">month</code> povinný string vo formáte <code class="nb">yyyyMM</code></td><td>—</td><td><code class="nb">200</code> → Core <code class="nb">IntegratorDocumentSummary</code> (cez <code class="nb">IntegratorDocumentSummaryFactory</code>); OpenAPI <code class="nb">IntegratorDocumentSummaryResponse</code></td></tr></tbody></table></div>
+<h3 id="integrator-pds-endpoint"><span class="mw-h">Integrator PDS endpoint</span><a class="anchor" href="#integrator-pds-endpoint" aria-label="Odkaz na sekciu">¶</a></h3>
+<div class="tw"><table class="wikitable"><thead><tr><th>Endpoint (HTTP cesta; trieda)</th><th>Hlavičky</th><th>Query parametre</th><th>Request body (povinné / voliteľné)</th><th>Typ odpovede</th></tr></thead><tbody><tr><td><code>POST /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>pds/<wbr>subjects</code>; <code class="nb">SubmitPdsSubjectsEndpoint</code></td><td>Povinný HMAC-SHA512 podpis v <code class="nb">X-PDS-Secret</code>; <code class="nb">Authorization</code> a <code class="nb">X-Integrator-Token</code> sa odstránia</td><td>—</td><td>Povinné JSON pole subjectov; podľa OpenAPI sú v každom objekte voliteľné <code class="nb">created</code>, <code class="nb">dic</code>, <code class="nb">legalName</code>, <code class="nb">company_email</code>, <code class="nb">company_phone</code>, <code class="nb">verification_token</code></td><td><code class="nb">200</code> → Core <code class="nb">PdsSubjectResponse</code></td></tr></tbody></table></div>
+<p>Všetky cesty v tabuľkách sú relatívne k <code class="nb">base_url</code>; hodnoty v zložených zátvorkách sú URL-kódované path parametre. Typ odpovede uvádza PHP model, ktorý vracia endpoint; OpenAPI schému uvádzam osobitne tam, kde má iný názov.</p>
+<p>Zoznam ciest, query parametrov, hlavičiek a tiel zodpovedá <code class="nb">docs/eFaktura/api/openapi.json</code> a implementačným mapperom.</p>
+<h2 id="ukážkové-requesty-a-odpovede"><span class="mw-h">Ukážkové requesty a odpovede</span><a class="anchor" href="#ukážkové-requesty-a-odpovede" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Request-Flow.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Ukážky používajú vymyslené identifikátory. JSON request zobrazuje iba telo; metódu, cestu, query a hlavičky uvádza tabuľka endpointov. Hodnota XML v ukážkach je skrátená. Tokeny, secrets a overovacie údaje sú zástupné.</p>
+<p>Chybové ukážky používajú OpenAPI error envelope: SAPI/Gateway vracia <code class="nb">SapiErrorResponseEnvelope</code>, Integrator API <code class="nb">IntegratorSapiErrorResponseEnvelope</code> s rovnakým tvarom. HTTP status je uvedený mimo JSON.</p>
+<p>Kódy, správy a korelačné ID sú ukážkové; pole <code class="nb">retryable</code> je odporúčanie poskytovateľa a nemení retry bezpečnosť operácie v konektore.</p>
+<h3 id="sapi-sk"><span class="mw-h">SAPI-SK</span><a class="anchor" href="#sapi-sk" aria-label="Odkaz na sekciu">¶</a></h3>
+<details>
+<summary><code>POST /<wbr>sapi/<wbr>auth/<wbr>token</code></summary>
+
+<p>Request JSON:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;client_id&quot;: &quot;client-example-1&quot;,
+  &quot;client_secret&quot;: &quot;&lt;redacted&gt;&quot;,
+  &quot;grant_type&quot;: &quot;client_credentials&quot;,
+  &quot;scope&quot;: &quot;document:send document:receive&quot;
+}</code></pre></div>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;access_token&quot;: &quot;&lt;redacted&gt;&quot;,
+  &quot;token_type&quot;: &quot;Bearer&quot;,
+  &quot;expires_in&quot;: 3600,
+  &quot;scope&quot;: &quot;document:send document:receive&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 400</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;VALIDATION&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Token request is invalid.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>GET /<wbr>sapi/<wbr>auth/<wbr>token/<wbr>status</code></summary>
+
+<p>Request body: none.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;valid&quot;: true,
+  &quot;token_type&quot;: &quot;access&quot;,
+  &quot;client_id&quot;: &quot;client-example-1&quot;,
+  &quot;issued_at&quot;: &quot;2026-11-26T09:00:00Z&quot;,
+  &quot;expires_at&quot;: &quot;2026-11-26T10:00:00Z&quot;,
+  &quot;expires_in_seconds&quot;: 3600,
+  &quot;should_refresh&quot;: false,
+  &quot;refresh_recommended_at&quot;: &quot;2026-11-26T09:55:00Z&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 401</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;AUTH&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;SAPI token is missing or invalid.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>POST /<wbr>sapi/<wbr>document/<wbr>send</code></summary>
+
+<p>Request JSON:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;metadata&quot;: {
+    &quot;documentId&quot;: &quot;INV-EXAMPLE-001&quot;,
+    &quot;documentTypeId&quot;: &quot;urn:example:document-type&quot;,
+    &quot;processId&quot;: &quot;urn:example:process&quot;,
+    &quot;senderParticipantId&quot;: &quot;0245:0000000001&quot;,
+    &quot;receiverParticipantId&quot;: &quot;0245:0000000002&quot;,
+    &quot;creationDateTime&quot;: &quot;2026-11-26T09:00:00Z&quot;
+  },
+  &quot;payload&quot;: &quot;&lt;Invoice&gt;…&lt;/Invoice&gt;&quot;,
+  &quot;payloadFormat&quot;: &quot;XML&quot;,
+  &quot;payloadEncoding&quot;: &quot;UTF-8&quot;
+}</code></pre></div>
+<p>Response JSON (<code class="nb">202</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;providerDocumentId&quot;: &quot;provider-doc-example-1&quot;,
+  &quot;status&quot;: &quot;ACCEPTED&quot;,
+  &quot;timestamp&quot;: &quot;2026-11-26T09:00:02Z&quot;,
+  &quot;receivedAt&quot;: &quot;2026-11-26T09:00:01Z&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 422</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;VALIDATION&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Document payload is invalid.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>GET /<wbr>sapi/<wbr>document/<wbr>receive</code></summary>
+
+<p>Request body: none. Pagination/filter examples are <code class="nb">?limit=20&amp;status=RECEIVED</code> and, on later pages, <code class="nb">pageToken=&lt;opaque-token&gt;</code>.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;documents&quot;: [
+    {
+      &quot;documentId&quot;: &quot;INV-EXAMPLE-002&quot;,
+      &quot;documentTypeId&quot;: &quot;urn:example:document-type&quot;,
+      &quot;processId&quot;: &quot;urn:example:process&quot;,
+      &quot;senderParticipantId&quot;: &quot;0245:0000000002&quot;,
+      &quot;receiverParticipantId&quot;: &quot;0245:0000000001&quot;,
+      &quot;creationDateTime&quot;: &quot;2026-11-26T08:30:00Z&quot;
+    }
+  ],
+  &quot;nextPageToken&quot;: &quot;&lt;opaque-token&gt;&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 400</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;VALIDATION&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Query parameters are invalid.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>GET /<wbr>sapi/<wbr>document/<wbr>receive/<wbr>{documentId}</code></summary>
+
+<p>Request body: none.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;metadata&quot;: {
+    &quot;documentId&quot;: &quot;INV-EXAMPLE-002&quot;,
+    &quot;documentTypeId&quot;: &quot;urn:example:document-type&quot;,
+    &quot;processId&quot;: &quot;urn:example:process&quot;,
+    &quot;senderParticipantId&quot;: &quot;0245:0000000002&quot;,
+    &quot;receiverParticipantId&quot;: &quot;0245:0000000001&quot;,
+    &quot;creationDateTime&quot;: &quot;2026-11-26T08:30:00Z&quot;
+  },
+  &quot;payload&quot;: &quot;&lt;Invoice&gt;…&lt;/Invoice&gt;&quot;,
+  &quot;payloadFormat&quot;: &quot;XML&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 404</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Received document was not found.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>POST /<wbr>sapi/<wbr>document/<wbr>receive/<wbr>{documentId}/<wbr>acknowledge</code></summary>
+
+<p>Request body: none.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;documentId&quot;: &quot;INV-EXAMPLE-002&quot;,
+  &quot;status&quot;: &quot;ACKNOWLEDGED&quot;,
+  &quot;acknowledgedDateTime&quot;: &quot;2026-11-26T09:10:00Z&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 404</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Received document was not found.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<h3 id="peppol-gateway"><span class="mw-h">Peppol Gateway</span><a class="anchor" href="#peppol-gateway" aria-label="Odkaz na sekciu">¶</a></h3>
+<details>
+<summary><code>POST /<wbr>v1/<wbr>discovery/<wbr>receives</code></summary>
+
+<p>Request JSON:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;participantId&quot;: &quot;0245:0000000002&quot;,
+  &quot;documentTypeId&quot;: &quot;urn:example:document-type&quot;,
+  &quot;processId&quot;: &quot;urn:example:process&quot;
+}</code></pre></div>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;participantId&quot;: &quot;0245:0000000002&quot;,
+  &quot;receives&quot;: true,
+  &quot;endpoint&quot;: &quot;https://ap.example.test/endpoint&quot;,
+  &quot;capability&quot;: {
+    &quot;documentTypeId&quot;: &quot;urn:example:document-type&quot;,
+    &quot;processId&quot;: &quot;urn:example:process&quot;,
+    &quot;transportProfile&quot;: &quot;peppol-transport-as4-v2_0&quot;
+  }
+}</code></pre></div>
+<p>Error response (<code>HTTP 400</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;VALIDATION&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Discovery request is invalid.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>GET /<wbr>v1/<wbr>participants/<wbr>{participantId}</code></summary>
+
+<p>Request body: none.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;participantId&quot;: &quot;0245:0000000002&quot;,
+  &quot;reachable&quot;: true,
+  &quot;name&quot;: &quot;Example Receiver&quot;,
+  &quot;capabilities&quot;: [
+    {
+      &quot;documentTypeId&quot;: &quot;urn:example:document-type&quot;,
+      &quot;processId&quot;: &quot;urn:example:process&quot;,
+      &quot;transportProfile&quot;: &quot;peppol-transport-as4-v2_0&quot;
+    }
+  ]
+}</code></pre></div>
+<p>Error response (<code>HTTP 502</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;TEMPORARY&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Discovery provider is temporarily unavailable.&quot;,&quot;retryable&quot;:true,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>POST /<wbr>v1/<wbr>validate-document</code></summary>
+
+<p>Request JSON: rovnaký tvar ako pri <code>POST /<wbr>sapi/<wbr>document/<wbr>send</code>.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;metadata&quot;: {
+    &quot;documentId&quot;: &quot;INV-EXAMPLE-003&quot;,
+    &quot;documentTypeId&quot;: &quot;urn:example:document-type&quot;,
+    &quot;processId&quot;: &quot;urn:example:process&quot;,
+    &quot;senderParticipantId&quot;: &quot;0245:0000000001&quot;,
+    &quot;receiverParticipantId&quot;: &quot;0245:0000000002&quot;,
+    &quot;creationDateTime&quot;: &quot;2026-11-26T09:15:00Z&quot;
+  },
+  &quot;payload&quot;: &quot;&lt;Invoice&gt;…&lt;/Invoice&gt;&quot;,
+  &quot;payloadFormat&quot;: &quot;XML&quot;,
+  &quot;payloadEncoding&quot;: &quot;UTF-8&quot;
+}</code></pre></div>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;valid&quot;: true
+}</code></pre></div>
+<p>Error response (<code>HTTP 400</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;VALIDATION&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Document validation request is invalid.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>POST /<wbr>v1/<wbr>send-documents</code></summary>
+
+<p>Request JSON:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;documents&quot;: [
+    {
+      &quot;type&quot;: &quot;UBL_XML&quot;,
+      &quot;receiverParticipantId&quot;: &quot;0245:0000000002&quot;,
+      &quot;payload&quot;: &quot;&lt;Invoice&gt;…&lt;/Invoice&gt;&quot;
+    }
+  ]
+}</code></pre></div>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;count&quot;: 1,
+  &quot;identifiers&quot;: [&quot;gateway-doc-example-1&quot;]
+}</code></pre></div>
+<p>Error response (<code>HTTP 413</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;VALIDATION&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Request body is too large.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>GET /<wbr>v1/<wbr>sent-documents/<wbr>{identifier}</code></summary>
+
+<p>Request body: none.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;identifier&quot;: &quot;gateway-doc-example-1&quot;,
+  &quot;status&quot;: &quot;SENT_TO_ACCESS_POINT&quot;,
+  &quot;senderParticipantId&quot;: &quot;0245:0000000001&quot;,
+  &quot;receiverParticipantId&quot;: &quot;0245:0000000002&quot;,
+  &quot;documentId&quot;: &quot;INV-EXAMPLE-003&quot;,
+  &quot;documentTypeId&quot;: &quot;urn:example:document-type&quot;,
+  &quot;processId&quot;: &quot;urn:example:process&quot;,
+  &quot;payloadFormat&quot;: &quot;UBL_XML&quot;,
+  &quot;provider&quot;: {
+    &quot;name&quot;: &quot;Example Access Point&quot;,
+    &quot;documentId&quot;: &quot;provider-doc-example-1&quot;,
+    &quot;messageId&quot;: &quot;message-example-1&quot;
+  },
+  &quot;createdAt&quot;: &quot;2026-11-26T09:15:00Z&quot;,
+  &quot;updatedAt&quot;: &quot;2026-11-26T09:16:00Z&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 404</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Sent document was not found.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>GET /<wbr>v1/<wbr>sent-documents/<wbr>{identifier}/<wbr>message-level-statuses</code></summary>
+
+<p>Request body: none.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;items&quot;: [
+    {
+      &quot;identifier&quot;: &quot;status-example-1&quot;,
+      &quot;messageId&quot;: &quot;message-example-1&quot;,
+      &quot;responseCode&quot;: &quot;AP&quot;,
+      &quot;responseDescription&quot;: &quot;Message accepted&quot;,
+      &quot;reasons&quot;: [],
+      &quot;senderParticipantId&quot;: &quot;0245:0000000001&quot;,
+      &quot;receiverParticipantId&quot;: &quot;0245:0000000002&quot;,
+      &quot;documentTypeId&quot;: &quot;urn:example:document-type&quot;,
+      &quot;receivedAt&quot;: &quot;2026-11-26T09:16:00Z&quot;
+    }
+  ]
+}</code></pre></div>
+<p>Error response (<code>HTTP 404</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Sent document was not found.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>GET /<wbr>v1/<wbr>sent-documents/<wbr>{identifier}/<wbr>message-level-statuses/<wbr>{statusIdentifier}/<wbr>content</code></summary>
+
+<p>Request body: none.</p>
+<p>Response XML (<code class="nb">200</code>, <code class="nb">application/xml</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-xml" data-lang="xml">&lt;ApplicationResponse&gt;…&lt;/ApplicationResponse&gt;</code></pre></div>
+<p>Error response (<code>HTTP 404</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Message-level status content was not found.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>GET /<wbr>v1/<wbr>webhooks</code></summary>
+
+<p>Request body: none. Example query: <code class="nb">?limit=20</code>.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;webhooks&quot;: [
+    {
+      &quot;id&quot;: &quot;webhook-example-1&quot;,
+      &quot;url&quot;: &quot;https://erp.example.test/webhooks/peppol&quot;,
+      &quot;events&quot;: [&quot;sent_document.status_changed&quot;],
+      &quot;status&quot;: &quot;ACTIVE&quot;,
+      &quot;description&quot;: &quot;Example endpoint&quot;,
+      &quot;createdAt&quot;: &quot;2026-11-01T08:00:00Z&quot;,
+      &quot;updatedAt&quot;: &quot;2026-11-01T08:00:00Z&quot;
+    }
+  ],
+  &quot;nextPageToken&quot;: null
+}</code></pre></div>
+<p>Error response (<code>HTTP 401</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;AUTH&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;SAPI token is missing or invalid.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>POST /<wbr>v1/<wbr>webhooks</code></summary>
+
+<p>Request JSON:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;url&quot;: &quot;https://erp.example.test/webhooks/peppol&quot;,
+  &quot;events&quot;: [&quot;sent_document.status_changed&quot;],
+  &quot;description&quot;: &quot;Example endpoint&quot;
+}</code></pre></div>
+<p>Response JSON (<code class="nb">201</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;id&quot;: &quot;webhook-example-1&quot;,
+  &quot;url&quot;: &quot;https://erp.example.test/webhooks/peppol&quot;,
+  &quot;events&quot;: [&quot;sent_document.status_changed&quot;],
+  &quot;status&quot;: &quot;ACTIVE&quot;,
+  &quot;description&quot;: &quot;Example endpoint&quot;,
+  &quot;createdAt&quot;: &quot;2026-11-26T09:20:00Z&quot;,
+  &quot;updatedAt&quot;: &quot;2026-11-26T09:20:00Z&quot;,
+  &quot;signingSecret&quot;: &quot;&lt;redacted&gt;&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 422</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;VALIDATION&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Webhook request is invalid.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>GET /<wbr>v1/<wbr>webhooks/<wbr>{webhookId}</code></summary>
+
+<p>Request body: none.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;id&quot;: &quot;webhook-example-1&quot;,
+  &quot;url&quot;: &quot;https://erp.example.test/webhooks/peppol&quot;,
+  &quot;events&quot;: [&quot;sent_document.status_changed&quot;],
+  &quot;status&quot;: &quot;ACTIVE&quot;,
+  &quot;description&quot;: &quot;Example endpoint&quot;,
+  &quot;createdAt&quot;: &quot;2026-11-01T08:00:00Z&quot;,
+  &quot;updatedAt&quot;: &quot;2026-11-26T09:20:00Z&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 404</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Webhook was not found.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>PATCH /<wbr>v1/<wbr>webhooks/<wbr>{webhookId}</code></summary>
+
+<p>Request JSON:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;status&quot;: &quot;DISABLED&quot;,
+  &quot;description&quot;: &quot;Temporarily disabled&quot;
+}</code></pre></div>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;id&quot;: &quot;webhook-example-1&quot;,
+  &quot;url&quot;: &quot;https://erp.example.test/webhooks/peppol&quot;,
+  &quot;events&quot;: [&quot;sent_document.status_changed&quot;],
+  &quot;status&quot;: &quot;DISABLED&quot;,
+  &quot;description&quot;: &quot;Temporarily disabled&quot;,
+  &quot;createdAt&quot;: &quot;2026-11-01T08:00:00Z&quot;,
+  &quot;updatedAt&quot;: &quot;2026-11-26T09:25:00Z&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 422</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;VALIDATION&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Webhook update is invalid.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>DELETE /<wbr>v1/<wbr>webhooks/<wbr>{webhookId}</code></summary>
+
+<p>Request body: none.</p>
+<p>Response: <code>204 No Content</code>; no JSON body.
+Error response (<code>HTTP 404</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Webhook was not found.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<h3 id="integrator-api"><span class="mw-h">Integrator API</span><a class="anchor" href="#integrator-api" aria-label="Odkaz na sekciu">¶</a></h3>
+<details>
+<summary><code>GET /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients</code></summary>
+
+<p>Request body: none. Example query: <code class="nb">?limit=20&amp;status=APPROVED</code>.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;clients&quot;: [
+    {
+      &quot;client_id&quot;: &quot;client-example-1&quot;,
+      &quot;client_name&quot;: &quot;Example ERP&quot;,
+      &quot;status&quot;: &quot;APPROVED&quot;,
+      &quot;created_at&quot;: &quot;2026-11-01T08:00:00Z&quot;,
+      &quot;approved_at&quot;: &quot;2026-11-01T08:05:00Z&quot;,
+      &quot;participants&quot;: [
+        {
+          &quot;participant_id&quot;: &quot;0245:0000000001&quot;,
+          &quot;can_send&quot;: true,
+          &quot;can_receive&quot;: true
+        }
+      ]
+    }
+  ],
+  &quot;nextPageToken&quot;: &quot;&lt;opaque-token&gt;&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 403</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;AUTH&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Integrator is not permitted to list clients.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>POST /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients</code></summary>
+
+<p>Request JSON:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;name&quot;: &quot;Example ERP&quot;,
+  &quot;contact_email&quot;: &quot;billing@example.test&quot;,
+  &quot;participants&quot;: [
+    {
+      &quot;participant_id&quot;: &quot;0245:0000000001&quot;,
+      &quot;can_send&quot;: true,
+      &quot;can_receive&quot;: false
+    }
+  ]
+}</code></pre></div>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;client_id&quot;: &quot;client-example-1&quot;,
+  &quot;client_secret&quot;: &quot;&lt;redacted&gt;&quot;,
+  &quot;client_name&quot;: &quot;Example ERP&quot;,
+  &quot;status&quot;: &quot;APPROVED&quot;,
+  &quot;participants&quot;: [
+    {
+      &quot;participant_id&quot;: &quot;0245:0000000001&quot;,
+      &quot;can_send&quot;: true,
+      &quot;can_receive&quot;: false
+    }
+  ]
+}</code></pre></div>
+<p>Error response (<code>HTTP 409</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;A client with these details already exists.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>GET /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients/<wbr>{clientId}</code></summary>
+
+<p>Request body: none.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;client_id&quot;: &quot;client-example-1&quot;,
+  &quot;client_name&quot;: &quot;Example ERP&quot;,
+  &quot;status&quot;: &quot;APPROVED&quot;,
+  &quot;created_at&quot;: &quot;2026-11-01T08:00:00Z&quot;,
+  &quot;approved_at&quot;: &quot;2026-11-01T08:05:00Z&quot;,
+  &quot;participants&quot;: [
+    {
+      &quot;participant_id&quot;: &quot;0245:0000000001&quot;,
+      &quot;can_send&quot;: true,
+      &quot;can_receive&quot;: false
+    }
+  ]
+}</code></pre></div>
+<p>Error response (<code>HTTP 404</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;OAuth client was not found.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>DELETE /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients/<wbr>{clientId}</code></summary>
+
+<p>Request body: none.</p>
+<p>Response: <code>204 No Content</code>; no JSON body.
+Error response (<code>HTTP 404</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;OAuth client was not found.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>PUT /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients/<wbr>{clientId}/<wbr>secret</code></summary>
+
+<p>Request body: none.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;client_id&quot;: &quot;client-example-1&quot;,
+  &quot;client_secret&quot;: &quot;&lt;redacted&gt;&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 404</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;OAuth client was not found.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>PUT /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients/<wbr>{clientId}/<wbr>participants</code></summary>
+
+<p>Request JSON:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;participants&quot;: [
+    {
+      &quot;participant_id&quot;: &quot;0245:0000000001&quot;,
+      &quot;can_send&quot;: true,
+      &quot;can_receive&quot;: true
+    }
+  ]
+}</code></pre></div>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;client_id&quot;: &quot;client-example-1&quot;,
+  &quot;client_name&quot;: &quot;Example ERP&quot;,
+  &quot;status&quot;: &quot;APPROVED&quot;,
+  &quot;created_at&quot;: &quot;2026-11-01T08:00:00Z&quot;,
+  &quot;approved_at&quot;: &quot;2026-11-01T08:05:00Z&quot;,
+  &quot;participants&quot;: [
+    {
+      &quot;participant_id&quot;: &quot;0245:0000000001&quot;,
+      &quot;can_send&quot;: true,
+      &quot;can_receive&quot;: true
+    }
+  ]
+}</code></pre></div>
+<p>Error response (<code>HTTP 409</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Participant access conflicts with the current client state.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>GET /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>participants</code></summary>
+
+<p>Request body: none. Example query: <code class="nb">?limit=20&amp;pageToken=&lt;opaque-token&gt;</code>.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;participants&quot;: [
+    {
+      &quot;participant_id&quot;: &quot;0245:0000000001&quot;,
+      &quot;dic&quot;: &quot;&lt;example-dic&gt;&quot;,
+      &quot;legal_name&quot;: &quot;Example Company s.r.o.&quot;,
+      &quot;company_email&quot;: &quot;info@example.test&quot;,
+      &quot;company_phone&quot;: &quot;+421900000001&quot;,
+      &quot;source_created_at&quot;: &quot;2026-11-20T10:00:00Z&quot;,
+      &quot;received_at&quot;: &quot;2026-11-21T10:00:00Z&quot;,
+      &quot;internal_transfer_required&quot;: false,
+      &quot;is_owner&quot;: true,
+      &quot;active_contract_mode&quot;: &quot;SEND_AND_RECEIVE&quot;
+    }
+  ],
+  &quot;nextPageToken&quot;: &quot;&lt;opaque-token&gt;&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 403</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;AUTH&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Integrator is not permitted to list participants.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>POST /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>participants/<wbr>{participantId}/<wbr>activations</code></summary>
+
+<p>Request JSON:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;mode&quot;: &quot;SEND_AND_RECEIVE&quot;,
+  &quot;requested_by_user_id&quot;: &quot;user-example-1&quot;
+}</code></pre></div>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;activation_id&quot;: &quot;activation-example-1&quot;,
+  &quot;participant_id&quot;: &quot;0245:0000000001&quot;,
+  &quot;integrator_id&quot;: &quot;integrator-example-1&quot;,
+  &quot;mode&quot;: &quot;SEND_AND_RECEIVE&quot;,
+  &quot;status&quot;: &quot;PENDING&quot;,
+  &quot;requested_at&quot;: &quot;2026-11-26T09:30:00Z&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 409</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;PERMANENT&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;Participant activation conflicts with the current state.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<details>
+<summary><code>GET /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>document-summary</code></summary>
+
+<p>Request body: none. Example query: <code class="nb">?month=202610</code>.</p>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;month&quot;: &quot;202610&quot;,
+  &quot;participants&quot;: [
+    {
+      &quot;participant_id&quot;: &quot;0245:0000000001&quot;,
+      &quot;sent&quot;: 12,
+      &quot;received&quot;: 8
+    }
+  ]
+}</code></pre></div>
+<p>Error response (<code>HTTP 400</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;VALIDATION&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;The month query parameter is invalid.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<h3 id="integrator-pds"><span class="mw-h">Integrator PDS</span><a class="anchor" href="#integrator-pds" aria-label="Odkaz na sekciu">¶</a></h3>
+<details>
+<summary><code>POST /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>pds/<wbr>subjects</code></summary>
+
+<p>Request JSON:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">[
+  {
+    &quot;created&quot;: &quot;2026-11-26T09:35:00Z&quot;,
+    &quot;dic&quot;: &quot;&lt;example-dic&gt;&quot;,
+    &quot;legalName&quot;: &quot;Example Company s.r.o.&quot;,
+    &quot;company_email&quot;: &quot;info@example.test&quot;,
+    &quot;company_phone&quot;: &quot;+421900000001&quot;,
+    &quot;verification_token&quot;: &quot;&lt;redacted&gt;&quot;
+  }
+]</code></pre></div>
+<p>Response JSON (<code class="nb">200</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+  &quot;code&quot;: 200,
+  &quot;description&quot;: &quot;Accepted&quot;
+}</code></pre></div>
+<p>Error response (<code>HTTP 400</code>):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{&quot;error&quot;:{&quot;category&quot;:&quot;VALIDATION&quot;,&quot;code&quot;:&quot;&lt;provider-code&gt;&quot;,&quot;message&quot;:&quot;PDS subject data is invalid.&quot;,&quot;retryable&quot;:false,&quot;correlation_id&quot;:&quot;550e8400-e29b-41d4-a716-446655440000&quot;}}</code></pre></div>
+</details>
+
+<h2 id="spoločné-vykonanie-a-odpoveď"><span class="mw-h">Spoločné vykonanie a odpoveď</span><a class="anchor" href="#spoločné-vykonanie-a-odpoveď" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Request-Flow.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<pre class="mermaid">flowchart LR
+    Request[ApiRequest] --&gt; Connector[ApiConnector vytvorí HttpExchangeRequest]
+    Connector --&gt; Auth[Príslušný autentifikačný sender]
+    Auth --&gt; Transport[Transport pridá base URL a scope]
+    Transport --&gt; BP[Backpressure a voliteľný request lock]
+    BP --&gt; CB[Circuit breaker]
+    CB --&gt; Retry[Retry podľa bezpečnosti requestu]
+    Retry --&gt; Log[Voliteľné logovanie]
+    Log --&gt; Metrics[Voliteľné metriky]
+    Metrics --&gt; Curl[cURL: HTTPS, TLS, limit odpovede]
+    Curl --&gt; Provider[SAPI / Gateway / Integrator API]
+    Provider --&gt; Curl --&gt; Exchange[HttpExchangeResult]
+    Exchange --&gt; Status{HTTP 2xx?}
+    Status --&gt;|nie| Error[ProviderErrorResponseException]
+    Status --&gt;|áno: JSON| Json[JSON dekódovanie a endpoint mapper]
+    Status --&gt;|áno: XML| XML[Bezpečné XML parsovanie]
+    Status --&gt;|áno: telo netreba| Done[Úspešné dokončenie]
+    Json --&gt; Model[Factory alebo Mapper: Core model]
+    XML --&gt; Body[Pôvodné XML bajty]
+    Model --&gt; Core[Endpoint vráti Core model; adaptér ho odovzdá]
+    Body --&gt; Core
+    Done --&gt; Core
+    Error --&gt; Caller[Hostiteľ dostane technickú výnimku]
+    Core --&gt; Caller</pre>
+<p><code class="nb">GET</code> je štandardne bezpečný na retry. Ostatné operácie sa opakujú iba po výslovnom označení endpointom ako bezpečné. SAPI OAuth token request je označený ako retry-safe; odoslanie dokumentu automatický retry nemá.</p>
+<p>Odpoveď mimo <code class="nb">2xx</code> sa prevedie na technickú výnimku a pri neplatnom JSON, XML alebo tvare dát vznikne <code class="nb">InvalidProviderResponseException</code>.</p>
+<p>Podrobnosti o endpointoch a HTTP metódach sú v <a href="API-Reference.html">prehľade API</a>, o autentifikácii a retry v <a href="Transport-and-Authentication.html">transporte a autentifikácii</a> a o zodpovednostiach klientov v <a href="Data-Flow-and-Classes.html">toku dát a triedach</a>.</p>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#prehľad-všetkých-vetiev"><span class="n">1</span> <span class="x">Prehľad všetkých vetiev</span></a></li><li class="t2"><a href="#sapi-a-peppol-gateway"><span class="n">2</span> <span class="x">SAPI a Peppol Gateway</span></a></li><li class="t3"><a href="#sapi-sk-endpointy"><span class="n">2.1</span> <span class="x">SAPI-SK endpointy</span></a></li><li class="t3"><a href="#peppol-gateway-endpointy"><span class="n">2.2</span> <span class="x">Peppol Gateway endpointy</span></a></li><li class="t2"><a href="#integrator-api-a-pds"><span class="n">3</span> <span class="x">Integrator API a PDS</span></a></li><li class="t3"><a href="#integrator-api-endpointy"><span class="n">3.1</span> <span class="x">Integrator API endpointy</span></a></li><li class="t3"><a href="#integrator-pds-endpoint"><span class="n">3.2</span> <span class="x">Integrator PDS endpoint</span></a></li><li class="t2"><a href="#ukážkové-requesty-a-odpovede"><span class="n">4</span> <span class="x">Ukážkové requesty a odpovede</span></a></li><li class="t3"><a href="#sapi-sk"><span class="n">4.1</span> <span class="x">SAPI-SK</span></a></li><li class="t3"><a href="#peppol-gateway"><span class="n">4.2</span> <span class="x">Peppol Gateway</span></a></li><li class="t3"><a href="#integrator-api"><span class="n">4.3</span> <span class="x">Integrator API</span></a></li><li class="t3"><a href="#integrator-pds"><span class="n">4.4</span> <span class="x">Integrator PDS</span></a></li><li class="t2"><a href="#spoločné-vykonanie-a-odpoveď"><span class="n">5</span> <span class="x">Spoločné vykonanie a odpoveď</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Versioning-and-Compatibility.html"><small>← Predchádzajúca</small><b>Verzovanie a kompatibilita</b></a><a class="nx" href="Data-Flow-and-Classes.html"><small>Ďalšia →</small><b>Tok dát a triedy</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a></li><li><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a></li><li><a href="API-Reference.html">Prehľad API</a></li><li><a href="Integrator-API.html">Integrator API</a></li><li><a href="Public-API.html">Verejné PHP API</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-referencia">Referencia</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Request-Flow.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Request-Flow.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

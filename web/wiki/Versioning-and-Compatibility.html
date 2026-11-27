@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Verzovanie a kompatibilita">
+<title>Verzovanie a kompatibilita – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html" aria-current="page">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Versioning-and-Compatibility.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Versioning-and-Compatibility.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Versioning-and-Compatibility.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-referencia">Referencia</a></div><h1 class="title">Verzovanie a kompatibilita</h1><div class="sub"><span class="chip">Čítanie ≈ 2 min</span><span class="chip">4 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><h2 id="prvé-vydanie"><span class="mw-h">Prvé vydanie</span><a class="anchor" href="#prvé-vydanie" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Versioning-and-Compatibility.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Prvé verejné vydanie je plánované ako <code class="nb">0.1.0</code>. V sérii <code class="nb">0.x</code> môže minor vydanie obsahovať zmenu spätnej kompatibility; patch vydanie má zachovať kompatibilitu. Pred prvým vydaním neexistoval Git tag ani zverejnená kompatibilná verzia.</p>
+<h2 id="verejné-a-interné-api"><span class="mw-h">Verejné a interné API</span><a class="anchor" href="#verejné-a-interné-api" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Versioning-and-Compatibility.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Verejné API tvoria typy v <code class="nb">Core</code> (okrem <code class="nb">Core\Configuration\Internal</code>), <code class="nb">Domain</code> a <code class="nb">Laravel</code> a ostatné typy výslovne označené <code class="nb">@api</code>. Ostatné typy <code class="nb">Infrastructure</code> a <code class="nb">Support</code> sú interné. Hostiteľské aplikácie majú používať verejné kontrakty a hodnoty, nie interné implementácie.</p>
+<h2 id="zmeny-spätnej-kompatibility"><span class="mw-h">Zmeny spätnej kompatibility</span><a class="anchor" href="#zmeny-spätnej-kompatibility" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Versioning-and-Compatibility.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Za zmenu spätnej kompatibility sa považuje odstránenie alebo premenovanie verejnej triedy, metódy, konfiguračného kľúča či premennej prostredia. Rovnako sa ňou považuje zmena názvu služby v Laravel kontajneri alebo názvu Artisan príkazu.</p>
+<p>Odstránenie alebo premenovanie konfiguračného kľúča je nekompatibilná zmena; pridanie nového kľúča ňou nie je. Neznáme konfiguračné kľúče sa naďalej odmietajú.</p>
+<p>Za zmenu spätnej kompatibility sa nepovažuje aktualizácia validačných zdrojov Peppol/CEN ani číselníkov, pretože môže zmeniť výsledok validácie.</p>
+<p>Nepovažuje sa za ňu ani pridanie metód do rozhraní určených na odber hostiteľom, pridanie hodnôt do enumov čítaných z odpovede poskytovateľa alebo zmena textu výnimky.</p>
+<p>Konštruktory výsledkových modelov rozširujte iba pridaním voliteľných koncových parametrov. Existujúce pozičné argumenty a ich poradie zachovajte.</p>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p><code class="nb">UblDocumentWriter</code> nezaručuje identický XML výstup medzi verziami.</p></div></div>
+<p>Hostiteľ má uložiť výsledný <code class="nb">OutboundDocumentPayload</code>; pri opakovaní odoslania s rovnakým idempotency kľúčom má použiť uložený payload a znovu ho neprepočítavať.</p>
+<p>Predvolené správanie retry, circuit breakera, backpressure a execution locku je súčasťou kontraktu. Hostiteľ ho môže zmeniť iba cez zdokumentované nastavenia a rozšíriteľné kontrakty.</p>
+<h2 id="kontrola-pred-vydaním"><span class="mw-h">Kontrola pred vydaním</span><a class="anchor" href="#kontrola-pred-vydaním" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Versioning-and-Compatibility.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Verejné API sa v CI porovnáva s posledným tagom pri každom PR, pushi a tagu (pri sérii <code class="nb">0.x</code> len informatívne, od <code class="nb">1.0</code> blokujúco). Pred každým tagom skontrolujte výsledok tejto kontroly. Výsledok kontroly zosúlaďte s release labelmi a so sekciou <code class="nb">Unreleased</code> v <code class="nb">CHANGELOG.md</code>.</p>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#prvé-vydanie"><span class="n">1</span> <span class="x">Prvé vydanie</span></a></li><li class="t2"><a href="#verejné-a-interné-api"><span class="n">2</span> <span class="x">Verejné a interné API</span></a></li><li class="t2"><a href="#zmeny-spätnej-kompatibility"><span class="n">3</span> <span class="x">Zmeny spätnej kompatibility</span></a></li><li class="t2"><a href="#kontrola-pred-vydaním"><span class="n">4</span> <span class="x">Kontrola pred vydaním</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Public-API.html"><small>← Predchádzajúca</small><b>Verejné PHP API</b></a><a class="nx" href="Request-Flow.html"><small>Ďalšia →</small><b>Graf toku API requestov</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Public-API.html">Verejné PHP API</a></li><li><a href="Request-Flow.html">Graf toku API requestov</a></li><li><a href="API-Reference.html">Prehľad API</a></li><li><a href="Integrator-API.html">Integrator API</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-referencia">Referencia</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Versioning-and-Compatibility.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Versioning-and-Compatibility.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 8
+    phpVersion: 70400
+    paths:
+        - src
+        - integrations/laravel/src
+    # Library inputs come from callers that may not honor docblock types; keep boundary checks meaningful.
+    treatPhpDocTypesAsCertain: false
+    tmpDir: .phpstan-cache

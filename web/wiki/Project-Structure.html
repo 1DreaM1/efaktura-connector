@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Repozitár obsahuje samostatné PHP jadro, voliteľný Laravel bridge, lokálne validačné zdroje, testy a dokumentáciu. Jadro nepozná hostiteľský workflow ani jeho perzistenciu; rozhrania v Core umožňujú aplikácii používať al">
+<title>Štruktúra balíka a hranice modulov – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html" aria-current="page">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Project-Structure.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Project-Structure.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Project-Structure.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-referencia">Referencia</a></div><h1 class="title">Štruktúra balíka a hranice modulov</h1><div class="sub"><span class="chip">Čítanie ≈ 8 min</span><span class="chip">5 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead">Repozitár obsahuje samostatné PHP jadro, voliteľný Laravel bridge, lokálne validačné zdroje, testy a dokumentáciu. Jadro nepozná hostiteľský workflow ani jeho perzistenciu; rozhrania v <code class="nb">Core</code> umožňujú aplikácii používať alebo nahradiť implementácie z <code class="nb">Infrastructure</code>.</p>
+<h2 id="koreň-repozitára"><span class="mw-h">Koreň repozitára</span><a class="anchor" href="#koreň-repozitára" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Project-Structure.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<div class="tw"><table class="wikitable"><thead><tr><th>Cesta</th><th>Účel</th></tr></thead><tbody><tr><td><code class="nb">composer.json</code></td><td>PHP požiadavky, PSR-4 autoload, voliteľný Laravel provider a príkazy balíka.</td></tr><tr><td><code class="nb">src/</code></td><td>Frameworkovo nezávislé jadro konektora.</td></tr><tr><td><code class="nb">integrations/laravel/</code></td><td>Laravel service provider a implementácie viazané na Laravel.</td></tr><tr><td><code class="nb">config/efaktura-connector.php</code></td><td>Predvolená konfigurácia, ktorú číta Laravel bridge.</td></tr><tr><td><code class="nb">resources/validation/</code></td><td>Verziované UBL XSD, CEN/Peppol Schematron, Saxon a licenčné oznámenia.</td></tr><tr><td><code class="nb">resources/code-lists/</code></td><td>Referenčné číselníky na vyhľadávanie a výber hodnôt UBL vrátane vydaní Peppol Billing; <code class="nb">unit-aliases.json</code> je neoficiálne mapovanie bežných skratiek jednotiek (<code class="nb">ks</code>, <code class="nb">kg</code>, <code class="nb">hod</code>) na kódy UN/ECE.</td></tr><tr><td><code class="nb">tests/</code></td><td>Architektonické, unit a integračné testy balíka.</td></tr><tr><td><code class="nb">phpunit.xml.dist</code>, <code class="nb">phpcs.xml.dist</code>, <code class="nb">.php-cs-fixer.dist.php</code>, <code class="nb">phpstan.neon.dist</code>, <code class="nb">phpstan-baseline.neon</code></td><td>Nastavenie testov, kontroly štýlu, formátovania a statickej analýzy PHPStan. Do Composer distribúcie sa nebalia (<code class="nb">export-ignore</code>).</td></tr><tr><td><code class="nb">tools/</code></td><td>Skripty na kontrolu zdrojov, čistého Composer konzumenta a Laravel 5.6/PHP 7.4 aj Laravel 13/PHP 8.4 bridge testy. Do Composer distribúcie sa nebalia (<code class="nb">export-ignore</code>). Composer deklaruje voliteľný Laravel rozsah 5.6 a 8.83–13.</td></tr><tr><td><code class="nb">docs/wiki/</code></td><td>Návody a referenčná dokumentácia samotného balíka.</td></tr><tr><td><code class="nb">docs/eFaktura/</code></td><td>Lokálny OpenAPI snapshot a dokumentácia poskytovateľa.</td></tr></tbody></table></div>
+<h2 id="php-zdrojový-kód"><span class="mw-h">PHP zdrojový kód</span><a class="anchor" href="#php-zdrojový-kód" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Project-Structure.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<div class="codebox"><pre tabindex="0"><code class="language-text" data-lang="text">src/
+├── Core/
+│   ├── CircuitBreaker/       kontrakty a procesný circuit breaker
+│   ├── Configuration/        nastavenie URL, SAPI OAuth a Integrator poverení, runtime
+│   │   └── Internal/         pomocné parsovanie nastavení runtime
+│   ├── IntegratorApi/        typované Integrator API požiadavky, výsledky a hodnoty
+│   ├── CodeLists/            stabilné identifikátory číselníkov a hodnoty možností výberu
+│   ├── Connection/           požiadavky discovery a výsledky kontroly účastníka
+│   │   └── Health/           stav tokenu, profil a schopnosti účastníka
+│   ├── Contracts/            porty pre klientov, Integrator API, číselníky, odoslanie, príjem, stav, discovery, webhooky a validáciu
+│   ├── Documents/            payloady, výsledky, kontext logovania a chyby toku dokumentov
+│   ├── Exceptions/           typované chyby konfigurácie a komunikácie s poskytovateľom
+│   ├── MessageStatuses/      typované správy a odpovede MLS
+│   ├── Pagination/           typované hodnoty veľkosti stránky a kurzora
+│   ├── ProviderErrors/       chybová obálka poskytovateľa, jej kódy, kategórie a detaily
+│   ├── Retry/                retry politika a spracovanie hlavičky Retry-After
+│   ├── Ubl/                  kontrakty UBL, možnosti čítania, názvy elementov a verzie
+│   │   ├── Contracts/        kontrakty čítania, zápisu a validačných fáz
+│   │   └── Validation/       validačné typy a výnimky pre UBL a Peppol
+│   ├── Webhooks/             webhookové modely, vstupy a parser udalostí
+│   └── Xml/                  typované pomocné hodnoty pre XML
+├── Domain/
+│   ├── EFaktura/            participant, stavy, limity a hodnoty poskytovateľa
+│   │   ├── CodeList/        doménové zoznamy kódov
+│   │   └── Webhooks/        typy udalostí, stavy registrácií, limity payloadu a validácia ID
+│   └── Ubl/                  UBL hodnoty, čítaný doklad a nemenné drafty Invoice/CreditNote
+│       ├── Code/            hodnoty kódov krajiny, meny a merných jednotiek
+│       ├── CodeList/        UBL zoznamy kódov
+│       └── Draft/           nemenné návrhy Invoice a CreditNote
+├── Infrastructure/
+│   ├── ResourcePath.php      cesty k pribaleným zdrojom s oddeľovačmi pre danú platformu
+│   ├── EFaktura/
+│   │   ├── Api/              OAuth, endpointy, HTTP transport a mapovanie odpovedí
+│   │   │   ├── Authentication/ OAuth autentifikácia a odosielanie autentifikovaných požiadaviek
+│   │   │   ├── Endpoints/    endpointy SAPI, Peppol Gateway a Integrator API
+│   │   │   ├── Logging/      redakcia citlivých údajov z API komunikácie a UBL payloadov
+│   │   │   ├── Response/     statické Factory/Mapper triedy mapujúce odpovede na Core modely vrátane Integrator API; response DTO len pre OAuth token
+│   │   │   ├── Serialization/ request mappery: tela požiadaviek zo Core requestov
+│   │   │   └── Transport/    spoločné HTTP typy, OAuth a Integrator token transporty
+│   │   │       ├── Coordination/ backpressure a zámky medzi požiadavkami
+│   │   │       └── Execution/    cURL vykonávače, URL resolver a skladanie transportných vrstiev
+│   │   ├── Clock/            hodiny a ich systémová implementácia
+│   │   ├── Http/             základ HTTP požiadaviek
+│   │   │   └── Protocol/     HTTP metódy, hlavičky a media types
+│   │   ├── Coordination/     bezpečné súborové zámky pre HTTP requesty a Schematron
+│   │   ├── Connection/       klienti, továrne a typované balíky služieb SAPI a Integrator
+│   │   │   └── Facades/      interné skupiny Integrator operácií podľa oblasti
+│   │   ├── Documents/        adaptéry pre odoslanie, príjem a sledovanie stavu
+│   │   │   └── Checks/       vzdialená validácia a kontrola príjemcu
+│   │   ├── Metrics/          voliteľné metriky HTTP pokusov, OAuth token cache a Schematron behov
+│   │   ├── Validation/       lokálna pipeline a spoločné validačné pomocné triedy
+│   │   │   ├── Schema/       validátor UBL XSD a adaptačná fáza
+│   │   │   └── Schematron/   CEN/Peppol pravidlá, Saxon a koordinácia behov
+│   │   └── Webhooks/         adaptér registry webhookov pre Peppol Gateway
+│   ├── Ubl/                  čítanie, zápis, validačné pravidlá a číselníky UBL
+│   │   ├── CodeList/         registry a poskytovatelia pribalených číselníkov
+│   │   ├── Reader/           bezpečné načítanie XML a čítanie doménového modelu
+│   │   ├── Validation/       pravidlá draftu, hlavičky a slovenské pravidlá
+│   │   └── Writer/           zápis Invoice a CreditNote do UBL XML
+├── Testing/                  offline FakeSapiClient a FakeDocumentSubmissionGateway pre testy hostiteľskej aplikácie
+└── Support/                  zdieľané pomocné typy: HTTP stavové kódy, URL a hash validácia, dekódovanie JSON a bezpečné XML parsovanie
+    ├── Exceptions/           spoločné rozhranie a základné typy výnimiek konektora
+    └── Xml/                  bezpečné parsovanie XML bez sieťového prístupu
+
+integrations/laravel/src/
+├── EFakturaConnectorServiceProvider.php   Laravel bindings a publikovanie konfigurácie
+├── Authentication/
+│   ├── LaravelSapiTokenCache.php          šifrovaná token cache nad Laravel Cache
+│   └── LaravelSapiTokenRefreshLock.php    zdieľaný zámok obnovy tokenu
+├── Configuration/
+│   ├── LaravelExecutionLockLeasePolicy.php politika lease pre zámky requestov
+│   └── LaravelServiceConfiguration.php    konfigurácia Laravel integrácie
+├── Cache/
+│   └── LaravelCacheStore.php               adaptér Laravel cache store
+├── Connection/
+│   └── TenantEFakturaClientResolver.php    klient z OAuth poverení modelu zákazníka
+├── Contracts/
+│   └── TenantEFakturaCredentialsInterface.php kontrakt poverení modelu zákazníka
+├── Console/
+│   └── CheckConnectorCommand.php           kontrola pripravenosti konfigurácie konektora
+├── Logging/
+│   └── LaravelHttpRequestExecutionLogger.php logovanie HTTP requestov cez Laravel
+├── Transport/
+│   ├── LaravelCacheCircuitBreaker.php     zdieľaný stav circuit breakera
+│   ├── LaravelCacheHttpRequestBackpressure.php zdieľané cooldowny HTTP 429
+│   ├── LaravelCacheHttpRequestExecutionLock.php zdieľaný zámok HTTP requestov
+│   ├── LaravelCacheLock.php               adaptér zámku nad Laravel Cache
+│   └── LaravelHttpRequestExecutorFactory.php skladanie HTTP executorov
+└── Validation/
+    └── LaravelValidationServiceRegistrar.php registrácia validačných služieb</code></pre></div>
+<p>Composer mapuje prefix <code class="nb">DreaM1\EfakturaConnector\</code> na <code class="nb">src/</code>; napríklad <code>DreaM1\<wbr>EfakturaConnector\<wbr>Core\<wbr>Contracts\</code> zodpovedá <code class="nb">src/Core/Contracts/</code>. Voliteľný prefix <code class="nb">DreaM1\EfakturaConnector\Laravel\</code> mapuje na <code class="nb">integrations/laravel/src/</code>.</p>
+<p>Verejné Core typy používajú namespace <code class="nb">DreaM1\EfakturaConnector\Core\...</code>.</p>
+<p><code>Domain\<wbr>EFaktura\<wbr>Webhooks\<wbr>WebhookIdentifier</code> je nemenný hodnotový objekt, ktorý odmieta prázdne ID webhooku a vracia pôvodný reťazec cez <code class="nb">value()</code>.</p>
+<p><code class="nb">Infrastructure\Ubl\UblDocumentType</code> centralizuje štrukturálne rozdiely medzi UBL <code class="nb">Invoice</code> a <code class="nb">CreditNote</code>, ktoré používajú načítanie XML, čítačka, zapisovač a XSD validátor.</p>
+<p><code class="nb">Infrastructure\ResourcePath</code> skladá cesty k pribaleným číselníkom a validačným zdrojom so separátormi aktuálneho operačného systému.</p>
+<p>Predvolená samostatná transportná skladba používa in-memory backpressure a circuit breaker, ktorých stav sa nezdieľa medzi PHP workermi.</p>
+<p>Predvolený backpressure wrapper však cez <code class="nb">FileHttpRequestExecutionLock</code> sériovo vykonáva HTTP requesty medzi procesmi s rovnakou kanonickou cestou aplikácie a OS používateľom.</p>
+<p>Laravel bridge používa Laravel Cache pre backpressure a circuit breaker a predvolene aj pre HTTP request lock cez <code class="nb">Cache::lock()</code>, spolu so zámkom obnovy OAuth tokenu. Ak Laravel alebo cache store lock API neposkytuje, bridge použije lokálne súborové zámky.</p>
+<p>Pri <code class="nb">driver=file</code> sa namiesto cache používa <code class="nb">FileHttpRequestExecutionLock</code> s koreňom v <code class="nb">basePath()</code>. Zdieľaná cache koordinácia vyžaduje podporu atómových zámkov; súborový lock sa nezdieľa medzi OS používateľmi ani hostmi.</p>
+<p><code class="nb">Core</code> a <code class="nb">Domain</code> nevolajú HTTP ani Laravel. <code class="nb">Infrastructure</code> implementuje porty a mapuje provider API do modelov konektora. Laravel bridge skladá tieto implementácie do kontajnera; pri použití bez Laravelu ich aplikácia zostaví sama.</p>
+<h2 id="tok-požiadavky-a-lokálne-ubl-operácie"><span class="mw-h">Tok požiadavky a lokálne UBL operácie</span><a class="anchor" href="#tok-požiadavky-a-lokálne-ubl-operácie" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Project-Structure.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Pri vzdialenej operácii aplikačný port alebo provider adaptér zavolá endpoint. Endpoint zostaví <code class="nb">ApiRequest</code>, <code class="nb">ApiConnector</code> spracuje HTTP odpoveď a endpoint alebo adaptér ju prevedie na typovaný výsledok.</p>
+<pre class="mermaid">flowchart LR
+    Host[Hostiteľský workflow] --&gt; Port[Core kontrakt]
+    Port --&gt; Adapter[Infrastructure provider/gateway]
+    Adapter --&gt; Endpoint[SAPI alebo Peppol endpoint]
+    Endpoint --&gt; Connector[ApiConnector]
+    Connector --&gt; Auth[AuthenticatedRequestSender]
+    Auth --&gt; Transport[Transport a executor]
+    Transport --&gt; Provider[Poskytovateľ]</pre>
+<p>UBL čítanie a zápis sú lokálne operácie bez HTTP. <code class="nb">UblXmlDocumentLoader</code> bezpečne načíta XML, <code class="nb">UblDocumentReader</code> vytvorí doménové hodnoty a <code class="nb">UblDocumentWriter</code> serializuje draft na XML.</p>
+<p>Validátory sú samostatné služby, takže samotné čítanie automaticky nespúšťa XSD ani Peppol kontroly.</p>
+<h2 id="umiestnenie-zmien-v-projekte"><span class="mw-h">Umiestnenie zmien v projekte</span><a class="anchor" href="#umiestnenie-zmien-v-projekte" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Project-Structure.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<div class="tw"><table class="wikitable"><thead><tr><th>Zmena</th><th>Miesto</th></tr></thead><tbody><tr><td>Nová aplikáciou používaná schopnosť konektora</td><td>kontrakt alebo DTO v <code class="nb">src/Core/</code>, implementácia v príslušnom <code class="nb">src/Infrastructure/EFaktura/</code> adaptéri</td></tr><tr><td>Nové volanie SAPI alebo Peppol Gateway</td><td>endpoint v <code class="nb">Infrastructure/EFaktura/Api/Endpoints/</code>, request mapper v <code class="nb">Serialization/</code>, response factory v <code class="nb">Response/</code> (vracia Core model) a API prehľad v <code class="nb">docs/wiki/API-Reference.md</code></td></tr><tr><td>Nový stav alebo nemenná hodnota</td><td>model v <code class="nb">src/Domain/EFaktura/</code> alebo <code class="nb">src/Domain/Ubl/</code>; neukladať provider HTTP logiku do domény</td></tr><tr><td>Zmena UBL čítania alebo generovania</td><td><code class="nb">Infrastructure/Ubl/Reader/</code> alebo <code class="nb">Writer/</code> a príslušné typy v <code class="nb">Domain/Ubl/</code></td></tr><tr><td>Zmena lokálnych validačných podkladov</td><td><code class="nb">resources/validation/</code> a postup v <code class="nb">resources/validation/README.md</code>; verzie zosúladiť s <code class="nb">ValidationResources</code></td></tr><tr><td>Nová Laravel väzba alebo konfigurácia</td><td><code class="nb">integrations/laravel/</code> a <code class="nb">config/efaktura-connector.php</code>; jadro ponechať bez závislosti od Laravelu</td></tr></tbody></table></div>
+<h2 id="testy-a-dokumentácia"><span class="mw-h">Testy a dokumentácia</span><a class="anchor" href="#testy-a-dokumentácia" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Project-Structure.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<ul>
+<li><code class="nb">tests/Unit/</code> overuje hodnoty, mapovanie odpovedí, endpointy a jednotlivé infraštruktúrne komponenty; testy Core UBL validácie a XML sú v samostatných podadresároch a transportné testy sú pri API testoch.</li>
+<li><code class="nb">tests/Integration/</code> používa pripravené odpovede a fake transport na overenie celých tokov bez volania produkčného poskytovateľa.</li>
+<li><code class="nb">tests/Architecture/</code> chráni hranice balíka a jeho závislostí.</li>
+<li>Zmeny verejných endpointov aktualizujú API referenciu; zmeny konfigurácie aktualizujú stránku <a href="Configuration.html">Konfigurácia</a>; zmeny validačných artefaktov aktualizujú <code class="nb">resources/validation/README.md</code>.</li>
+</ul>
+<p>Poskytovateľský API kontrakt je v <code class="nb">docs/eFaktura/api/openapi.json</code>. Prehľad zodpovedností a hlavných tokov je v <a href="Architecture-and-Testing.html">architektúre a tokoch</a>.</p>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li><a href="Architecture-and-Testing.html">Architektúra a hlavné toky</a></li>
+<li><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a></li>
+<li><a href="Source-Alignment.html">API špecifikácie a pokrytie</a></li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#koreň-repozitára"><span class="n">1</span> <span class="x">Koreň repozitára</span></a></li><li class="t2"><a href="#php-zdrojový-kód"><span class="n">2</span> <span class="x">PHP zdrojový kód</span></a></li><li class="t2"><a href="#tok-požiadavky-a-lokálne-ubl-operácie"><span class="n">3</span> <span class="x">Tok požiadavky a lokálne UBL operácie</span></a></li><li class="t2"><a href="#umiestnenie-zmien-v-projekte"><span class="n">4</span> <span class="x">Umiestnenie zmien v projekte</span></a></li><li class="t2"><a href="#testy-a-dokumentácia"><span class="n">5</span> <span class="x">Testy a dokumentácia</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Data-Flow-and-Classes.html"><small>← Predchádzajúca</small><b>Tok dát a triedy</b></a><a class="nx" href="Source-Alignment.html"><small>Ďalšia →</small><b>API špecifikácie a pokrytie</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a></li><li><a href="Source-Alignment.html">API špecifikácie a pokrytie</a></li><li><a href="API-Reference.html">Prehľad API</a></li><li><a href="Integrator-API.html">Integrator API</a></li><li><a href="Public-API.html">Verejné PHP API</a></li><li><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="Architecture-and-Testing.html">Architektúra a hlavné toky</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-referencia">Referencia</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Project-Structure.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Project-Structure.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

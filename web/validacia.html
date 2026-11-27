@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fafafc">
+<meta name="description" content="UBL 2.1, XSD, Schematron CEN EN 16931 a Peppol BIS Billing 3.0.22, slovenské pravidlá SK-R-001 až SK-R-007.">
+<title>Validácia · eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('efk-theme');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Preskočiť na obsah</a>
+<div class="progress" id="bar"></div>
+<header class="site">
+  <div class="wrap nav">
+    <a class="logo" href="index.html"><i>€</i>eFaktúra <span>Connector</span></a>
+    <nav class="menu" id="menu" aria-label="Hlavná navigácia"><a href="index.html">Prehľad</a><a href="architektura.html">Architektúra</a><a href="toky.html">Toky dokladov</a><a href="ukazky.html">Ukážky kódu</a><a href="validacia.html" aria-current="page">Validácia</a><a href="api.html">API</a><a href="integrator.html">Integrator</a><a href="nastavenie.html">Nastavenie</a><a href="prevadzka.html">Prevádzka</a><a href="wiki/index.html">Wiki</a></nav>
+    <div class="right">
+      <button class="icon-btn" id="theme" type="button" aria-label="Téma">◐</button>
+      <a class="btn pri sm hide-s" href="https://github.com/1DreaM1/efaktura-connector">GitHub ↗</a>
+      <button class="icon-btn burger" id="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menu">☰</button>
+    </div>
+  </div>
+</header>
+<main id="main">
+
+<div class="phead"><div class="mesh"><div class="dots"></div></div><div class="wrap"><div class="crumbs"><a href="index.html">Prehľad</a> / UBL a validácia</div><span class="kick">UBL a validácia</span><h1>Validácia na <span class="gt">správnej hranici.</span></h1><p class="sub">Cieľovým profilom je Peppol BIS Billing 3.0 pre UBL 2.1 Invoice a CreditNote. Predvolená pipeline v Laraveli spúšťa UBL XSD, pravidlá hlavičky a CEN EN 16931 1.3.17 + Peppol BIS Billing 3.0.22 Schematron vrátane slovenských pravidiel. Čítanie XML validáciu nespúšťa; kontrola cez Gateway je samostatná a môže používať inú verziu pravidiel.</p><div class="toc"><a href="#vrstvy">Vrstvy</a><a href="#kontroly">Prehľad kontrol</a><a href="#vysledok">Výsledok</a><a href="#pipeline">Pipeline</a></div></div></div>
+<div class="wrap">
+<section id="vrstvy" class="tight"><div class="grid g4" style="margin-top:0">
+<div class="cell rv"><span class="num">01</span><h4>Čítanie UBL</h4><p>Bezpečný XML parser. Nie je to biznis validácia.</p></div>
+<div class="cell rv"><span class="num">02</span><h4>XSD</h4><p>Verziované schémy UBL 2.1 cez libxml.</p></div>
+<div class="cell rv"><span class="num">03</span><h4>Schematron</h4><p>CEN a Peppol pravidlá cez Saxon (Java 11+).</p></div>
+<div class="cell rv"><span class="num">04</span><h4>Gateway</h4><p>Voliteľná vzdialená kontrola; samostatné volanie.</p></div></div></section>
+
+<section id="kontroly"><div class=""><span class="kick">Prehľad</span><h2>Čo sa overuje <span class="gt">a ako.</span></h2></div><div class="tw"><table><thead><tr><th>Kontrola</th><th>Čo overuje</th><th>Požiadavky / výsledok</th></tr></thead><tbody><tr><td>Bezpečné načítanie</td><td>Veľkosť XML, DTD/ENTITY a koreň Invoice alebo CreditNote.</td><td>Lokálne; bez Javy. Nevykonáva obchodnú validáciu.</td></tr><tr><td>UBL XSD</td><td>Štruktúru proti pribaleným UBL 2.1 schémam.</td><td>libxml; hlási typované XSD problémy.</td></tr><tr><td>CEN + Peppol Schematron</td><td>CEN/EN 16931 1.3.17 a Peppol BIS Billing 3.0.22 (2026-Q4-MR, november 2026).</td><td>Java 11+, Saxon HE, povolené <code>proc_open</code> a <code>flock</code>; predvolený limit sú 2 súbežné validácie. Workery na rovnakom hoste zdieľajú sloty pri rovnakom adresári zámkov; pracovný adresár rozsah limitu nemení.</td></tr><tr><td>Slovenské pravidlá</td><td>Pravidlá Peppol SK-R-001 až SK-R-007 v Schematrone vydania 2026-Q4-MR.</td><td>Spúšťa ich predvolený Peppol Schematron krok. Samostatný PHP stage je určený pre vlastnú pipeline, ktorý tieto pravidlá v Schematrone nemá.</td></tr><tr><td>Vzdialená validácia</td><td>Kontrola obsahu dokladu službou Peppol Gateway.</td><td>Sieť + OAuth; pravidlá sa môžu líšiť od pribalených verzií.</td></tr><tr><td>Základné pravidlá hlavičky</td><td>Vybrané fakturačné pravidlá Peppol nad načítanou hlavičkou UBL (BR-CO-25).</td><td>Lokálne; bez Javy a bez XSD.</td></tr><tr><td>Kontrola návrhu dokladu</td><td>Vybrané požiadavky dostupné pred zápisom UBL XML.</td><td>Voliteľné samostatné volanie; zapisovač ani odoslanie ho nespúšťajú.</td></tr></tbody></table></div></section>
+
+<section id="vysledok"><div class=""><span class="kick">Výsledok</span><h2>Závažnosť nálezov <span class="gt">a platnosť.</span></h2><p class="lead">Nálezy majú závažnosť <code>error</code>, <code>warning</code> alebo <code>info</code>. Upozornenia a informácie samy osebe neblokujú <code>isValid()</code>; vynechané nálezy áno.</p></div><div class="sev rv"><span class="e">error: dokument je neplatný</span><span class="w">warning: stále platný</span><span class="i">info: stále platný</span><span class="e">vynechané nálezy: dokument je neplatný</span></div><div class="note info rv"><span>Lokálne zdroje sú súčasťou balíka v <code>resources/validation</code>. Integrácia Laravelu umožňuje nastaviť poradie krokov cez <code>laravel.validation.stages</code> a pridať vlastnú implementáciu <code>UblValidationStageInterface</code>. Pred zápisom možno samostatne zavolať <code>PeppolBillingDraftRulesInterface</code>. Cesty k zdrojom, pracovný adresár, spustiteľný súbor Java a limity validácie možno upraviť v zverejnenej konfigurácii. Samotná čítačka môže vrátiť doklad bez automatického spustenia validátorov.</span></div></section>
+
+<section id="pipeline"><div class=""><span class="kick">Pipeline v detailoch</span><h2>Tri samostatné <span class="gt">toky.</span></h2></div><details class="acc rv" id="p-write" open><summary>Zápis návrhu <span class="tag">WRITE</span></summary><div class="body"><p>Zapisovač serializuje dodaný draft a biznis hodnoty nevymýšľa ani výsledok nevaliduje.</p><div class="flow" style="--n:4"><div class="step rv"><i>1</i><em>Vstup</em><b>UblDocumentDraft</b><small>Doménové hodnoty, strany, riadky a súčty.</small></div><div class="step rv"><i>2</i><em>Voliteľne</em><b>Draft preflight</b><small>PeppolBillingDraftRules kontroluje iba údaje dostupné v návrhu.</small></div><div class="step rv"><i>3</i><em>Zápis</em><b>UblDocumentWriter</b><small>Skladá Invoice alebo CreditNote v poradí schémy.</small></div><div class="step rv"><i>4</i><em>Výstup</em><b>UBL 2.1 XML</b><small>UTF-8 XML; writer sám nevykonáva obchodnú validáciu.</small></div></div></div></details><details class="acc rv" id="p-read"><summary>Načítanie a spoločný bod <span class="tag">READ</span></summary><div class="body"><p>Zdieľaným bodom čítania a kontrol je bezpečne načítaný <code>UblXmlDocument</code>.</p><div class="flow" style="--n:5"><div class="step rv"><i>1</i><em>Zdroj</em><b>XML z writeru alebo systému</b><small>Hostiteľ odovzdá obsah explicitne.</small></div><div class="step rv"><i>2</i><em>Bezpečnosť</em><b>UblXmlDocumentLoader</b><small>Kontrola veľkosti, DTD, bezpečného parsovania a podporovaného rootu.</small></div><div class="step rv"><i>3</i><em>Model XML</em><b>UblXmlDocument</b><small>UBL 2.1 Invoice alebo CreditNote s pôvodným XML.</small></div><div class="step rv"><i>4</i><em>Čítanie</em><b>UblDocumentReader</b><small>Header reader + content reader načítajú doménové hodnoty.</small></div><div class="step rv"><i>5</i><em>Model</em><b>UblDocument</b><small>Čitateľný model hlavičky, strán a obsahu.</small></div></div></div></details><details class="acc rv" id="p-val"><summary>Predvolená lokálna pipeline <span class="tag">LocalUblValidator</span></summary><div class="body"><p>Ten istý parsovaný obsah môže hostiteľ zdieľať medzi krokmi.</p><div class="flow" style="--n:5"><div class="step rv"><i>1</i><em>Krok 1</em><b>UBL XSD</b><small>Štruktúra dokumentu cez libxml.</small></div><div class="step rv"><i>2</i><em>Krok 2</em><b>BR-CO-25 header</b><small>Doplnková kontrola splatnosti alebo platobných podmienok.</small></div><div class="step rv"><i>3</i><em>Krok 3</em><b>CEN + Peppol Schematron</b><small>Java/Saxon spustí pravidlá a vytvorí reporty SVRL.</small></div><div class="step rv"><i>4</i><em>Mapovanie</em><b>Normalizované nálezy</b><small>Kroky pridajú stav, trvanie a dostupné verzie pravidiel.</small></div><div class="step rv"><i>5</i><em>Výsledok</em><b>LocalUblValidationResult</b><small>Spoločný výsledok všetkých nakonfigurovaných krokov.</small></div></div><div class="note info rv"><span>Pipeline vykoná všetky nakonfigurované kroky v poradí aj vtedy, keď skorší krok našiel chyby. Chýbajúca Java, zdroje alebo procesná chyba vyvolá infraštruktúrnu výnimku (<code>LocalValidationInfrastructureException</code>); nejde o nález proti dokumentu. Laravel predvolene používa poradie XSD → BR-CO-25 → CEN/Peppol Schematron. Remote check <code>POST /v1/validate-document</code> vyžaduje samostatné volanie.</span></div></div></details></section>
+</div>
+<div class="wrap"><div class="pager"><a href="ukazky.html"><small>← Predchádzajúca</small><b>Ukážky kódu</b></a><a class="nx" href="api.html"><small>Ďalšia →</small><b>API</b></a></div></div>
+</main>
+<footer class="site">
+  <div class="wrap">
+    <div class="fgrid">
+      <div><a class="logo" href="index.html"><i>€</i>eFaktúra <span>Connector</span></a><p>Frameworkovo nezávislá PHP knižnica pre SAPI-SK, Peppol Gateway a Integrator API. MIT licencia.</p></div>
+      <div><h5>Produkt</h5><a href="architektura.html">Architektúra</a><a href="toky.html">Toky dokladov</a><a href="ukazky.html">Ukážky kódu</a><a href="validacia.html">Validácia</a></div>
+      <div><h5>Referencia</h5><a href="api.html">API operácie</a><a href="integrator.html">Integrator</a><a href="nastavenie.html">Nastavenie</a><a href="prevadzka.html">Prevádzka</a></div>
+      <div><h5>Zdroje</h5><a href="dokumentacia.html">Dokumentácia</a><a href="https://github.com/1DreaM1/efaktura-connector">GitHub</a><a href="wiki/index.html">Wiki</a><a href="../LICENSE">Licencia MIT</a></div>
+    </div>
+    <div class="fbot"><span>© eFaktúra Connector · MIT licencia</span><span>Statická stránka · CSS a JavaScript v priečinku assets</span></div>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+</body>
+</html>

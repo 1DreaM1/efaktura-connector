@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="EFaktura Connector">
+    <description>PSR-12 style checks for maintained PHP code.</description>
+
+    <file>config</file>
+    <file>src</file>
+    <file>integrations/laravel/src</file>
+    <file>tests</file>
+    <file>tools</file>
+
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+
+    <rule ref="PSR12">
+        <exclude name="Generic.Files.LineLength" />
+    </rule>
+
+    <rule ref="Squiz.Functions.FunctionDeclarationArgumentSpacing.SpacingAfterHint">
+        <severity>0</severity>
+    </rule>
+
+    <rule ref="Squiz.Functions.FunctionDeclarationArgumentSpacing.SpacingAfterReference">
+        <severity>0</severity>
+    </rule>
+
+    <rule ref="Squiz.Functions.MultiLineFunctionDeclaration.Indent">
+        <severity>0</severity>
+    </rule>
+
+    <arg name="colors" />
+    <arg name="warning-severity" value="0" />
+</ruleset>

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="SapiReceivedDocumentProvider implementuje ReceivedDocumentProviderInterface a skladá tri SAPI operácie: zoznam prijatých dokladov, stiahnutie XML a samostatné technické potvrdenie príjmu.">
+<title>Príjem dokladov – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html" aria-current="page">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Receiving-Documents.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Receiving-Documents.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Receiving-Documents.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-práca-s-dokladmi">Práca s dokladmi</a></div><h1 class="title">Príjem dokladov</h1><div class="sub"><span class="chip">Čítanie ≈ 5 min</span><span class="chip">4 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead"><code class="nb">SapiReceivedDocumentProvider</code> implementuje <code class="nb">ReceivedDocumentProviderInterface</code> a skladá tri SAPI operácie: zoznam prijatých dokladov, stiahnutie XML a samostatné technické potvrdenie príjmu.</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Operácia</th><th>Endpoint</th></tr></thead><tbody><tr><td>Zoznam / stránka inboxu</td><td><code>GET /<wbr>sapi/<wbr>document/<wbr>receive</code></td></tr><tr><td>Stiahnutie dokladu</td><td><code>GET /<wbr>sapi/<wbr>document/<wbr>receive/<wbr>{documentId}</code></td></tr><tr><td>Technické potvrdenie príjmu</td><td><code>POST /<wbr>sapi/<wbr>document/<wbr>receive/<wbr>{documentId}/<wbr>acknowledge</code></td></tr></tbody></table></div>
+<p>SAPI OpenAPI podporuje pri zozname kurzor <code class="nb">pageToken</code>, voliteľný <code class="nb">limit</code> 1–100 (predvolene 20) a filter <code class="nb">status=RECEIVED|ACKNOWLEDGED</code>; záznamy sa vracajú od najstarších.</p>
+<p><code class="nb">getInboxPage()</code> prijíma <code class="nb">ListReceivedDocumentsRequest</code>, ktorý obsahuje participant, voliteľný <code class="nb">PageToken</code>, <code class="nb">PageSize</code> a filter <code class="nb">ProviderDocumentStatus</code>.</p>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p>Zoznam ani načítanie detailu dokument automaticky nepotvrdzuje.</p></div></div>
+<p>Odpoveď bez poľa <code class="nb">nextPageToken</code> (alebo s hodnotou <code class="nb">null</code>, prázdnym či bielym reťazcom) znamená poslednú stránku: <code class="nb">nextPageToken()</code> vráti <code class="nb">null</code>. Rovnako sa čítajú aj zoznamy webhookov a Integrator API.</p>
+<p>Neprázdny token zachová <code class="nb">PageToken</code> bez zmeny a token, ktorý nie je reťazec, je neplatná odpoveď (<code class="nb">InvalidProviderResponseException</code>). Core stránkovanie používa <code class="nb">PageToken</code> a <code class="nb">PageSize</code>.</p>
+<p>Token z predchádzajúcej stránky možno odovzdať priamo ďalšiemu volaniu; pri ukladaní do hostiteľského úložiska použite <code class="nb">value()</code> a pri obnove ho vytvorte cez <code class="nb">PageToken::fromString()</code>. Veľkosť stránky vytvorte cez <code class="nb">PageSize::fromInt()</code>.</p>
+<p>SAPI OpenAPI označuje acknowledge za idempotentný: opakované potvrdenie už potvrdeného dokladu vráti úspech.</p>
+<h2 id="tok-príjmu-dokumentu"><span class="mw-h">Tok príjmu dokumentu</span><a class="anchor" href="#tok-príjmu-dokumentu" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Receiving-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Zoznam, stiahnutie obsahu, lokálne spracovanie a technické potvrdenie sú samostatné kroky. Hostiteľ si riadi kurzor stránkovania, bezpečné uloženie a okamih potvrdenia.</p>
+<pre class="mermaid">sequenceDiagram
+    participant Host as Hostiteľská aplikácia
+    participant SAPI as SAPI-SK
+    participant Loader as UblXmlDocumentLoader
+    participant Reader as UblDocumentReader
+    participant Validator as LocalUblValidator
+    Host-&gt;&gt;SAPI: GET /sapi/document/receive + participant
+    SAPI--&gt;&gt;Host: metadata[] + nextPageToken
+    loop Každý dokument na stránke
+        Host-&gt;&gt;SAPI: GET /sapi/document/receive/{documentId}
+        SAPI--&gt;&gt;Host: metadata + payload XML + payloadFormat
+        opt Hostiteľ chce čítať UBL
+            Host-&gt;&gt;Loader: parse(payload)
+            Loader--&gt;&gt;Host: UblXmlDocument alebo XML výnimka
+            Host-&gt;&gt;Reader: readDocument(document)
+            Reader--&gt;&gt;Host: UblDocument
+        end
+        opt Hostiteľ chce lokálnu validáciu
+            Host-&gt;&gt;Loader: parse(payload) alebo použiť už načítaný dokument
+            Loader--&gt;&gt;Host: UblXmlDocument
+            Host-&gt;&gt;Validator: validateDocument(UblXmlDocument)
+            Validator--&gt;&gt;Host: LocalUblValidationResult
+        end
+        Host-&gt;&gt;Host: overiť tenant, spracovať a bezpečne uložiť
+        Host-&gt;&gt;SAPI: POST /sapi/document/receive/{documentId}/acknowledge
+        SAPI--&gt;&gt;Host: stav a acknowledgedDateTime
+    end
+    opt Ďalšia stránka existuje
+        Host-&gt;&gt;SAPI: GET inbox s nextPageToken
+    end</pre>
+<p><code class="nb">payloadFormat</code> je podľa OpenAPI obyčajný reťazec, preto hostiteľ rozhoduje, či telo odovzdá UBL čítačke. Ak XML načítate, reader ho bezpečne parsuje, ale XSD ani Schematron sa nespúšťajú automaticky.</p>
+<p>Potvrdenie volajte až podľa pravidiel hostiteľa; konektor neporovnáva obsah XML s participant metadátami ani neukladá prijatý dokument.</p>
+<h2 id="načítanie-po-stránkach"><span class="mw-h">Načítanie po stránkach</span><a class="anchor" href="#načítanie-po-stránkach" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Receiving-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\Documents\DocumentRequestContext;
+use DreaM1\EfakturaConnector\Core\Documents\ListReceivedDocumentsRequest;
+use DreaM1\EfakturaConnector\Core\Documents\ReceivedDocumentReference;
+use DreaM1\EfakturaConnector\Core\Pagination\PageSize;
+use DreaM1\EfakturaConnector\Domain\EFaktura\Participant;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Endpoints\Sapi\AcknowledgeReceivedDocumentEndpoint;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Endpoints\Sapi\GetReceivedDocumentEndpoint;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Endpoints\Sapi\ListReceivedDocumentsEndpoint;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Documents\SapiReceivedDocumentProvider;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Reader\UblDocumentReader;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Reader\UblXmlDocumentLoader;
+
+$provider = new SapiReceivedDocumentProvider(
+    new ListReceivedDocumentsEndpoint($connector),
+    new GetReceivedDocumentEndpoint($connector),
+    new AcknowledgeReceivedDocumentEndpoint($connector),
+);
+$ublReader = new UblDocumentReader(new UblXmlDocumentLoader());
+$participant = Participant::parse('0245:1234567890');
+
+$pageToken = null;
+do {
+    $page = $provider-&gt;getInboxPage(new ListReceivedDocumentsRequest(
+        $participant,
+        $pageToken,
+        PageSize::fromInt(50)
+    ));
+    $pageToken = $page-&gt;nextPageToken();
+
+    foreach ($page-&gt;documents() as $metadata) {
+        $context = new DocumentRequestContext(
+            $myDb-&gt;resolveId($metadata-&gt;documentId()-&gt;value()),
+            $metadata-&gt;documentId()-&gt;value()
+        );
+        $reference = new ReceivedDocumentReference(
+            $participant,
+            $metadata-&gt;documentId(),
+            $context
+        );
+        $document = $provider-&gt;getDocumentPayload($reference);
+        $ublDocument = $ublReader-&gt;read($document-&gt;xml());
+
+        // Spracujte alebo bezpečne uložte $ublDocument podľa workflow hostiteľa.
+        // Potvrdenie ostáva samostatným rozhodnutím hostiteľa.
+        $acknowledgement = $provider-&gt;acknowledge($reference);
+        // Výsledok obsahuje ProviderDocumentStatus cez status(), ProviderDocumentId cez documentId()
+        // a acknowledgedDateTime(). Reťazec stavu získate cez status()-&gt;value().
+    }
+} while ($pageToken !== null);</code></pre></div>
+<p><code class="nb">ReceivedDocumentMetadata::documentId()</code> a <code>ReceivedDocumentReference::<wbr>providerDocumentId()</code> používajú <code class="nb">ProviderDocumentId</code>.</p>
+<p>Pri načítaní ID z vlastného úložiska ho obnovte cez <code class="nb">ProviderDocumentId::fromString()</code>; na reťazec sa prevedie cez <code class="nb">value()</code> iba pri ukladaní alebo zostavovaní logovacieho kontextu. Rovnakú referenciu možno použiť na stiahnutie aj potvrdenie.</p>
+<p><code class="nb">DocumentRequestContext</code> zostáva samostatný reťazcový kontext hostiteľa a neposiela sa poskytovateľovi.</p>
+<p>Metadáta z inboxu obsahujú <code class="nb">documentId</code>, <code class="nb">documentTypeId</code>, <code class="nb">processId</code>, <code class="nb">senderParticipantId</code>, <code class="nb">receiverParticipantId</code> a <code class="nb">creationDateTime</code>.</p>
+<p>K odosielateľovi a príjemcovi možno pristúpiť typovane cez <code class="nb">sender()</code> a <code class="nb">receiver()</code>, ktoré vracajú <code class="nb">Participant</code>; chybné Peppol ID sa odmietne už pri mapovaní odpovede SAPI.</p>
+<p>Detail ich vracia znova spolu s payloadom; cez <code class="nb">ReceivedDocumentPayload::metadata()</code> sú dostupné v rovnakom typovanom <code class="nb">ReceivedDocumentMetadata</code> modeli.</p>
+<p>SAPI detail vracia aj pole <code class="nb">payloadFormat</code>, ktoré OpenAPI definuje iba ako reťazec bez enum hodnôt. Endpoint overí typ reťazca a provider jeho hodnotu prenesie do <code>ReceivedDocumentPayload::<wbr>payloadFormat()</code> bez normalizácie.</p>
+<p>Payload poskytuje XML cez <code class="nb">xml()</code>; ak ho hostiteľ chce čítať ako UBL, samostatne zavolá <code class="nb">$ublReader-&gt;read($document-&gt;xml())</code>. Čítačka bezpečne načíta XML a odmietne nebezpečné, chybné alebo nepodporované UBL XML cez príslušnú <code class="nb">UblValidationException</code>.</p>
+<p>Načítanie neznamená XSD/Schematron validáciu a nespúšťa <code class="nb">acknowledge()</code>; hostiteľ môže <code class="nb">payloadFormat()</code> vyhodnotiť samostatne podľa svojho workflow.</p>
+<h2 id="technické-potvrdenie-príjmu"><span class="mw-h">Technické potvrdenie príjmu</span><a class="anchor" href="#technické-potvrdenie-príjmu" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Receiving-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Operácia <code class="nb">acknowledge()</code> odošle poskytovateľovi technické potvrdenie príjmu dokumentu. Neznamená obchodné schválenie faktúry, zaúčtovanie, vznik záväzku ani vytvorenie objednávky. Rozhodnutie o potvrdení a jeho načasovaní patrí hostiteľskej aplikácii.</p>
+<p>Volanie vracia <code class="nb">ReceivedDocumentAcknowledgement</code> s <code class="nb">documentId</code>, výsledným <code class="nb">status</code> a <code class="nb">acknowledgedDateTime</code>, ktoré poskytovateľ vrátil. Tieto údaje potvrdzujú technický výsledok operácie; neurčujú obchodný stav dokladu.</p>
+<p>UBL reader dokáže načítať bezpečné Invoice/CreditNote XML, ale čítanie samo osebe nespúšťa XSD ani Peppol validáciu.</p>
+<p>Pri synchronizácii získajte príjemcu cez <code class="nb">$metadata-&gt;receiver()</code> a porovnajte ho s participantom aktuálneho tenantu pomocou <code class="nb">equals()</code>. Obe metódy vracajú typovaný <code class="nb">Participant</code>; SAPI metadata factory odmietne neplatné participant ID ako <code class="nb">InvalidProviderResponseException</code>.</p>
+<p>Ak XML načítate, porovnajte v ňom aj identifikátory odosielateľa a príjemcu s metadátami SAPI. Konektor mapuje metadáta a XML samostatne; ich vzájomnú zhodu ani vlastníctvo tenantom nekontroluje.</p>
+<p>O potvrdení rozhodnite až podľa pravidiel hostiteľa po bezpečnom spracovaní alebo uložení.</p>
+<h2 id="stránkovanie-a-opakovanie"><span class="mw-h">Stránkovanie a opakovanie</span><a class="anchor" href="#stránkovanie-a-opakovanie" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Receiving-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Vždy pokračujte s <code class="nb">nextPageToken()</code> až po <code class="nb">null</code>. Spracovanie a perzistenciu urobte idempotentne, pretože rovnaký doklad môže byť vrátený pri opakovaní synchronizácie.</p>
+<p>Zlyhanie uloženia XML má zastaviť alebo odložiť potvrdenie tak, aby hostiteľ nestratil možnosť doklad znovu stiahnuť.</p>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></li>
+<li><a href="UBL-Documents.html">Čítanie a zápis UBL</a></li>
+<li><a href="Errors-Retry-and-Idempotency.html">Výnimky, retry a idempotencia</a></li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#tok-príjmu-dokumentu"><span class="n">1</span> <span class="x">Tok príjmu dokumentu</span></a></li><li class="t2"><a href="#načítanie-po-stránkach"><span class="n">2</span> <span class="x">Načítanie po stránkach</span></a></li><li class="t2"><a href="#technické-potvrdenie-príjmu"><span class="n">3</span> <span class="x">Technické potvrdenie príjmu</span></a></li><li class="t2"><a href="#stránkovanie-a-opakovanie"><span class="n">4</span> <span class="x">Stránkovanie a opakovanie</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Sending-Documents.html"><small>← Predchádzajúca</small><b>Odosielanie dokladov</b></a><a class="nx" href="Tracking-and-Webhooks.html"><small>Ďalšia →</small><b>Stav, Discovery a webhooky</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Sending-Documents.html">Odosielanie dokladov</a></li><li><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></li><li><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a></li><li><a href="UBL-Documents.html">Čítanie a zápis UBL</a></li><li><a href="Validation.html">Lokálna validácia</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li><li><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a></li><li><a href="UBL-Documents.html">Čítanie a zápis UBL</a></li><li><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-práca-s-dokladmi">Práca s dokladmi</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Receiving-Documents.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Receiving-Documents.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fafafc">
+<meta name="description" content="Odkazy na podrobnú dokumentáciu v repozitári: wiki, API referencia, OpenAPI a validačné zdroje.">
+<title>Dokumentácia · eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('efk-theme');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Preskočiť na obsah</a>
+<div class="progress" id="bar"></div>
+<header class="site">
+  <div class="wrap nav">
+    <a class="logo" href="index.html"><i>€</i>eFaktúra <span>Connector</span></a>
+    <nav class="menu" id="menu" aria-label="Hlavná navigácia"><a href="index.html">Prehľad</a><a href="architektura.html">Architektúra</a><a href="toky.html">Toky dokladov</a><a href="ukazky.html">Ukážky kódu</a><a href="validacia.html">Validácia</a><a href="api.html">API</a><a href="integrator.html">Integrator</a><a href="nastavenie.html">Nastavenie</a><a href="prevadzka.html">Prevádzka</a><a href="wiki/index.html">Wiki</a></nav>
+    <div class="right">
+      <button class="icon-btn" id="theme" type="button" aria-label="Téma">◐</button>
+      <a class="btn pri sm hide-s" href="https://github.com/1DreaM1/efaktura-connector">GitHub ↗</a>
+      <button class="icon-btn burger" id="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menu">☰</button>
+    </div>
+  </div>
+</header>
+<main id="main">
+
+<div class="phead"><div class="mesh"><div class="dots"></div></div><div class="wrap"><div class="crumbs"><a href="index.html">Prehľad</a> / Dokumentácia</div><span class="kick">Dokumentácia</span><h1>Pokračujte <span class="gt">podľa témy.</span></h1><p class="sub">Táto stránka ponúka stručný prehľad modulu. Podrobné príklady a prevádzkové poznámky sú v lokálnej dokumentácii repozitára.</p></div></div>
+<div class="wrap">
+<section class="tight">
+<div class="grid g4" style="margin-top:0"><a class="cell rv" href="wiki/index.html"><small class="top">Prehľad</small><h4>Dokumentácia balíka</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Installation.html"><small class="top">Začíname</small><h4>Inštalácia</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Configuration.html"><small class="top">Začíname</small><h4>Konfigurácia</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Transport-and-Authentication.html"><small class="top">Začíname</small><h4>Transport a autentifikácia</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Laravel.html"><small class="top">Laravel</small><h4>Laravel bridge</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Tenant-Clients-in-Laravel.html"><small class="top">Laravel</small><h4>OAuth poverenia zákazníka</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Practical-Scenarios.html"><small class="top">Doklady</small><h4>Praktické scenáre a diagramy</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/UBL-Documents.html"><small class="top">Doklady</small><h4>Čítanie a zápis UBL</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Validation.html"><small class="top">Doklady</small><h4>Lokálna validácia</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Sending-Documents.html"><small class="top">Doklady</small><h4>Odosielanie dokladov</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Receiving-Documents.html"><small class="top">Doklady</small><h4>Príjem dokladov</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Tracking-and-Webhooks.html"><small class="top">Doklady</small><h4>Stav, Discovery a webhooky</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/API-Reference.html"><small class="top">Referencia</small><h4>Prehľad API</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Integrator-API.html"><small class="top">Referencia</small><h4>Integrator API</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Public-API.html"><small class="top">Referencia</small><h4>Verejné PHP API</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Request-Flow.html"><small class="top">Referencia</small><h4>Graf toku API requestov</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Data-Flow-and-Classes.html"><small class="top">Referencia</small><h4>Tok dát a triedy</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Project-Structure.html"><small class="top">Referencia</small><h4>Štruktúra balíka</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Source-Alignment.html"><small class="top">Referencia</small><h4>API špecifikácie a pokrytie</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Errors-Retry-and-Idempotency.html"><small class="top">Referencia</small><h4>Výnimky, opakovanie a idempotencia</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Architecture-and-Testing.html"><small class="top">Prevádzka</small><h4>Architektúra a testovanie</h4><span class="more">Otvoriť ↗</span></a><a class="cell rv" href="wiki/Troubleshooting.html"><small class="top">Prevádzka</small><h4>Riešenie problémov</h4><span class="more">Otvoriť ↗</span></a>
+<a class="cell rv" href="../resources/validation/README.md"><small class="top">Údržba</small><h4>Validačné zdroje</h4><span class="more">Otvoriť ↗</span></a>
+<a class="cell rv" href="../docs/eFaktura/api/openapi.json"><small class="top">Kontrakt</small><h4>OpenAPI</h4><span class="more">Otvoriť ↗</span></a></div>
+<div class="note info rv"><span>Témy sa otvárajú ako HTML stránky v sekcii <a href="wiki/index.html">Wiki</a>, ktorú generuje <code>tools/build-wiki.js</code> zo zdrojov v <code>docs/wiki</code>. Odkazy na validačné zdroje a OpenAPI mieria na súbory v repozitári.</span></div>
+</section>
+</div>
+<div class="wrap"></div>
+</main>
+<footer class="site">
+  <div class="wrap">
+    <div class="fgrid">
+      <div><a class="logo" href="index.html"><i>€</i>eFaktúra <span>Connector</span></a><p>Frameworkovo nezávislá PHP knižnica pre SAPI-SK, Peppol Gateway a Integrator API. MIT licencia.</p></div>
+      <div><h5>Produkt</h5><a href="architektura.html">Architektúra</a><a href="toky.html">Toky dokladov</a><a href="ukazky.html">Ukážky kódu</a><a href="validacia.html">Validácia</a></div>
+      <div><h5>Referencia</h5><a href="api.html">API operácie</a><a href="integrator.html">Integrator</a><a href="nastavenie.html">Nastavenie</a><a href="prevadzka.html">Prevádzka</a></div>
+      <div><h5>Zdroje</h5><a href="dokumentacia.html">Dokumentácia</a><a href="https://github.com/1DreaM1/efaktura-connector">GitHub</a><a href="wiki/index.html">Wiki</a><a href="../LICENSE">Licencia MIT</a></div>
+    </div>
+    <div class="fbot"><span>© eFaktúra Connector · MIT licencia</span><span>Statická stránka · CSS a JavaScript v priečinku assets</span></div>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+</body>
+</html>

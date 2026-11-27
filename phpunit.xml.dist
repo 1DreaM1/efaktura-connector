@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="vendor/autoload.php"
+         colors="true"
+         defaultTestSuite="EFaktura Connector"
+         beStrictAboutTestsThatDoNotTestAnything="false">
+    <testsuites>
+        <testsuite name="EFaktura Connector">
+            <directory suffix="Test.php">tests</directory>
+            <exclude>tests/Laravel</exclude>
+        </testsuite>
+        <!--
+            Laravel bridge tests against the laravel/framework 8 development dependency (PHP 7.4 lock).
+            Run explicitly by selecting the "Laravel Bridge" test suite.
+            The isolated Laravel 13 / PHP 8.4 run uses tools/test-laravel-bridge.ps1 with the same files.
+        -->
+        <testsuite name="Laravel Bridge">
+            <directory suffix="Test.php">tests/Laravel</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

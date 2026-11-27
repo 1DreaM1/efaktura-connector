@@ -1,0 +1,63 @@
+name: Release provenance
+
+on:
+  release:
+    types: [published]
+  # Releases created with GITHUB_TOKEN do not emit `release` events, so the release job dispatches this workflow.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to attest
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  attest:
+    name: Source archive, SBOM and provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+
+      - name: Build source archive
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: git archive --format=zip --prefix="efaktura-connector-${TAG}/" -o "efaktura-connector-${TAG}.zip" "$TAG"
+
+      - name: Generate CycloneDX SBOM
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          composer config --no-plugins allow-plugins.cyclonedx/cyclonedx-php-composer true
+          composer require --dev --no-interaction --no-progress --ignore-platform-reqs cyclonedx/cyclonedx-php-composer:6.2.0
+          composer CycloneDX:make-sbom --output-format=JSON --output-file="efaktura-connector-${TAG}.sbom.json" --omit=dev
+          git checkout -- composer.json composer.lock
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
+        with:
+          subject-path: efaktura-connector-*.zip
+
+      - name: Upload artifacts to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: gh release upload "$TAG" "efaktura-connector-${TAG}.zip" "efaktura-connector-${TAG}.sbom.json" --clobber

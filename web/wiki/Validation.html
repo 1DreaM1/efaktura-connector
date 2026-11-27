@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Konektor poskytuje samostatné validačné služby aj agregovaný kontrakt LocalUblValidationInterface . Validácia je lokálna a nevykonáva sieťové volania.">
+<title>Lokálna validácia – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html" aria-current="page">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Validation.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Validation.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Validation.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-práca-s-dokladmi">Práca s dokladmi</a></div><h1 class="title">Lokálna validácia</h1><div class="sub"><span class="chip">Čítanie ≈ 21 min</span><span class="chip">7 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead">Konektor poskytuje samostatné validačné služby aj agregovaný kontrakt <code class="nb">LocalUblValidationInterface</code>. Validácia je lokálna a nevykonáva sieťové volania.</p>
+<h2 id="tok-validácie"><span class="mw-h">Tok validácie</span><a class="anchor" href="#tok-validácie" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Validation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Hostiteľ môže validovať draft ešte pred zápisom a výsledné XML následne skontrolovať samostatnou lokálnou pipeline. Bezpečné načítanie vytvára spoločný <code class="nb">UblXmlDocument</code>; reader a validátory z neho čítajú nezávisle.</p>
+<p>Nálezy jedného kroku nezastavia ďalšie kroky. Chyba nástrojov alebo chýbajúci validačný zdroj je infraštruktúrna výnimka, nie chyba dokladu.</p>
+<pre class="mermaid">flowchart TD
+    Draft[UblDocumentDraft] --&gt; Preflight{Hostiteľ zapne draft preflight?}
+    Preflight --&gt;|Áno| DraftRules[PeppolBillingDraftRules]
+    DraftRules --&gt;|Nálezy alebo výnimka| Decision[Hostiteľ vyhodnotí preflight]
+    DraftRules --&gt;|Pokračovať| Writer[UblDocumentWriter]
+    Preflight --&gt;|Nie| Writer
+    Writer --&gt; Xml[UBL XML]
+    Existing[XML z iného zdroja] --&gt; Xml
+    Xml --&gt; Loader[UblXmlDocumentLoader]
+    Loader --&gt; Guard{Veľkosť, bezpečné XML a podporovaný koreň?}
+    Guard --&gt;|Nie| ParseError[InvalidXmlException alebo UnsupportedDocumentTypeException]
+    Guard --&gt;|Áno| Parsed[UblXmlDocument]
+    Parsed --&gt; Reader[Voliteľný UblDocumentReader]
+    Reader --&gt; Model[UblDocument: hlavička a obsah]
+    Parsed --&gt; Validator[LocalUblValidator]
+    Validator --&gt; Pipeline[UblValidationPipeline: nakonfigurované poradie]
+    Pipeline --&gt; Xsd[XSD stage cez libxml]
+    Xsd --&gt; Header[Voliteľný BR-CO-25 header stage]
+    Header --&gt; Schematron[Voliteľný CEN a Peppol Schematron stage]
+    Schematron --&gt; Saxon[Java Saxon + SVRL reporty]
+    Saxon --&gt; Findings[Parser a normalizácia nálezov]
+    Xsd --&gt; Combine[Zložiť výsledky krokov a metadáta]
+    Header --&gt; Combine
+    Findings --&gt; Combine
+    Combine --&gt; Result[LocalUblValidationResult]
+    Result --&gt; Valid{Je výsledok validný?}
+    Valid --&gt;|Áno| Continue[Hostiteľ môže pokračovať podľa workflow]
+    Valid --&gt;|Nie| Stop[Hostiteľ spracuje error nálezy alebo vynechané nálezy]
+    Saxon -. infraštruktúrny problém .-&gt; Infra[Step infrastructure_error; pipeline pokračuje]
+    Payload[Hostiteľom pripravený OutboundDocumentPayload] --&gt; Remote[Samostatné POST /v1/validate-document]
+    Remote --&gt; RemoteResult[Provider result alebo API výnimka]</pre>
+<p>Predvolený Laravel skladá XSD, BR-CO-25 header a CEN/Peppol Schematron v tomto poradí; vlastná integrácia si môže nakonfigurovať iné kroky. Schematron stage spúšťa CEN aj Peppol pravidlá nad tým istým XML a pri vykonaní Java procesov používa samostatný concurrency limiter.</p>
+<p><code class="nb">LocalUblValidator</code> nevolá Gateway a <code class="nb">UblDocumentWriter</code> ani odosielací adaptér validáciu automaticky nespúšťajú. Vzdialená kontrola je samostatné API volanie a môže používať iné pravidlá než lokálne pribalené zdroje.</p>
+<h2 id="kontroly"><span class="mw-h">Kontroly</span><a class="anchor" href="#kontroly" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Validation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Ak vlastná pipeline spúšťa iba CEN/EN 16931, použite <code class="nb">CenSchematronValidationStage</code>. Spustí CEN stylesheet a doplní kontrolu endpointov podľa aktuálneho Peppol EAS zoznamu.</p>
+<p>Samotný upstream <code class="nb">CEN-EN16931-UBL.xsl</code> zostáva nezmenený; jeho priame spustenie cez <code class="nb">SaxonSchematronRunner</code> túto doplnkovú kontrolu nevykoná.</p>
+<p>Tento stage nemožno kombinovať s <code class="nb">PeppolSchematronValidationStage</code> v jednej pipeline, pretože druhý stage už spúšťa CEN aj Peppol pravidlá; <code class="nb">UblValidationPipeline</code> takéto zloženie odmietne s <code class="nb">InvalidInputException</code>.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\CenSchematronValidationStage;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\LocalUblValidator;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\UblSchematronReportParser;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\SaxonSchematronRunner;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\ValidationResources;
+
+$cenStage = new CenSchematronValidationStage(
+    new SaxonSchematronRunner(ValidationResources::directory(), sys_get_temp_dir()),
+    new UblSchematronReportParser()
+);
+$result = (new LocalUblValidator([$cenStage]))-&gt;validateDocument($document);</code></pre></div>
+<div class="tw"><table class="wikitable"><thead><tr><th>Služba / kontrakt</th><th>Kontrola</th><th>Závislosti</th></tr></thead><tbody><tr><td><code class="nb">CenSchematronValidationStage</code></td><td>Samostatný CEN Schematron s dodatočnou kontrolou aktuálnych Peppol EAS schém endpointov.</td><td>Pribalený Saxon, Java 11+, <code class="nb">proc_open</code> a <code class="nb">flock</code>.</td></tr><tr><td><code class="nb">UblXmlDocumentLoaderInterface</code></td><td>Bezpečné načítanie XML a podpora Invoice/CreditNote.</td><td>PHP DOM a libxml.</td></tr><tr><td><code class="nb">UblSchemaValidationInterface</code></td><td>UBL 2.1 XSD.</td><td>Pribalené schémy, libxml.</td></tr><tr><td><code class="nb">PeppolSchematronValidationInterface</code></td><td>CEN/EN 16931 a Peppol BIS Billing pravidlá; vracia <code class="nb">PeppolSchematronValidationResult</code> s nálezmi a ich závažnosťou.</td><td>Pribalený Saxon HE, Java 11+, <code class="nb">proc_open</code> a <code class="nb">flock</code>.</td></tr><tr><td><code class="nb">LocalUblValidationInterface</code></td><td>Spustí nastavené kroky a vráti ich nálezy v jednom výsledku; Laravel predvolene nastavuje XSD, doplnkovú kontrolu BR-CO-25 a Peppol Schematron.</td><td>Závislosti nastavených krokov.</td></tr><tr><td><code class="nb">PeppolBillingDraftRulesInterface</code></td><td>Predbežná kontrola polí dostupných priamo v <code class="nb">UblDocumentDraft</code>, pred serializáciou.</td><td>Bez Java a bez XSD.</td></tr><tr><td><code class="nb">PeppolBillingRulesInterface</code> / <code class="nb">PeppolBillingHeaderValidationStage</code></td><td>Doplnková kontrola BR-CO-25: kladná faktúra musí mať dátum splatnosti alebo platobné podmienky.</td><td>Bez Java a bez XSD.</td></tr></tbody></table></div>
+<p><code class="nb">UblSchemaValidationInterface</code>, <code class="nb">PeppolSchematronValidationInterface</code> a <code class="nb">PeppolBillingRulesInterface</code> povinne poskytujú verzie svojich pravidiel cez <code class="nb">ruleVersions()</code>.</p>
+<p>Lokálne Schematron artefakty v tomto balíku sú UBL 2.1, CEN/EN 16931 1.3.17 a oficiálny Peppol BIS Billing 3.0.22 z vydania <code class="nb">2026-Q4-MR</code>. CEN verzia 1.3.17 sa spúšťa samostatne; OpenPeppol uvádza vo svojom Q4-MR balíku EN 16931 artefakty 1.3.16.</p>
+<p>Oficiálny Peppol <code class="nb">.sch</code> obsahuje zmeny vydania: pravidlá <code class="nb">PEPPOL-COMMON-R054</code>, <code class="nb">R055</code>, <code class="nb">R056-1</code>, <code class="nb">R056-2</code> a <code class="nb">R057</code> majú fatal závažnosť, pridané sú <code class="nb">R058</code>, <code class="nb">R059</code> a <code class="nb">R062</code>, povinné kardinality <code class="nb">PEPPOL-EN16931-R140</code> až <code class="nb">R276</code> a slovenské <code class="nb">SK-R-001</code> až <code class="nb">SK-R-007</code>.</p>
+<p>Verzie a cesty spravuje <code class="nb">ValidationResources</code>; presný zdroj a jeho kontrolný súčet sú v <code class="nb">resources/validation/README.md</code>.</p>
+<p>Normatívny kontext poskytujú <a href="https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html" class="ext" rel="noopener">OASIS UBL 2.1</a>, priebežne aktualizovaná <a href="https://docs.peppol.eu/poacc/billing/3.0/" class="ext" rel="noopener">dokumentácia OpenPeppol BIS Billing</a> a <a href="https://github.com/ConnectingEurope/eInvoicing-EN16931/releases" class="ext" rel="noopener">vydania CEN EN 16931</a>.</p>
+<p>Konkrétne lokálne <code class="nb">.sch</code> a <code class="nb">.xsl</code> súbory a ich licencie sú pripnuté v <code class="nb">resources/validation/</code>; ich upstream tagy a postup aktualizácie sú v <a href="../../resources/validation/README.md">README validačných podkladov</a>. Verejná dokumentácia môže byť novšia než lokálne pravidlá.</p>
+<h3 id="schémy-a-pravidlá-v-balíku"><span class="mw-h">Schémy a pravidlá v balíku</span><a class="anchor" href="#schémy-a-pravidlá-v-balíku" aria-label="Odkaz na sekciu">¶</a></h3>
+<div class="tw"><table class="wikitable"><thead><tr><th>Kontrola</th><th>Zdroj a cesta</th><th>Implementácia</th></tr></thead><tbody><tr><td>Podporovaný koreň a bezpečné XML</td><td>UBL 2.1 <code class="nb">Invoice</code>/<code class="nb">CreditNote</code>; XML limit a bezpečnostné obmedzenia konektora</td><td><code class="nb">UblXmlDocumentLoader</code>, <code class="nb">Support\Xml\SecureXmlDocumentParser</code></td></tr><tr><td>Štrukturálna validácia</td><td><code>resources/<wbr>validation/<wbr>ubl-2.<wbr>1/<wbr>xsd/<wbr>maindoc/<wbr>UBL-Invoice-2.<wbr>1.<wbr>xsd</code> alebo <code class="nb">UBL-CreditNote-2.1.xsd</code> s importovanými schémami v <code class="nb">common/</code></td><td><code class="nb">UblSchemaValidator</code>, libxml</td></tr><tr><td>CEN pravidlá EN 16931</td><td><code>resources/<wbr>validation/<wbr>cen-1.<wbr>3.<wbr>17/<wbr>CEN-EN16931-UBL.<wbr>xsl</code>, zdrojové <code class="nb">.sch</code></td><td><code class="nb">PeppolSchematronValidator</code>, pribalený Saxon</td></tr><tr><td>Peppol BIS Billing</td><td><code>resources/<wbr>validation/<wbr>peppol-3.<wbr>0.<wbr>22-2026-Q4-MR/<wbr>PEPPOL-EN16931-UBL.<wbr>xsl</code>, zdrojové <code class="nb">.sch</code> vrátane slovenských pravidiel</td><td><code class="nb">PeppolSchematronValidator</code>, pribalený Saxon</td></tr><tr><td>Slovenské pravidlá Peppol</td><td><code class="nb">SK-R-001</code> až <code class="nb">SK-R-007</code> z vydania <code class="nb">2026-Q4-MR</code></td><td>Predvolene ich kontroluje Peppol Schematron; <code class="nb">PeppolSlovakBillingValidationStage</code> použite vo vlastnej pipeline bez týchto pravidiel</td></tr><tr><td>BR-CO-25</td><td>Pozitívna faktúra musí mať BT-9 alebo BT-20; pravidlo nie je v pripnutom Schematrone</td><td><code class="nb">PeppolBillingHeaderRules</code>, <code class="nb">PeppolBillingHeaderValidationStage</code></td></tr><tr><td>Kontrola poskytovateľom</td><td>Gateway <code>POST /<wbr>v1/<wbr>validate-document</code>; pravidlá nasadené u poskytovateľa</td><td><code class="nb">PeppolGatewayDocumentValidationCheck</code></td></tr></tbody></table></div>
+<p>UBL XSD overuje XML štruktúru. Predvolený Laravel pipeline spúšťa <code class="nb">UblSchemaValidationStage</code>, <code class="nb">PeppolBillingHeaderValidationStage</code> a Peppol Schematron.</p>
+<p>Hlavičkový stage kontroluje iba BR-CO-25 pre faktúry; ostatné Peppol pravidlá vykonáva Schematron a duplicitné hlavičkové nálezy sa nevytvárajú. Q4-MR Schematron obsahuje slovenské pravidlá <code class="nb">SK-R-001</code> až <code class="nb">SK-R-007</code>.</p>
+<p>Samostatný <code class="nb">PeppolSlovakBillingValidationStage</code> pridajte do vlastnej pipeline, ktorá tieto pravidlá v Schematrone nespúšťa. Vlastná konfigurácia môže kroky vynechať alebo upraviť. Vzdialený Gateway endpoint je samostatná sieťová operácia.</p>
+<p>Verzie lokálnych pravidiel preto nezaručujú rovnakú verziu ani výsledok vzdialenej kontroly.</p>
+<p>Pred zápisom možno zavolať <code>PeppolBillingDraftRulesInterface::<wbr>assertSatisfied($draft)</code>. Ide o voliteľný preflight pred vytvorením XML, nie o krok predvolenej lokálnej pipeline.</p>
+<p>Zachytí chyby dostupné už v drafte, napríklad nepodporovanú menu či krajinu, chýbajúcu schému endpointu, prázdne riadky alebo neznámu jednotku.</p>
+<p>Krajinu overuje pri dodávateľovi a odberateľovi aj v nepovinných adresách dodania a daňového zástupcu a pri krajine pôvodu každej položky. Nálezy pre tieto polia používajú <code class="nb">seller_country</code>, <code class="nb">buyer_country</code>, <code class="nb">delivery_country</code>, <code class="nb">tax_representative_country</code> a <code class="nb">origin_country</code>.</p>
+<p>Kontrola meny v drafte vyžaduje presný kód z pribaleného ISO 4217 zoznamu; hodnoty sa počas validácie neorezávajú ani nemenia na veľké písmená. Writer ani odosielanie preflight nespúšťajú automaticky.</p>
+<p>Po zápise stále samostatne validujte výsledné XML cez XSD a Schematron:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">$draftRules-&gt;assertSatisfied($draft);
+$xml = $writer-&gt;write($draft);
+$document = $loader-&gt;parse($xml);
+$result = $localValidator-&gt;validateDocument($document);
+
+if (! $result-&gt;isValid()) {
+    // Spracovať error findings a odoslanie zastaviť.
+}</code></pre></div>
+<p>Preflight nevyžaduje DIČ ani IČ DPH. Plná CEN/EN 16931 Schematron validácia však uplatňuje všeobecné identifikačné pravidlá: <code class="nb">BR-CO-26</code> vyžaduje identifikátor dodávateľa, ktorý nemusí byť daňový.</p>
+<p>Pri štandardnej sadzbe DPH pravidlá <code class="nb">BR-S-02</code> až <code class="nb">BR-S-04</code> vyžadujú VAT identifikátor, inú daňovú registráciu alebo VAT identifikátor daňového zástupcu; obdobné podmienené pravidlá platia pre ďalšie kategórie DPH.</p>
+<p><code class="nb">BR-CO-09</code> kontroluje ISO prefix VAT identifikátora, ak je uvedený, ale nevyžaduje slovenský prefix. Pri konkrétnych dokladoch teda môže plná validácia vyžadovať daňový identifikátor podľa použitej kategórie DPH; nevyžaduje však všeobecne slovenské DIČ alebo IČ DPH.</p>
+<p>Kompilované XSLT používa SchXslt 1.10.1; runtime Saxon-HE 12.10 potrebuje Javu 11+. Súbory, licencie, pôvod a aktualizačný postup sú uvedené v <a href="../../resources/validation/README.md"><code class="nb">resources/validation/README.md</code></a>.</p>
+<h3 id="predbežná-kontrola-draftu"><span class="mw-h">Predbežná kontrola draftu</span><a class="anchor" href="#predbežná-kontrola-draftu" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Voliteľný <code class="nb">PeppolBillingDraftRules</code> kontroluje vybrané údaje dostupné pred serializáciou, napríklad <code class="nb">CustomizationID</code>, schválený <code class="nb">ProfileID</code>, menu, krajiny, endpointy, referenciu odberateľa a riadky.</p>
+<p>Je to skorý preflight; po zápise XML stále spustite XSD a Schematron. Hlavičkový stage tieto kontroly neopakuje, iba dopĺňa samostatné BR-CO-25.</p>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p><code class="nb">CustomizationID</code> draftu musí začínať štandardným identifikátorom a nesmie obsahovať <code class="nb">::</code>, ako stanovuje pravidlo <a href="https://test-docs.peppol.eu/poacc/billing/3.0/2026-Q4-MR/rules/ubl-peppol/PEPPOL-EN16931-R004/" class="ext" rel="noopener">PEPPOL-EN16931-R004</a>.</p></div></div>
+<p>Slovenské pravidlá <code class="nb">SK-R-002</code> až <code class="nb">SK-R-007</code> v sade <code class="nb">2026-Q4-MR</code> kontrolujú prítomnosť príslušného adresného elementu podľa oficiálneho Schematronu.</p>
+<p>Prázdny, ale prítomný element preto tieto slovenské varovania nevyvolá; pravidlo Peppol <code class="nb">PEPPOL-EN16931-R008</code> samostatne hlási prázdne XML elementy.</p>
+<h3 id="referencie-pravidiel-v-kóde"><span class="mw-h">Referencie pravidiel v kóde</span><a class="anchor" href="#referencie-pravidiel-v-kóde" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Hodnoty z <code class="nb">PeppolBillingRule</code> a <code class="nb">PeppolBillingDraftRule</code> sú stabilné interné kódy konektora, nie ID Schematron pravidiel.</p>
+<p><code class="nb">PeppolBillingRule</code> obsahuje iba <code class="nb">payment_due_date_or_terms</code>, jediný nález hlavičkového stage (BR-CO-25); ostatné hlavičkové požiadavky kontroluje plný Schematron. Ostatné kódy v tabuľke patria <code class="nb">PeppolBillingDraftRule</code> a používa ich voliteľný draft preflight pred serializáciou.</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Interný kód</th><th>Referencia</th><th>Kontrola v konektore</th></tr></thead><tbody><tr><td><code class="nb">specification_identifier</code></td><td><code class="nb">PEPPOL-EN16931-R004</code></td><td>Formát <code class="nb">CustomizationID</code> overuje voliteľný draft preflight; XML kontroluje Schematron.</td></tr><tr><td><code class="nb">business_process</code></td><td><code class="nb">PEPPOL-EN16931-R001</code>, <code class="nb">PEPPOL-EN16931-R007</code></td><td>Prítomnosť a schválenú hodnotu <code class="nb">ProfileID</code> overuje voliteľný draft preflight; XML kontroluje Schematron.</td></tr><tr><td><code class="nb">document_number</code></td><td>BT-1, BR-02</td><td>Prítomnosť čísla dokladu predbežne overuje draft preflight; XML kontroluje Schematron.</td></tr><tr><td><code class="nb">currency</code></td><td>BT-5, BR-05, BR-CL-04; pre tax currency BT-6, <code class="nb">PEPPOL-EN16931-R005</code>, BR-CL-05</td><td>Menu a účtovnú menu predbežne kontroluje draft preflight; XML kontroluje Schematron.</td></tr><tr><td><code class="nb">seller_endpoint</code></td><td>BT-34, <code class="nb">PEPPOL-EN16931-R020</code>, BR-CL-25</td><td>Prítomnosť a schému endpointu predbežne kontroluje draft preflight; XML kontroluje Schematron.</td></tr><tr><td><code class="nb">buyer_endpoint</code></td><td>BT-49, <code class="nb">PEPPOL-EN16931-R010</code>, BR-CL-25</td><td>Prítomnosť a schému endpointu predbežne kontroluje draft preflight; XML kontroluje Schematron.</td></tr><tr><td><code class="nb">buyer_reference</code></td><td>BT-10 alebo BT-13, <code class="nb">PEPPOL-EN16931-R003</code></td><td>Prítomnosť referencie odberateľa alebo objednávky predbežne kontroluje draft preflight; XML kontroluje Schematron.</td></tr><tr><td><code class="nb">payment_due_date_or_terms</code></td><td>BT-9 alebo BT-20, BR-CO-25</td><td>Pri kladnej sume na faktúre musí byť dátum splatnosti alebo text platobných podmienok; kontroluje draft preflight aj hlavičkový stage, nie dobropisy.</td></tr><tr><td><code class="nb">document_note_count</code></td><td><code class="nb">PEPPOL-EN16931-R002</code></td><td>Počet poznámok predbežne kontroluje draft preflight; XML kontroluje Schematron.</td></tr><tr><td><code class="nb">invoice_lines</code></td><td>BR-16</td><td>Prítomnosť riadku predbežne kontroluje draft preflight; XML kontroluje Schematron.</td></tr><tr><td><code class="nb">unit_code</code></td><td>BR-CL-23</td><td>Jednotku predbežne kontroluje draft preflight; XML kontroluje Schematron.</td></tr><tr><td><code class="nb">*_country</code></td><td>BR-CL-14/15</td><td>Krajiny predbežne kontroluje draft preflight; XML kontroluje Schematron.</td></tr></tbody></table></div>
+<p>Kódy v PHP triedach majú pri deklarácii alebo v tabuľke vyššie uvedené príslušné referencie. Podmienka pre BT-9/BT-20 je opísaná v <a href="https://test-docs.peppol.eu/poacc/billing/3.0/2026-Q4-MR/syntax/ubl-invoice/tree/" class="ext" rel="noopener">syntaxi Peppol BIS Billing pre faktúru</a>.</p>
+<p>Ostatné oficiálne pravidlá pre pripnuté vydanie sú v <a href="https://test-docs.peppol.eu/poacc/billing/3.0/2026-Q4-MR/rules/ubl-peppol/" class="ext" rel="noopener">Peppol BIS Billing 3.0.22, vydanie 2026-Q4-MR – UBL Peppol pravidlá</a> a <a href="https://test-docs.peppol.eu/poacc/billing/3.0/2026-Q4-MR/rules/ubl-tc434/" class="ext" rel="noopener">EN 16931 pravidlá</a>. Pribalené zdrojové <code class="nb">.sch</code> súbory a ich kontrolné súčty sú popísané v <code class="nb">resources/validation/README.md</code>.</p>
+<p>Vydanie <code class="nb">2026-Q4-MR</code> uvádza <code class="nb">BR-CO-25</code> iba pre faktúry a odstraňuje odkaz naň pri dobropisoch (<a href="https://test-docs.peppol.eu/poacc/billing/3.0/2026-Q4-MR/release-notes/" class="ext" rel="noopener">poznámky k vydaniu</a>). Pribalené CEN aj Peppol Schematron artefakty nemajú pre toto ID samostatný assert, preto podmienku pre faktúry kontroluje PHP hlavičkový stage.</p>
+<h2 id="spoločný-výsledok"><span class="mw-h">Spoločný výsledok</span><a class="anchor" href="#spoločný-výsledok" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Validation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Hostiteľ načíta XML raz a ten istý <code class="nb">UblXmlDocument</code> odovzdá validátorom:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">$document = $loader-&gt;parse($xml);
+$result = $localValidator-&gt;validateDocument($document);
+
+$result-&gt;issues();
+$result-&gt;issuesForStep('schema');
+$result-&gt;stepResults();</code></pre></div>
+<p><code class="nb">LocalUblValidationResult::issues()</code> vracia zachované nálezy zo všetkých krokov ako normalizované <code class="nb">UblValidationFinding</code> objekty s ID kroku, kódom pravidla, správou, závažnosťou, jednotným umiestnením a doplnkovým kontextom.</p>
+<p><code class="nb">severity()</code> vráti hodnotový objekt <code class="nb">UblValidationSeverity</code>; jeho <code class="nb">value()</code> sprístupní <code class="nb">error</code>, <code class="nb">warning</code> alebo <code class="nb">info</code>. Rovnaký reťazec je v poli <code class="nb">severity</code> metódy <code class="nb">toArray()</code>. XSD nálezy majú závažnosť <code class="nb">error</code>.</p>
+<p>Schematron preberá <code class="nb">warning</code> a <code class="nb">info</code> z príznaku SVRL; chýbajúci alebo neznámy príznak sa považuje za <code class="nb">error</code>.</p>
+<p><code class="nb">LocalUblValidationResult::isValid()</code> vráti <code class="nb">false</code>, ak je medzi nálezmi aspoň jedna chyba, niektorý krok vynechal nálezy alebo sa krok nepodarilo vykonať pre infraštruktúrny problém. Samotné upozornenia a informačné nálezy validitu neblokujú.</p>
+<p>Vynechané nálezy naďalej blokujú výsledok, pretože ich závažnosť nie je v reporte známa. <code class="nb">issuesForStep($stepId)</code> vráti pôvodné typované nálezy konkrétneho kroku a <code class="nb">omittedCountForStep($stepId)</code> jeho počet vynechaných nálezov.</p>
+<p><code class="nb">stepResults()</code> sprístupňuje všetky reporty. Každý krok môže mať limit nálezov. Nepodporovaný koreňový element vyvolá <code class="nb">UnsupportedDocumentTypeException</code>.</p>
+<p>Pri priamom volaní XSD alebo Schematron validátora môže infraštruktúrny problém vyvolať <code class="nb">LocalValidationInfrastructureException</code>; <code class="nb">LocalUblValidator</code> ho zachytí do výsledku daného kroku a pokračuje ďalšími krokmi.</p>
+<p>Každý výsledok kroku z pipeline má <code class="nb">metadata()</code> typu <code class="nb">UblValidationStepMetadata</code>. Metadáta obsahujú trvanie <code class="nb">validate()</code> v milisekundách, stav a verzie pravidiel, ak ich komponent poskytuje cez <code>UblValidationRuleVersionProviderInterface</code>:</p>
+<p><code class="nb">metadata()-&gt;status()</code> vracia <code class="nb">UblValidationStepStatus</code>; <code class="nb">value()</code> poskytne reťazec <code class="nb">passed</code>, <code class="nb">failed</code>, <code class="nb">incomplete</code> alebo <code class="nb">infrastructure_error</code>. <code class="nb">toArray()</code> zachováva reťazcový tvar pre serializáciu.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">$result-&gt;stepResults()['peppol_schematron']-&gt;metadata()-&gt;toArray();
+// ['duration_ms' =&gt; 12.4, 'status' =&gt; 'passed', 'rule_versions' =&gt; [...]]</code></pre></div>
+<p>Stav <code class="nb">passed</code> znamená, že krok nemá chyby; môže obsahovať neblokujúce warning/info nálezy. <code class="nb">failed</code> znamená aspoň jednu chybu, <code class="nb">incomplete</code> znamená, že krok niektoré nálezy vynechal bez zachovania ich závažnosti, a <code class="nb">infrastructure_error</code> znamená, že sa krok nepodarilo spustiť.</p>
+<p>Vlastné kroky bez verziovacieho rozhrania vracajú prázdne <code class="nb">rule_versions</code>.</p>
+<p><code class="nb">LocalUblValidationResult::summary()</code> vráti <code class="nb">UblValidationSummary</code> s počtami zachovaných nálezov podľa závažnosti a kroku. Vynechané nálezy sú uvedené zvlášť za každý krok aj v celkovom <code class="nb">omitted_count</code>; nezapočítavajú sa do počtov severity, pretože ich závažnosť nie je známa.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">$summary = $result-&gt;summary()-&gt;toArray();
+// [
+//     'total_findings' =&gt; 3,
+//     'by_severity' =&gt; ['error' =&gt; 1, 'warning' =&gt; 1, 'info' =&gt; 1],
+//     'by_step' =&gt; [
+//         'schema' =&gt; ['error' =&gt; 1, 'warning' =&gt; 0, 'info' =&gt; 0, 'omitted_count' =&gt; 0],
+//     ],
+//     'omitted_count' =&gt; 0,
+// ]</code></pre></div>
+<p>Normalizovaný nález má jednotný tvar:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">$finding = [
+    'stage' =&gt; 'peppol_schematron',
+    'code' =&gt; 'PEPPOL-EN16931-R120',
+    'message' =&gt; '...',
+    'severity' =&gt; 'error',
+    'location' =&gt; ['path' =&gt; '/Invoice/cac:InvoiceLine/...', 'line' =&gt; null, 'column' =&gt; null],
+    'context' =&gt; ['invoice_line' =&gt; ['id' =&gt; '1']],
+];</code></pre></div>
+<p>Pri XSD náleze je <code class="nb">code</code> a <code class="nb">path</code> hodnota <code class="nb">null</code>, <code class="nb">severity</code> je <code class="nb">error</code> a <code class="nb">location.line</code> a <code class="nb">location.column</code> obsahujú pozíciu v XML.</p>
+<p><code class="nb">LocalUblValidator</code> spúšťa usporiadaný zoznam validačných krokov. Predvolený zoznam v <code>efaktura-connector.<wbr>laravel.<wbr>validation.<wbr>stages</code> obsahuje <code class="nb">UblSchemaValidationStage</code>, <code class="nb">PeppolBillingHeaderValidationStage</code> a <code class="nb">PeppolSchematronValidationStage</code>.</p>
+<p>Hlavičkový stage kontroluje iba BR-CO-25 pre faktúry, takže neopakuje nálezy Schematronu. Aplikácia môže zoznam upraviť; pri náhrade uveďte celý zoznam krokov, ktoré majú bežať. Laravel kontajner vytvorí nakonfigurované triedy a odovzdá ich pipeline.</p>
+<p>Vlastný krok má implementovať <code class="nb">UblValidationStageInterface</code> a jeho trieda sa uvedie v konfigurácii. Bez Laravelu môžete odovzdať objekty krokov priamo: <code>new LocalUblValidator([$schemaStage, $headerStage, $schematronStage])</code>.</p>
+<p>Ak vlastná pipeline nepoužíva Schematron vydania Q4-MR, slovenské pravidlá možno pridať cez <code class="nb">PeppolSlovakBillingValidationStage</code>.</p>
+<p><code>LocalUblValidationResult::<wbr>fromStepResults()</code> vytvorí všeobecný výsledok z reportov krokov. Musí dostať aspoň jeden report, aby prázdny zoznam kontrol nebol označený za platný dokument.</p>
+<p>Výsledok nepozná konkrétne validačné technológie; prístup ku konkrétnym nálezom a počtom vynechaných položiek sa riadi ID kroku.</p>
+<h3 id="použitie-bez-laravelu"><span class="mw-h">Použitie bez Laravelu</span><a class="anchor" href="#použitie-bez-laravelu" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Pri samostatnom použití vytvorte validačné kroky a odovzdajte ich v poradí do <code class="nb">LocalUblValidator</code>. Nasledujúci príklad spúšťa UBL XSD, doplnkovú kontrolu BR-CO-25 a CEN/Peppol Schematron:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\LocalUblValidator;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\PeppolBillingHeaderValidationStage;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\PeppolSchematronValidationStage;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\PeppolSchematronValidator;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\SaxonSchematronRunner;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\UblSchematronReportParser;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\ValidationResources;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schema\UblSchemaValidationStage;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schema\UblSchemaValidator;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Reader\UblXmlDocumentLoader;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Validation\PeppolBillingHeaderRules;
+
+$resourceDirectory = ValidationResources::directory();
+$schematronRunner = new SaxonSchematronRunner($resourceDirectory, sys_get_temp_dir());
+
+$validator = new LocalUblValidator([
+    new UblSchemaValidationStage(new UblSchemaValidator($resourceDirectory)),
+    new PeppolBillingHeaderValidationStage(new PeppolBillingHeaderRules()),
+    new PeppolSchematronValidationStage(
+        new PeppolSchematronValidator(
+            new UblSchematronReportParser(),
+            $schematronRunner,
+            $resourceDirectory
+        )
+    ),
+]);
+
+$document = (new UblXmlDocumentLoader())-&gt;parse($xml);
+$result = $validator-&gt;validateDocument($document);
+
+if (! $result-&gt;isValid()) {
+    foreach ($result-&gt;issues() as $finding) {
+        $details = $finding-&gt;toArray();
+        // Spracujte napríklad stage, code, message, severity a location.
+    }
+}
+
+$summary = $result-&gt;summary()-&gt;toArray();</code></pre></div>
+<p><code class="nb">$xml</code> obsahuje XML faktúry alebo dobropisu. <code class="nb">isValid()</code> vráti <code class="nb">false</code>, ak sa našla chyba alebo ak niektorý krok vynechal nálezy pre nastavený limit. Výsledok je dostupný aj po krokoch cez <code class="nb">stepResults()</code> a <code class="nb">issuesForStep($stepId)</code>.</p>
+<h3 id="vlastný-validačný-krok"><span class="mw-h">Vlastný validačný krok</span><a class="anchor" href="#vlastný-validačný-krok" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Vlastný krok môže pridať pravidlo špecifické pre hostiteľskú aplikáciu. Nasledujúci príklad vyžaduje neprázdny <code class="nb">cbc:BuyerReference</code> a pri jeho chýbaní vráti nález so závažnosťou <code class="nb">error</code>. Triedy v aplikácii uložte do samostatných PSR-4 súborov.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">&lt;?php
+
+namespace App\Ubl\Validation;
+
+use DOMXPath;
+use DreaM1\EfakturaConnector\Core\Ubl\Contracts\UblValidationStageInterface;
+use DreaM1\EfakturaConnector\Core\Ubl\UblNamespaces;
+use DreaM1\EfakturaConnector\Core\Ubl\UblXmlDocument;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\LimitedValidationIssues;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\UblValidationStepResult;
+
+final class RequireBuyerReferenceStage implements UblValidationStageInterface
+{
+    public const ID = 'app_buyer_reference';
+
+    public function id(): string
+    {
+        return self::ID;
+    }
+
+    public function ruleVersions(): array
+    {
+        return [];
+    }
+
+    public function validate(UblXmlDocument $document): UblValidationStepResult
+    {
+        $xpath = new DOMXPath($document-&gt;domDocument());
+        $xpath-&gt;registerNamespace('cbc', UblNamespaces::COMMON_BASIC_COMPONENTS);
+        $buyerReference = trim((string) $xpath-&gt;evaluate('string(/*/cbc:BuyerReference)'));
+
+        if ($buyerReference !== '') {
+            return new UblValidationStepResult();
+        }
+
+        return new UblValidationStepResult(new LimitedValidationIssues([
+            new ApplicationValidationIssue(
+                'APP-BUYER-REFERENCE',
+                'Buyer reference is required by the host application.',
+                '/' . $document-&gt;kind() . '/cbc:BuyerReference'
+            ),
+        ], 0));
+    }
+}</code></pre></div>
+<p>Vlastný typ nálezu implementuje <code class="nb">UblValidationIssueInterface</code>; pipeline ho potom prevedie na spoločný <code class="nb">UblValidationFinding</code>:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">&lt;?php
+
+namespace App\Ubl\Validation;
+
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\UblValidationFinding;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\UblValidationIssueInterface;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\UblValidationLocation;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\UblValidationSeverity;
+
+final class ApplicationValidationIssue implements UblValidationIssueInterface
+{
+    private string $code;
+    private string $message;
+    private string $path;
+
+    public function __construct(string $code, string $message, string $path)
+    {
+        $this-&gt;code = $code;
+        $this-&gt;message = $message;
+        $this-&gt;path = $path;
+    }
+
+    public function severity(): UblValidationSeverity
+    {
+        return UblValidationSeverity::error();
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'code' =&gt; $this-&gt;code,
+            'message' =&gt; $this-&gt;message,
+            'path' =&gt; $this-&gt;path,
+            'severity' =&gt; $this-&gt;severity()-&gt;value(),
+        ];
+    }
+
+    public function toFinding(string $stageId): UblValidationFinding
+    {
+        return new UblValidationFinding(
+            $stageId,
+            $this,
+            $this-&gt;code,
+            $this-&gt;message,
+            new UblValidationLocation($this-&gt;path),
+            [],
+            $this-&gt;severity()
+        );
+    }
+}</code></pre></div>
+<p>Pridajte <code>new RequireBuyerReferenceStage()</code> do zoznamu krokov v ručne zostavenej pipeline. Pri Laravel konfigurácii ju pridajte za predvolené kroky:</p>
+<h3 id="použitie-v-laraveli"><span class="mw-h">Použitie v Laraveli</span><a class="anchor" href="#použitie-v-laraveli" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Laravel bridge predvolene zostaví kroky XSD, hlavičkové Peppol pravidlá a Peppol Schematron. Ak zoznam v konfigurácii upravíte, uveďte všetky kroky, ktoré majú bežať:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">'laravel' =&gt; [
+    'validation' =&gt; [
+        'stages' =&gt; [
+            \DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schema\UblSchemaValidationStage::class,
+            \DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\PeppolBillingHeaderValidationStage::class,
+            \DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\PeppolSchematronValidationStage::class,
+            App\Ubl\Validation\RequireBuyerReferenceStage::class,
+        ],
+    ],
+],</code></pre></div>
+<p>Potom možno dokument načítať a validátor získať z Laravel kontajnera:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\Contracts\LocalUblValidationInterface;
+use DreaM1\EfakturaConnector\Core\Ubl\Contracts\UblXmlDocumentLoaderInterface;
+
+$document = app(UblXmlDocumentLoaderInterface::class)-&gt;parse($xml);
+$result = app(LocalUblValidationInterface::class)-&gt;validateDocument($document);</code></pre></div>
+<p>Každý vlastný krok musí implementovať <code class="nb">UblValidationStageInterface</code>, vrátiť verzie pravidiel cez <code class="nb">ruleVersions()</code> (alebo prázdne pole, ak ich nemá) a mať stabilné, unikátne ID, ktoré nie je prázdne ani čisto číselné.</p>
+<p>Laravel kontajner vytvorí triedy uvedené v konfigurácii. Predvolený hlavičkový stage vytvára iba doplnkový nález BR-CO-25; ostatné hlavičkové pravidlá ponecháva Schematronu.</p>
+<h2 id="interpretácia-výsledkov"><span class="mw-h">Interpretácia výsledkov</span><a class="anchor" href="#interpretácia-výsledkov" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Validation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<ul>
+<li><code class="nb">UblValidationIssueInterface</code> definuje spoločnú metódu <code class="nb">severity()</code> pre všetky typy nálezov. Stav validačného kroku sa určuje priamo podľa závažnosti, bez vytvárania normalizovaného nálezu.</li>
+<li><code class="nb">SchemaValidationException</code> obsahuje XSD chyby, verziu a počet vynechaných nálezov.</li>
+<li><code>PeppolSchematronValidationInterface::<wbr>validateDocument()</code> vracia <code class="nb">PeppolSchematronValidationResult</code>; bežné Schematron nálezy nie sú výnimkou.</li>
+<li><code>PeppolSchematronValidationResult::<wbr>isValid()</code> povoľuje nálezy so závažnosťou <code class="nb">warning</code> a <code class="nb">info</code>; <code class="nb">hasErrors()</code> je <code class="nb">true</code>, ak report obsahuje zachovanú chybu. Vynechané nálezy znamenajú neúplný výsledok, preto <code class="nb">isValid()</code> v takom prípade vráti <code class="nb">false</code>.</li>
+<li><code class="nb">PeppolSchematronValidationStage</code> prevádza špecifický výsledok na všeobecný <code class="nb">UblValidationStepResult</code>, ktorý používa lokálna validačná pipeline.</li>
+<li>Schematron parser zachováva <code class="nb">failed-assert</code> s príznakom <code class="nb">error</code>, <code class="nb">warning</code> aj <code class="nb">info</code>; bez príznaku a s neznámym príznakom priradí závažnosť <code class="nb">error</code>.</li>
+<li><code class="nb">failed-assert</code> bez neprázdnej správy sa považuje za chybný Schematron report a vyvolá <code class="nb">LocalValidationInfrastructureException</code>, aby sa neúspešné pravidlo nestratilo z výsledku.</li>
+<li>Pri priamom volaní <code>PeppolSchematronValidationInterface::<wbr>validateDocument()</code> sa <code class="nb">LocalValidationInfrastructureException</code> vyhodí, keď Schematron validáciu nebolo možné vykonať; lokálna pipeline ju zachytí ako stav príslušného kroku.</li>
+<li><code>PeppolBillingDraftRulesInterface::<wbr>assertSatisfied()</code> môže pred serializáciou draftu vyhodiť <code class="nb">PeppolBillingDraftRulesException</code>; <code class="nb">violatedRules()</code> obsahuje identifikátory vybraných pravidiel draftu. Táto kontrola nie je validačným krokom XML pipeline.</li>
+<li><code class="nb">PeppolBillingRulesException</code> obsahuje zoznam <code class="nb">PeppolBillingRule</code> pre doplnkovú kontrolu hlavičky BR-CO-25 a je oddelená od plného Schematron behu.</li>
+</ul>
+<p>Pri samostatnom volaní pracujete priamo s reportom Schematronu:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">$report = $peppolSchematron-&gt;validateDocument($document);
+$report-&gt;issues();       // PeppolValidationIssue[]
+$report-&gt;omittedCount();
+$report-&gt;hasErrors();
+$report-&gt;isValid();</code></pre></div>
+<p>Lokálny validátor neznamená, že poskytovateľ prijme dokument: Gateway môže používať novšiu alebo inú konfiguráciu pravidiel. Pri odosielaní použite podľa workflow aj vzdialenú kontrolu <code>POST /<wbr>v1/<wbr>validate-document</code>.</p>
+<h2 id="runtime-a-bezpečnosť"><span class="mw-h">Runtime a bezpečnosť</span><a class="anchor" href="#runtime-a-bezpečnosť" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Validation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">SaxonProcessExecutor</code> obmedzuje počet súbežných validačných behov na 2 pre jednu aplikačnú pracovnú cestu. Sloty zdieľajú PHP workery na tom istom hoste pomocou súborových zámkov v systémovom temp adresári.</p>
+<p>Pravidlá jedného dokumentu sa naďalej vykonávajú paralelne; limit sa týka celých validácií, nie jednotlivých Java procesov. Čakanie na voľný slot má vlastný limit 60 sekúnd; po získaní slotu má samotný validačný beh samostatný 60-sekundový timeout.</p>
+<p>V Laravel bridge možno limit nastaviť kľúčom <code>runtime.<wbr>schematron.<wbr>max_<wbr>concurrent_<wbr>validations</code>, prípadne premennou prostredia <code>EFAKTURA_<wbr>SCHEMATRON_<wbr>MAX_<wbr>CONCURRENT_<wbr>VALIDATIONS</code>. Hodnota musí byť kladné celé číslo.</p>
+<p>Samostatné hodnoty <code>runtime.<wbr>schematron.<wbr>process_<wbr>timeout_<wbr>seconds</code>, <code class="nb">runtime.schematron.max_report_bytes</code>, <code>runtime.<wbr>schematron.<wbr>max_<wbr>error_<wbr>output_<wbr>bytes</code> a <code>runtime.<wbr>schematron.<wbr>max_<wbr>error_<wbr>detail_<wbr>characters</code> určujú časový a výstupný limit.</p>
+<p><code class="nb">runtime.validation.max_issues</code> nastavuje maximálny počet zachovaných nálezov pre každú jednotlivú XSD alebo Schematron kontrolu; nejde o spoločný limit celého pipeline.</p>
+<p>Laravel config môže tiež nastaviť <code class="nb">laravel.validation.resource_directory</code>, <code class="nb">working_directory</code>, <code class="nb">concurrency_lock_directory</code> a <code class="nb">java_binary</code>; ich predvolené hodnoty sú bundled validačné zdroje, Laravel <code class="nb">basePath()</code>, podadresár <code class="nb">efaktura-schematron-locks</code> v systémovom temp adresári a Java z <code class="nb">JAVA_HOME</code>/<code class="nb">PATH</code>.</p>
+<p>Viac-hostová aplikácia môže cez <code class="nb">laravel.services</code> nahradiť <code class="nb">SchematronConcurrencyLimiterInterface</code> implementáciou napojenou na zdieľanú koordináciu.</p>
+<p>Bez Laravelu možno timeout a súbežnosť odovzdať ako prvé dva argumenty <code>new SaxonProcessExecutor($timeoutSeconds, $maxConcurrentValidations)</code>; ďalšie limity sa dajú odovzdať v nasledujúcich argumentoch konštruktora.</p>
+<p>Limit <code class="nb">max_error_detail_characters</code> počíta Unicode znaky vrátane koncového znaku <code class="nb">…</code>, ktorým sa označuje skrátený diagnostický detail.</p>
+<p>Predvolene Java beží s limitom haldy, ktorý určuje JVM (štvrtina pamäte stroja na proces).</p>
+<p>Pri veľkých dokladoch a viacerých súbežných validáciách ho možno obmedziť kľúčom <code class="nb">runtime.schematron.java_max_heap_mb</code> (env <code class="nb">EFAKTURA_SCHEMATRON_JAVA_MAX_HEAP_MB</code>, 64 až 65536 MB); hodnota sa odovzdá ako <code class="nb">-Xmx&lt;n&gt;m</code>.</p>
+<p>Príliš nízky limit spôsobí <code class="nb">OutOfMemoryError</code> a validácia skončí chybou infraštruktúry, preto ho zvyšujte, ak sa objaví pri legitímnych dokladoch.</p>
+<p>Bez Laravelu ho odovzdajte ako piaty argument konštruktora <code class="nb">SaxonSchematronRunner</code> (za adresárom zdrojov, pracovným adresárom, executorom a cestou k Jave).</p>
+<p>Rozsah súborového limitu určuje <code class="nb">concurrency_lock_directory</code>, nie <code class="nb">working_directory</code>: procesy na tom istom hoste, ktoré používajú rovnaký lock adresár, zdieľajú jednu sadu slotov aj vtedy, keď majú odlišné pracovné adresáre.</p>
+<p>Všetky tieto workery musia mať rovnaký limit; inak by rôzne počty očíslovaných slotov mohli obísť zamýšľanú hranicu. Odlišné lock adresáre vytvárajú nezávislé pooly.</p>
+<h3 id="kapacita-a-samostatná-validačná-fronta"><span class="mw-h">Kapacita a samostatná validačná fronta</span><a class="anchor" href="#kapacita-a-samostatná-validačná-fronta" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Predvolené CEN a Peppol pravidlá sa spúšťajú paralelne, teda jedna validácia môže vytvoriť dva Java procesy. Pri <code>schematron_<wbr>max_<wbr>concurrent_<wbr>validations = V</code> počítajte s kapacitou až <code>2 × V</code> súbežných Saxon procesov.</p>
+<p>Pre pamäť použite <code>V ≤ floor(M / R)</code>, kde <code class="nb">M</code> je pamäť vyhradená validácii po odpočítaní OS a ostatných workerov a <code class="nb">R</code> je nameraná špičková RSS jedného kompletného validačného batchu. Výslednú hodnotu overte podľa CPU a času behov na reprezentatívnych dokumentoch.</p>
+<p>Príliš vysoký počet Java procesov môže spomaliť validáciu aj API workery na tom istom hoste; samostatná fronta sama osebe zdroje neizoluje.</p>
+<p>Validácie plánujte cez samostatnú hostiteľskú frontu a jej worker pool nastavte najviac na nakonfigurovaný počet validačných slotov, prípadne nižšie, ak na hoste validujú aj iné procesy. Nadbytočné joby by inak obsadili PHP workery počas čakania na slot.</p>
+<p>Pri viacerých hostoch použite zdieľaný <code class="nb">SchematronConcurrencyLimiterInterface</code>, alebo validačnú frontu spúšťajte iba na jednom hoste. Súbežnosť API fronty nastavujte nezávisle podľa kvót poskytovateľa.</p>
+<p>Podrobnosti o rozdelení front a ich monitorovaní sú v <a href="Architecture-and-Testing.html">kapacitných odporúčaniach architektúry</a>.</p>
+<p>Ak hostiteľ zaregistruje <code class="nb">ConnectorMetricsInterface</code>, každý Schematron batch zaznamená jeho celkové trvanie, výsledok (<code class="nb">success</code>/<code class="nb">failure</code>) a počet spustených pravidlových sád. Metrika neobsahuje XML ani report.</p>
+<p>Laravel bridge odovzdá zaregistrovanú implementáciu automaticky; pri samostatnom použití ju možno odovzdať ako štvrtý argument <code>new SaxonProcessExecutor($timeoutSeconds, $maxConcurrentValidations, $limiter, $connectorMetrics)</code>.</p>
+<p>Chyba monitorovacieho backendu výsledok validácie nemení. Podrobnosti o registrácii a API/token udalostiach sú v <a href="Transport-and-Authentication.html#metriky">metrikách transportu</a>.</p>
+<p>Predvolený <code class="nb">FileSchematronConcurrencyLimiter</code> ukladá očíslované sloty do <code class="nb">concurrency_lock_directory</code> (predvolene do <code>sys_<wbr>get_<wbr>temp_<wbr>dir()/<wbr>efaktura-schematron-locks</code>). <code class="nb">working_directory</code> sa používa na validačné pracovné súbory a overenie dostupnosti, ale neurčuje rozsah zámkov.</p>
+<p>Súborové sloty koordinujú procesy, ktoré zdieľajú ten istý lock adresár na tom istom hoste a podporovanom súborovom systéme.</p>
+<p>Pri workeroch na viacerých hostoch nahraďte <code class="nb">SchematronRunnerInterface</code> runnerom napojeným na zdieľanú službu, alebo odovzdajte do <code class="nb">SaxonProcessExecutor</code> vlastný <code class="nb">SchematronConcurrencyLimiterInterface</code>.</p>
+<p>Saxon beží ako samostatný proces. PHP proces musí mať povolené <code class="nb">proc_open</code> a <code class="nb">flock</code>, dostupnú Java 11+ a prístup k pribaleným validačným súborom a temp adresáru. Runner zapisuje dočasné XML, reporty a chybový výstup do systémového temp adresára.</p>
+<p>Súborové zámky slotov ukladá do <code class="nb">concurrency_lock_directory</code> (predvolene <code>sys_<wbr>get_<wbr>temp_<wbr>dir()/<wbr>efaktura-schematron-locks</code>). Oba adresáre majú mať obmedzený prístup; lock súborový systém musí podporovať zámky.</p>
+<p>Hostiteľ rozhoduje, kedy validáciu spustí a ako výsledky zobrazí. Texty chýb sú technické; zobrazenie používateľovi a preklady patria hostiteľovi.</p>
+<h2 id="proveniencia-a-čiastočné-výsledky"><span class="mw-h">Proveniencia a čiastočné výsledky</span><a class="anchor" href="#proveniencia-a-čiastočné-výsledky" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Validation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Výsledky jednotlivých krokov rozlišujú <code class="nb">passed</code>, <code class="nb">failed</code>, <code class="nb">incomplete</code> a <code class="nb">infrastructure_error</code>. <code class="nb">failed</code> znamená, že krok našiel chybu v doklade; <code class="nb">infrastructure_error</code> znamená, že sa ho pre technický problém nepodarilo vykonať.</p>
+<p>Pri infraštruktúrnom zlyhaní pipeline uloží technickú správu ku kroku a pokračuje ďalšími nakonfigurovanými krokmi. Nepodporovaný typ dokladu sa naďalej odmietne výnimkou.</p>
+<p><code class="nb">LocalUblValidationResult::isValid()</code> vráti <code class="nb">false</code> aj vtedy, keď niektorý krok zlyhal infraštruktúrne. <code class="nb">hasInfrastructureFailures()</code> a <code class="nb">infrastructureFailures()</code> umožnia zistiť, ktoré kontroly sa nevykonali.</p>
+<p><code class="nb">isComplete()</code> vráti <code class="nb">false</code>, keď sa kontrola nedokončila alebo keď boli nálezy vynechané limitom; samotné nálezy chýb neznamenajú neúplné vykonanie.</p>
+<p>Metadáta kroku môžu popri verziách pravidiel obsahovať <code class="nb">provenance</code>: SHA-256 použitých XSD/XSL, manifestu a Saxon JAR, verziu Saxon-HE a minimálnu požadovanú verziu Javy. Odtlačky sa počítajú z aktívneho <code class="nb">resource_directory</code>, takže odlíšia aj vlastné validačné zdroje.</p>
+<p>Ak sa vybraná Java binárka dá spojiť s lokálnym JDK <code class="nb">release</code> súborom, metadáta uvedú aj jej verziu; inak uvedú iba minimálnu požiadavku. Konektor do proveniencie nevkladá XML dokladu ani absolútne cesty.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">$result-&gt;isValid();
+$result-&gt;isComplete();
+$result-&gt;infrastructureFailures();
+$result-&gt;stepResults()['peppol_schematron']-&gt;metadata()-&gt;provenance();
+
+$guidance = $result-&gt;issues()[0]-&gt;guidance();
+if ($guidance !== null) {
+    $guidance-&gt;referenceUrl();
+    $guidance-&gt;recommendedAction();
+}</code></pre></div>
+<p>Normalizovaný nález môže obsahovať <code class="nb">guidance</code> s odkazom na pripnuté Peppol pravidlo a, pre vybrané časté pravidlá, stručným odporúčaním. Nápoveda je doplnková; konektor doklad automaticky neupravuje a hostiteľ si ponecháva zodpovednosť za zobrazenie aj lokalizáciu.</p>
+<h2 id="aktualizácia-pravidiel"><span class="mw-h">Aktualizácia pravidiel</span><a class="anchor" href="#aktualizácia-pravidiel" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Validation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Validačné artefakty sa verzujú v <code class="nb">resources/validation</code>. Postup aktualizácie, zdroje a licencie sú v <code class="nb">resources/validation/README.md</code>. Pri aktualizácii zachovajte pôvodné verzie a vytvorte nový adresár pravidiel, aby bola zmena dohľadateľná.</p>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li><a href="UBL-Documents.html">Čítanie a zápis UBL</a></li>
+<li><a href="Sending-Documents.html">Odosielanie dokladov</a></li>
+<li><a href="Troubleshooting.html">Riešenie problémov</a></li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#tok-validácie"><span class="n">1</span> <span class="x">Tok validácie</span></a></li><li class="t2"><a href="#kontroly"><span class="n">2</span> <span class="x">Kontroly</span></a></li><li class="t3"><a href="#schémy-a-pravidlá-v-balíku"><span class="n">2.1</span> <span class="x">Schémy a pravidlá v balíku</span></a></li><li class="t3"><a href="#predbežná-kontrola-draftu"><span class="n">2.2</span> <span class="x">Predbežná kontrola draftu</span></a></li><li class="t3"><a href="#referencie-pravidiel-v-kóde"><span class="n">2.3</span> <span class="x">Referencie pravidiel v kóde</span></a></li><li class="t2"><a href="#spoločný-výsledok"><span class="n">3</span> <span class="x">Spoločný výsledok</span></a></li><li class="t3"><a href="#použitie-bez-laravelu"><span class="n">3.1</span> <span class="x">Použitie bez Laravelu</span></a></li><li class="t3"><a href="#vlastný-validačný-krok"><span class="n">3.2</span> <span class="x">Vlastný validačný krok</span></a></li><li class="t3"><a href="#použitie-v-laraveli"><span class="n">3.3</span> <span class="x">Použitie v Laraveli</span></a></li><li class="t2"><a href="#interpretácia-výsledkov"><span class="n">4</span> <span class="x">Interpretácia výsledkov</span></a></li><li class="t2"><a href="#runtime-a-bezpečnosť"><span class="n">5</span> <span class="x">Runtime a bezpečnosť</span></a></li><li class="t3"><a href="#kapacita-a-samostatná-validačná-fronta"><span class="n">5.1</span> <span class="x">Kapacita a samostatná validačná fronta</span></a></li><li class="t2"><a href="#proveniencia-a-čiastočné-výsledky"><span class="n">6</span> <span class="x">Proveniencia a čiastočné výsledky</span></a></li><li class="t2"><a href="#aktualizácia-pravidiel"><span class="n">7</span> <span class="x">Aktualizácia pravidiel</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="UBL-Documents.html"><small>← Predchádzajúca</small><b>Čítanie a zápis UBL</b></a><a class="nx" href="Sending-Documents.html"><small>Ďalšia →</small><b>Odosielanie dokladov</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="UBL-Documents.html">Čítanie a zápis UBL</a></li><li><a href="Sending-Documents.html">Odosielanie dokladov</a></li><li><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a></li><li><a href="Receiving-Documents.html">Príjem dokladov</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li><li><a href="Configuration.html">Konfigurácia</a></li><li><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a></li><li><a href="UBL-Documents.html">Čítanie a zápis UBL</a></li><li><a href="Sending-Documents.html">Odosielanie dokladov</a></li><li><a href="Data-Flow-and-Classes.html">Tok dát a prehľad tried</a></li><li><a href="Source-Alignment.html">API špecifikácie a pokrytie</a></li><li><a href="Architecture-and-Testing.html">Architektúra a hlavné toky</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-práca-s-dokladmi">Práca s dokladmi</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Validation.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Validation.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

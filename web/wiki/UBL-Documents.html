@@ -1,0 +1,1009 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="UBL modul pracuje samostatne od SAPI a Peppol Gateway. Podporuje UBL 2.1 Invoice a CreditNote .">
+<title>Čítanie a zápis UBL – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html" aria-current="page">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="UBL-Documents.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/UBL-Documents.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/UBL-Documents.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-práca-s-dokladmi">Práca s dokladmi</a></div><h1 class="title">Čítanie a zápis UBL</h1><div class="sub"><span class="chip">Čítanie ≈ 38 min</span><span class="chip">8 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead">UBL modul pracuje samostatne od SAPI a Peppol Gateway. Podporuje UBL 2.1 <code class="nb">Invoice</code> a <code class="nb">CreditNote</code>.</p>
+<p>UBL XML syntax vychádza zo štandardu <a href="https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html" class="ext" rel="noopener">OASIS UBL 2.1</a>. Pravidlá sémantického modelu EN 16931 a profilu <a href="https://docs.peppol.eu/poacc/billing/3.0/" class="ext" rel="noopener">Peppol BIS Billing 3.0</a> sú samostatná vrstva nad syntaxou a ich kontrolu zabezpečujú validátory opísané v <a href="Validation.html">Lokálnej validácii</a>.</p>
+<p>Presné verzie pribalených pravidiel a ich pôvod sú uvedené v <a href="Source-Alignment.html">zdrojoch API a štandardov</a> a v <code class="nb">resources/validation/README.md</code>.</p>
+<p>Pre konkrétnu štruktúru elementov pozrite oficiálne <a href="https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/maindoc/UBL-Invoice-2.1.xsd" class="ext" rel="noopener">UBL Invoice XSD</a>, <a href="https://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/maindoc/UBL-CreditNote-2.1.xsd" class="ext" rel="noopener">UBL CreditNote XSD</a>, <a href="https://docs.peppol.eu/poacc/billing/3.0/syntax/ubl-invoice/" class="ext" rel="noopener">Peppol Invoice syntax</a> a <a href="https://docs.peppol.eu/poacc/billing/3.0/syntax/ubl-creditnote/" class="ext" rel="noopener">Peppol CreditNote syntax</a>. OASIS XSD určuje štruktúru a poradie XML elementov; Peppol pravidlá navyše kontrolujú obchodný obsah.</p>
+<p>Živá dokumentácia Peppol sa môže líšiť od verzie Schematron pravidiel pripnutej v tomto balíku.</p>
+<h2 id="tok-zápisu-čítania-a-validácie"><span class="mw-h">Tok zápisu, čítania a validácie</span><a class="anchor" href="#tok-zápisu-čítania-a-validácie" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/UBL-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Zápis, čítanie a validácia sú samostatné operácie nad draftom alebo XML. <code class="nb">UblDocumentWriter</code> vytvorí XML v poradí UBL schémy, loader bezpečne parsuje podporovaný koreň a vráti <code class="nb">UblXmlDocument</code>; reader z neho zostaví doménový model.</p>
+<p>Ten istý parsovaný dokument možno samostatne odovzdať lokálnej validačnej pipeline.</p>
+<pre class="mermaid">flowchart LR
+    Draft[UblDocumentDraft] --&gt; Preflight{Voliteľný draft preflight}
+    Preflight --&gt;|Nálezy: rozhoduje hostiteľ| HostDecision[Hostiteľ vyhodnotí pravidlá]
+    Preflight --&gt;|Pokračovať| Writer[UblDocumentWriter]
+    Preflight --&gt;|Vynechaný preflight| Writer
+    Writer --&gt; Xml[UBL Invoice alebo CreditNote XML]
+    External[XML z iného zdroja] --&gt; Xml
+    Xml --&gt; Loader[UblXmlDocumentLoader]
+    Loader --&gt; Guard[Kontrola veľkosti, DTD, bezpečného parsovania a root namespace]
+    Guard --&gt; Parsed[UblXmlDocument]
+    Parsed --&gt; Reader[UblDocumentReader]
+    Reader --&gt; Header[UblDocumentHeaderReader]
+    Reader --&gt; Content[UblDocumentContentReader]
+    Header --&gt; Model[UblDocument]
+    Content --&gt; Model
+    Parsed --&gt; Local[Voliteľná LocalUblValidator]
+    Local --&gt; Xsd[XSD kontrola]
+    Local --&gt; Schematron[CEN a Peppol Schematron]
+    Xsd --&gt; Result[LocalUblValidationResult]
+    Schematron --&gt; Result</pre>
+<p>Loader odmieta neplatné alebo nebezpečné XML a podporuje iba UBL 2.1 <code class="nb">Invoice</code> a <code class="nb">CreditNote</code>. Čítanie modelu neznamená úspech XSD ani Peppol validácie. Zápis draftu zasa nekontroluje obchodnú správnosť a neposiela XML na API.</p>
+<p>Každý ďalší krok volá hostiteľ výslovne; podrobné poradie validačných krokov a tvar výsledku sú v <a href="Validation.html">lokálnej validácii</a>.</p>
+<h2 id="bezpečné-načítanie-xml-a-čítanie-dokladu"><span class="mw-h">Bezpečné načítanie XML a čítanie dokladu</span><a class="anchor" href="#bezpečné-načítanie-xml-a-čítanie-dokladu" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/UBL-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">UblXmlDocumentLoaderInterface</code> bezpečne parsuje XML a vytvorí <code class="nb">UblXmlDocument</code>. Neplatné alebo nebezpečné XML vyvolá <code class="nb">UblValidationException</code> (typicky <code class="nb">InvalidXmlException</code>). <code class="nb">UblDocumentReaderInterface</code> prevedie načítaný dokument na doménový <code class="nb">UblDocument</code> s hlavičkou a obsahom.</p>
+<p>Čítačka kontroluje bezpečnosť XML a podporovaný koreňový element, nie úplnú zhodu dokumentu s UBL XSD alebo Peppol BIS. Ak potrebujete potvrdiť štruktúru alebo obchodnú správnosť vstupu, zavolajte samostatné validátory.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Infrastructure\Ubl\Reader\UblDocumentReader;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Reader\UblXmlDocumentLoader;
+
+$loader = new UblXmlDocumentLoader();
+$reader = new UblDocumentReader($loader);
+$document = $reader-&gt;read($xml);
+
+$document-&gt;header()-&gt;number();
+$document-&gt;header()-&gt;supplierEndpoint(); // ?UblEndpointIdentifier dodávateľa z cbc:EndpointID
+$document-&gt;header()-&gt;customerEndpoint(); // ?UblEndpointIdentifier odberateľa z cbc:EndpointID
+$document-&gt;header()-&gt;deliveryDate();
+$document-&gt;content()-&gt;lines();</code></pre></div>
+<p>Reader načíta všetky riadky faktúry alebo dobropisu.
+Dátumové gettery hlavičky (<code class="nb">issueDate()</code>, <code class="nb">dueDate()</code>, <code class="nb">deliveryDate()</code> a <code class="nb">taxPointDate()</code>) vracajú validované <code class="nb">LocalDate|null</code>.</p>
+<p>Chýbajúci alebo neplatný kalendárny dátum vráti ako <code class="nb">null</code>; pôvodný text zostáva v <code class="nb">UblDocumentHeader::toArray()</code> pod zodpovedajúcim kľúčom. <code class="nb">supplierEndpoint()</code> a <code class="nb">customerEndpoint()</code> vracajú UBL <code class="nb">EndpointID</code> dodávateľa a odberateľa.</p>
+<p><code class="nb">toArray()</code> používa polia <code class="nb">supplierEndpointScheme</code>/<code class="nb">supplierEndpointValue</code> a <code class="nb">customerEndpointScheme</code>/<code class="nb">customerEndpointValue</code>; staré <code class="nb">sender()</code>/<code class="nb">receiver()</code> aliasy a sender/receiver polia boli odstránené.
+<code class="nb">documentRoot()</code> vracia typovaný koreň <code class="nb">Invoice</code> alebo <code class="nb">CreditNote</code>; <code class="nb">toArray()</code> ho zachová pod kľúčom <code class="nb">documentRoot</code>.</p>
+<p>Validácia ho používa na uplatnenie pravidiel špecifických pre typ dokladu.</p>
+<p>Čítanie neoveruje Peppol BIS ani EN 16931 pravidlá. Vďaka tomu možno prečítať aj staršie a prijaté doklady, ktoré nevyhovujú aktuálnym pravidlám pre nové odoslania. Chýbajúce textové hodnoty hlavičky sa vracajú ako <code class="nb">null</code>.</p>
+<p><code class="nb">UblDocumentContent::toArray()</code> a <code class="nb">fromArray()</code> sprístupňujú štruktúrovaný tvar dokumentu vhodný na uloženie.</p>
+<p>Číselné reťazce krajiny, meny a jednotky zostávajú dostupné cez <code class="nb">countryCode()</code>, <code class="nb">currency()</code> a <code class="nb">unit()</code> presne tak, ako boli v XML.</p>
+<p>Ak reader kód rozpozná v pribalenom číselníku, sprístupní aj typovanú kanonickú hodnotu cez <code class="nb">recognizedCountryCode()</code>, <code class="nb">recognizedCurrencyCode()</code> alebo <code class="nb">recognizedUnitCode()</code>. Neznáme hodnoty čítanie neodmieta a typovaný getter vráti <code class="nb">null</code>.</p>
+<p><code class="nb">UblDocumentParty::toArray()</code> ukladá UBL endpoint cez polia <code class="nb">endpointScheme</code> a <code class="nb">endpointValue</code>; <code class="nb">fromArray()</code> načíta túto dvojicu, staré kľúče <code class="nb">participantScheme</code> a <code class="nb">participantValue</code> ignoruje a zachová hranicu medzi schémou a hodnotou aj vtedy, keď hodnota obsahuje dvojbodku.</p>
+<h2 id="mapovanie-medzi-draftom-xml-a-čítaným-modelom"><span class="mw-h">Mapovanie medzi draftom, XML a čítaným modelom</span><a class="anchor" href="#mapovanie-medzi-draftom-xml-a-čítaným-modelom" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/UBL-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Zapisovač prijíma <code class="nb">UblDocumentDraft</code> a jeho podmodely z <code class="nb">Domain\Ubl\Draft</code>.</p>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p>Čítačka vracia odlišný model <code class="nb">UblDocument</code>; čítaný dokument nie je automaticky konvertovaný späť na draft.</p></div></div>
+<p>Hodnoty Peppol <code class="nb">documentTypeId</code>, <code class="nb">CustomizationID</code> a <code class="nb">ProfileID</code> reprezentujú <code class="nb">PeppolDocumentTypeIdentifier</code>, <code class="nb">PeppolCustomizationIdentifier</code> a <code class="nb">PeppolProcessIdentifier</code>.</p>
+<p><code class="nb">UblDocumentDraft::withSpecification()</code> prijíma oba identifikátory ako objekty; XML writer a pomocné metódy ich pri serializácii prevedú späť na reťazce.</p>
+<p>UBL elektronickú adresu reprezentuje <code class="nb">UblEndpointIdentifier</code>; uchováva <code class="nb">schemeID</code> a hodnotu samostatne a môže zachovať aj chýbajúcu schému pri čítaní starého dokumentu. <code class="nb">Participant</code> z <code class="nb">Domain\EFaktura</code> predstavuje transportné Peppol ID a používa sa osobitne.</p>
+<p><code class="nb">cbc:EndpointID/@schemeID</code> musí pri Peppol BIS faktúre patriť do číselníka EAS; <code class="nb">PeppolBillingDraftRules</code> túto podmienku kontroluje. Transportné ID a UBL <code class="nb">EndpointID</code> nemusia byť rovnaké.</p>
+<p>Číslo dokladu v <code class="nb">UblDocumentDraft</code> aj číslo pôvodnej faktúry v <code>UblDraftReferences::<wbr>withBillingReference()</code> sú hodnoty <code class="nb">UblDocumentNumber</code>; číslo v načítanom <code class="nb">UblDocumentHeader</code> zostáva reťazec.</p>
+<p>Ostatné draftové ID prvky, napríklad ID riadka, odkazy na dokumenty, objednávky, daňové registrácie a platobné účty, používajú <code class="nb">UblDraftIdentifier</code>. Jeho prvý argument je hodnota ID a druhý voliteľný argument je <code class="nb">schemeID</code>.</p>
+<p>ID číselníkových hodnôt, ako <code class="nb">listID</code> pri klasifikácii položky, zostávajú reťazce, pretože označujú metadáta zoznamu, nie UBL identifikátorový prvok.</p>
+<p>Draft používa aj <code class="nb">TaxCategoryCode</code> pre kategóriu DPH a <code class="nb">PaymentMeansCode</code> pre spôsob úhrady. Tieto kódy vytvárajte cez <code class="nb">fromString()</code>; neznáme neprázdne hodnoty sa zachovajú a writer ich zapíše v pôvodnom tvare.</p>
+<p><code class="nb">UblDocumentDraft::typeCode()</code> vracia <code class="nb">UblDocumentTypeCode</code> a <code class="nb">withTypeCode()</code> prijíma tento objekt. <code class="nb">UblDraftPartyTaxScheme</code> používa <code class="nb">TaxSchemeCode</code>; <code>UblDraftDocumentReference::<wbr>withDocumentType()</code> prijíma <code class="nb">AdditionalDocumentTypeCode</code> alebo <code class="nb">null</code> na vymazanie kódu.</p>
+<p>Ich <code class="nb">fromString()</code> zachová neznáme neprázdne kódy, ktoré writer zapíše bez zmeny.</p>
+<p>Príklady so schémou <code class="nb">0245</code> sú produkčné. V eFaktúra Sandboxe použite testovacie ID so schémou <code class="nb">9915</code> a pre raw UBL nastavte <code class="nb">EndpointID/@schemeID=&quot;9915&quot;</code>. Writer hodnoty automaticky nemení.</p>
+<p>Podrobnosti sú v <a href="https://developers.efaktura.sk/sk/docs/sandbox" class="ext" rel="noopener">dokumentácii Sandboxu</a>.</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Údaje draftu</th><th>UBL elementy</th><th>Čítaný model</th></tr></thead><tbody><tr><td><code class="nb">UblDocumentDraft</code>: druh, kód typu, špecifikácia, číslo, dátumy, mena, referencia odberateľa/objednávky a poznámky (každé volanie <code class="nb">withAddedNote()</code> poznámku pridá; <code class="nb">UblDraftLine::withNote()</code> poznámku riadku nahrádza)</td><td>Koreň <code class="nb">Invoice</code> alebo <code class="nb">CreditNote</code>; <code class="nb">CustomizationID</code>, <code class="nb">ProfileID</code>, <code class="nb">ID</code>, <code class="nb">IssueDate</code>, príslušný typový kód, <code class="nb">DueDate</code>/<code class="nb">TaxPointDate</code>, <code class="nb">DocumentCurrencyCode</code>, referencie a poznámky</td><td><code class="nb">UblDocumentHeader</code>: typ, identifikátory, dátumy, mena, referencie a súhrnné sumy</td></tr><tr><td><code class="nb">UblDraftParty</code> a identifikátory</td><td><code class="nb">AccountingSupplierParty</code> alebo <code class="nb">AccountingCustomerParty</code>, <code class="nb">EndpointID</code>, adresa, daňové schémy a právna entita</td><td><code class="nb">UblDocumentContent::supplier()</code> / <code class="nb">customer()</code> a <code class="nb">UblDocumentParty</code></td></tr><tr><td><code class="nb">UblDraftPaymentMeans</code></td><td><code class="nb">PaymentMeans</code>, kód spôsobu platby, referencia platby a účet</td><td><code class="nb">UblDocumentHeader</code>: <code class="nb">paymentMeansCode()</code>, <code class="nb">paymentId()</code>, <code class="nb">iban()</code></td></tr><tr><td><code class="nb">UblDraftTotals</code>, <code class="nb">UblDraftTaxSubtotal</code>, <code class="nb">UblDraftTaxCategory</code></td><td><code class="nb">TaxTotal</code>, <code class="nb">TaxSubtotal</code>, <code class="nb">TaxCategory</code>, <code class="nb">LegalMonetaryTotal</code></td><td><code class="nb">UblDocumentHeader</code> obsahuje hlavné sumy; <code class="nb">UblDocumentContent::taxSummary()</code> obsahuje rozpis daní</td></tr><tr><td><code class="nb">UblDraftLine</code> a jeho daňová kategória</td><td><code class="nb">InvoiceLine</code>/<code class="nb">InvoicedQuantity</code> alebo <code class="nb">CreditNoteLine</code>/<code class="nb">CreditedQuantity</code>, položka, jednotková cena a DPH</td><td>Každý riadok je <code class="nb">UblDocumentLine</code> v <code class="nb">UblDocumentContent::lines()</code></td></tr></tbody></table></div>
+<p>Presné poradie a povolenú štruktúru určuje UBL 2.1 XSD. Zapisovač neposudzuje obchodnú správnosť výpočtov. <code class="nb">UblDecimal</code> je nemenná typovaná hodnota: overí desatinný zápis a zachová pôvodný text bez zaokrúhľovania.</p>
+<p>Sumy a množstvá musí pripraviť hostiteľ.</p>
+<p>Pri <code class="nb">CreditNote</code> writer používa elementy <code class="nb">CreditNoteLine</code> a <code class="nb">CreditedQuantity</code>. Kód typu dokladu rozlišuje dobropis a iné varianty; ťarchopis je UBL <code class="nb">Invoice</code> s príslušným <code class="nb">InvoiceTypeCode</code>, nie ďalší koreňový element.</p>
+<p>Pri dobropise sa splatnosť zapisuje cez <code class="nb">PaymentMeans/PaymentDueDate</code>; draft so splatnosťou dobropisu preto potrebuje platobné údaje.</p>
+<p>Model <code class="nb">UblDocumentHeader</code> obsahuje súhrnné hodnoty aj pri čítaní. Reader načíta všetky riadky do <code class="nb">UblDocumentContent::lines()</code> a nastaví <code class="nb">itemsTruncated()</code> na <code class="nb">false</code>. Tento príznak slúži hostiteľovi na označenie modelu vytvoreného z už skráteného zoznamu.</p>
+<h2 id="zápis-invoice-a-creditnote"><span class="mw-h">Zápis Invoice a CreditNote</span><a class="anchor" href="#zápis-invoice-a-creditnote" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/UBL-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">UblDocumentWriterInterface</code> zapisuje <code class="nb">UblDocumentDraft</code> ako UBL 2.1 XML. Draft je nemenný; každé <code class="nb">with*()</code> vráti upravenú kópiu.</p>
+<p>Voliteľné dátumy, referencie a platobné údaje sú zoskupené do hodnôt <code class="nb">UblDraftDates</code>, <code class="nb">UblDraftReferences</code> a <code class="nb">UblDraftPayment</code>, ktoré draft prijíma cez <code class="nb">withDates()</code>, <code class="nb">withReferences()</code> a <code class="nb">withPayment()</code> a vracia cez <code class="nb">dates()</code>, <code class="nb">references()</code> a <code class="nb">payment()</code>.</p>
+<p>Tieto settery nahrádzajú celú skupinu; ak chcete zmeniť jednu hodnotu a ostatné zachovať, vychádzajte z existujúcej skupiny: <code>$draft-&gt;withDates($draft-&gt;dates()-&gt;withDueDate($dueDate))</code>.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Domain\Ubl\UblEndpointIdentifier;
+use LogicException;
+use DreaM1\EfakturaConnector\Domain\Ubl\CodeList\TaxCategoryCode;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftAddress;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftIdentifier;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftLine;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftParty;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftTaxCategory;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftTaxSubtotal;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftTotals;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\Base64DocumentContent;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDecimal;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDocumentDraft;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftDates;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDocumentNumber;
+use DreaM1\EfakturaConnector\Domain\Ubl\LocalDate;
+use DreaM1\EfakturaConnector\Domain\Ubl\UblDocumentRoot;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\CountryCodeList;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\CurrencyCodeList;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\UnitCodeList;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Validation\PeppolBillingDraftRules;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Writer\UblDocumentWriter;
+
+// Číselník vráti typovaný kód alebo null, ak kód nepozná.
+$countryCode = CountryCodeList::resolve(CountryCodeList::SLOVAKIA);
+$currencyCode = CurrencyCodeList::resolve('EUR');
+$unitCode = UnitCodeList::unit('ks'); // text ako 'ks' alebo 'hod' prevedie na kód UN/ECE, neznámy vstup vyhodí výnimku
+if ($countryCode === null || $currencyCode === null) {
+    throw new LogicException('Required code is not available in the bundled code lists.');
+}
+
+// 1. Dodávateľ a odberateľ
+$supplier = (new UblDraftParty(
+    UblEndpointIdentifier::fromSchemeAndValue('0245', '2012345676'),
+    'Ukážkový dodávateľ s.r.o.',
+    $countryCode
+))-&gt;withAddress(
+    (new UblDraftAddress($countryCode))
+        -&gt;withLines('Hlavná 1')
+        -&gt;withLocality('Bratislava', '811 01')
+);
+
+$customer = (new UblDraftParty(
+    UblEndpointIdentifier::fromSchemeAndValue('0245', '2012345687'),
+    'Ukážkový odberateľ s.r.o.',
+    $countryCode
+))-&gt;withAddress(
+    (new UblDraftAddress($countryCode))
+        -&gt;withLines('Druhá 2')
+        -&gt;withLocality('Košice', '040 01')
+);
+
+// 2. Položka: dva kusy po 50 EUR, DPH 23 %
+$vatCategory = new UblDraftTaxCategory(
+    TaxCategoryCode::fromString(TaxCategoryCode::STANDARD),
+    UblDecimal::fromString('23')
+);
+
+$line = new UblDraftLine(
+    new UblDraftIdentifier('1'), // ID riadka
+    UblDecimal::fromString('2.0000'), // Množstvo
+    $unitCode,              // Jednotka: kus
+    UblDecimal::fromString('100.00'), // Suma riadka bez DPH
+    'Konzultačná služba',   // Názov položky
+    $vatCategory,           // Kategória a sadzba DPH
+    UblDecimal::fromString('50.00') // Jednotková cena bez DPH
+);
+
+// 3. Súhrn: základ 100 EUR + DPH 23 EUR = 123 EUR
+$totals = new UblDraftTotals(
+    UblDecimal::fromString('100.00'), // Súčet riadkov bez DPH
+    UblDecimal::fromString('100.00'), // Základ dane
+    UblDecimal::fromString('123.00'), // Celkom vrátane DPH
+    null,     // Zaokrúhlenie
+    UblDecimal::fromString('123.00'), // Zostáva uhradiť
+    UblDecimal::fromString('23.00'), // Celková DPH
+    [
+        new UblDraftTaxSubtotal(
+            UblDecimal::fromString('100.00'),
+            UblDecimal::fromString('23.00'),
+            $vatCategory
+        ),
+    ]
+);
+
+// 4. Zostavenie draftu z pripravených hodnôt
+$draft = (new UblDocumentDraft(
+    UblDocumentRoot::fromString(UblDocumentRoot::INVOICE),
+    UblDocumentNumber::fromString('FA-2026-001'),
+    LocalDate::fromString('2026-11-22'),
+    $currencyCode,
+    $supplier,
+    $customer,
+    $totals
+))-&gt;withDates(UblDraftDates::none()-&gt;withDueDate(LocalDate::fromString('2026-12-22')))
+    -&gt;withLines([$line]);
+
+// 5. Výslovná Peppol kontrola draftu a zápis UBL XML
+$draftRules = new PeppolBillingDraftRules();
+$draftRules-&gt;assertSatisfied($draft);
+$xml = (new UblDocumentWriter())-&gt;write($draft);
+echo $xml;</code></pre></div>
+<p>Ukážka vytvorí faktúru s jednou položkou: 2 kusy po 50 EUR, základ dane 100 EUR, DPH 23 EUR a celkom 123 EUR. Identifikátory strán a všetky sumy sú ukážkové.</p>
+<p><code class="nb">PeppolBillingDraftRules</code> skontroluje vybrané požiadavky ešte pred zápisom; writer naďalej iba serializuje dodané hodnoty. Pred odoslaním po zápise samostatne spustite UBL XSD a Peppol Schematron validáciu podľa <a href="Validation.html">lokálnej validácie</a>.</p>
+<p>Balík je určený slovenským firmám, no jeho preflight ani writer nevyžadujú DIČ alebo IČ DPH a nekontrolujú, či má daňový identifikátor prefix <code class="nb">SK</code>. Doklad sa posudzuje podľa údajov, ktoré hostiteľ dodá, a podľa príslušných UBL a Peppol pravidiel.</p>
+<p>Všetky dátumy draftu sú <code class="nb">LocalDate</code> hodnoty, ktoré možno vytvoriť cez <code>LocalDate::<wbr>fromString(&#39;2026-11-22&#39;)</code>.</p>
+<p>Rovnaký typ používajú konštruktor, <code class="nb">withIssueDate()</code>, <code class="nb">UblDraftDates</code> (<code class="nb">withDueDate()</code>, <code class="nb">withTaxPointDate()</code>, <code class="nb">withDeliveryDate()</code>) a dátum <code>UblDraftReferences::<wbr>withBillingReference()</code>.</p>
+<p><code class="nb">LocalDate</code> rozširuje <code class="nb">DateTimeImmutable</code> a štandardne predstavuje daný dátum o polnoci UTC, takže ho možno použiť aj tam, kde sa očakáva <code class="nb">DateTimeInterface</code>. Neplatný kalendárny dátum nemožno vložiť do draftu.</p>
+<h3 id="dobropis-s-referenciou-na-pôvodnú-faktúru"><span class="mw-h">Dobropis s referenciou na pôvodnú faktúru</span><a class="anchor" href="#dobropis-s-referenciou-na-pôvodnú-faktúru" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Pri dobropise vytvorte koreň cez <code>UblDocumentRoot::<wbr>fromString(UblDocumentRoot::<wbr>CREDIT_<wbr>NOTE)</code> a pôvodnú faktúru uveďte cez <code>UblDraftReferences::<wbr>withBillingReference()</code>.</p>
+<p>Prvý argument je <code class="nb">UblDocumentNumber</code> vytvorený cez <code class="nb">UblDocumentNumber::fromString()</code>, druhý je nepovinný dátum vystavenia pôvodnej faktúry.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Domain\Ubl\Code\CurrencyCode;
+
+$creditNote = (new UblDocumentDraft(
+    UblDocumentRoot::fromString(UblDocumentRoot::CREDIT_NOTE),
+    UblDocumentNumber::fromString('CN-1'),
+    LocalDate::fromString('2026-11-10'),
+    CurrencyCode::fromCanonical('EUR'),
+    $supplier,
+    $customer,
+    $creditNoteTotals
+))
+    -&gt;withReferences(
+        UblDraftReferences::none()
+            -&gt;withBillingReference(UblDocumentNumber::fromString('INV-1'), LocalDate::fromString('2026-10-20'))
+    )
+    -&gt;withLines($creditNoteLines);
+
+$creditNoteXml = (new UblDocumentWriter())-&gt;write($creditNote);</code></pre></div>
+<p>Vygenerované XML bude obsahovať tento výrez (prefixy <code class="nb">cac</code> a <code class="nb">cbc</code> sú deklarované na koreňovom elemente):</p>
+<div class="codebox"><pre tabindex="0"><code class="language-xml" data-lang="xml">&lt;cac:BillingReference&gt;
+  &lt;cac:InvoiceDocumentReference&gt;
+    &lt;cbc:ID&gt;INV-1&lt;/cbc:ID&gt;
+    &lt;cbc:IssueDate&gt;2026-10-20&lt;/cbc:IssueDate&gt;
+  &lt;/cac:InvoiceDocumentReference&gt;
+&lt;/cac:BillingReference&gt;</code></pre></div>
+<p>Writer zapíše referenciu do <code>cac:BillingReference/<wbr>cac:InvoiceDocumentReference</code> ako <code class="nb">cbc:ID</code> a prípadne <code class="nb">cbc:IssueDate</code>. Referencia sa zapíše do XML; writer pôvodnú faktúru nevyhľadáva ani z nej nepreberá položky či sumy.</p>
+<p>Tie musí hostiteľ pripraviť v drafte dobropisu.</p>
+<p>Writer serializuje draft do schémou určeného poradia UBL elementov. Nevyberá údaje partnerov, DPH ani obchodné pravidlá; hostiteľ musí pripraviť správny obsah a následne ho validovať.</p>
+<p>Voliteľné polia Peppol Billing 3 sa zadávajú cez podmodely draftu.</p>
+<p><code class="nb">UblDocumentDraft</code> pokrýva účtovný náklad, menu DPH, obdobie fakturácie, referencie na objednávky a podklady, miesto dodania, príjemcu platby, daňového zástupcu, viacero spôsobov platby, platobné podmienky a zľavy či poplatky na úrovni dokladu.</p>
+<p><code class="nb">UblDraftParty</code> dopĺňa obchodný názov, adresné riadky, kontaktné údaje a právnu formu; e-mail kontaktu sa zadáva ako <code>EmailAddress::<wbr>fromString(&#39;billing@example.<wbr>test&#39;)</code>, ktorý overí formát adresy.</p>
+<p><code class="nb">UblDraftLine</code> umožňuje referenciu na riadok objednávky a podklad, obdobie, zľavu alebo poplatok, identifikátory a klasifikácie položky, jej pôvod, vlastnosti a základné množstvo ceny. Sumár môže obsahovať súčty zliav, poplatkov, preddavkov aj DPH v účtovnej mene.</p>
+<p><code class="nb">UblDraftDocumentReference</code> podporuje referenciu na pôvodnú faktúru aj ďalšie dokumenty vrátane vloženého Base64 súboru a externej URI.</p>
+<p>Externú URI nastavte cez <code>withExternalUri(ExternalDocumentUri::<wbr>fromString(&#39;https:/<wbr>/<wbr>example.<wbr>test/<wbr>support.<wbr>pdf&#39;))</code>; objekt vyžaduje absolútnu <code class="nb">http</code> alebo <code class="nb">https</code> URI s hostiteľom a zachová jej pôvodný zápis; iné schémy (<code class="nb">javascript:</code>, <code class="nb">data:</code>, <code class="nb">file:</code>, <code class="nb">ftp:</code>, <code class="nb">urn:</code>) odmietne, pretože sa URI zapíše do faktúry a príjemca ju môže zobraziť ako odkaz.</p>
+<p>Typ referencie odovzdajte ako <code>UblDocumentReferenceType::<wbr>fromString(UblDocumentReferenceType::<wbr>ADDITIONAL)</code>; objekt povoľuje len podporované UBL typy a <code class="nb">type()-&gt;value()</code> vráti názov elementu na serializáciu.</p>
+<p>Obsah vložte napríklad cez <code>$reference-&gt;withEmbeddedDocument(Base64DocumentContent::<wbr>fromString($base64), MimeType::<wbr>fromString(&#39;application/<wbr>pdf&#39;), &#39;support.<wbr>pdf&#39;)</code>; objekt MIME typu overí zápis <code class="nb">type/subtype</code>, kým obsahový objekt overí Base64 zápis, povoľuje XML whitespace, zachová pôvodný text a prázdny obsah odmietne.</p>
+<p>U Invoice sa projekt zapisuje ako <code class="nb">cac:ProjectReference</code>; pri CreditNote sa mapuje na <code class="nb">cac:AdditionalDocumentReference</code> s typovým kódom <code class="nb">50</code>, ako požaduje Peppol.</p>
+<p>Pre každý podmodel použite príslušný <code class="nb">with*()</code> setter (skupiny dátumov, referencií a platby cez <code class="nb">withDates()</code>, <code class="nb">withReferences()</code> a <code class="nb">withPayment()</code>) a samostatne spustite UBL XSD a Peppol Schematron validáciu.</p>
+<p>Writer zapisuje referencie v poradí určenom UBL schémou. Podporuje billing, despatch, receipt, originator, contract, additional a project referencie.</p>
+<p>Vložený súbor sa zapisuje ako Base64 <code class="nb">EmbeddedDocumentBinaryObject</code> s povinným MIME typom a názvom; externý súbor ako <code class="nb">ExternalReference/URI</code>.</p>
+<p>Referencia typu <code>AdditionalDocumentTypeCode::<wbr>INVOICED_<wbr>OBJECT</code> (<code class="nb">130</code>) označuje identifikátor fakturovaného objektu, preto pri nej Peppol zakazuje prílohu aj popis.</p>
+<p>Pri dobropise sa projektová referencia zapisuje pod typovým kódom <code>AdditionalDocumentTypeCode::<wbr>PROJECT_<wbr>REFERENCE</code> (<code class="nb">50</code>).</p>
+<p>Model <code class="nb">UblDraftPaymentMeans</code> môže niesť účet príjemcu, platobnú kartu alebo mandát inkasa. <code class="nb">PaymentMeansCode</code> obsahuje pomenované hodnoty pre bankový prevod (<code class="nb">30</code>), SEPA prevod (<code class="nb">58</code>), kartu (<code class="nb">48</code>) a SEPA inkaso (<code class="nb">59</code>).</p>
+<p>Pri prevode musí byť uvedený identifikátor účtu príjemcu; pri inkase možno pripojiť <code class="nb">UblDraftPaymentMandate</code>.</p>
+<p><code class="nb">UblDraftPaymentCard</code> prijme iba zamaskované alebo skrátené číslo karty (posledné 4 až 6 číslic) najviac do 10 znakov (<code>UblDraftPaymentCard::<wbr>MAX_<wbr>PRIMARY_<wbr>ACCOUNT_<wbr>NUMBER_<wbr>LENGTH</code>); dlhšie hodnoty, teda aj celé číslo karty, odmietne <code class="nb">InvalidInputException</code>.</p>
+<p>Pravidlo BR-51 je v lokálnej validácii len varovanie, takže bez tejto kontroly by doklad s celým číslom karty prešiel. Dobropis zapisuje dátum splatnosti do prvého <code class="nb">PaymentMeans/PaymentDueDate</code>.</p>
+<h2 id="praktický-návod-na-vytvorenie-faktúry"><span class="mw-h">Praktický návod na vytvorenie faktúry</span><a class="anchor" href="#praktický-návod-na-vytvorenie-faktúry" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/UBL-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Nasledujúci postup je pre štandardnú UBL <code class="nb">Invoice</code> v Peppol BIS Billing 3.0. Konektor vytvorí XML a poskytuje kontroly, ale sám nevyberá obchodné údaje, sadzbu DPH ani daňové zaobchádzanie.</p>
+<p>Správnu kategóriu a sadzbu určte podľa konkrétneho plnenia a pravidiel platných pre daný obchod.</p>
+<h3 id="1-pripravte-povinné-údaje"><span class="mw-h">1. Pripravte povinné údaje</span><a class="anchor" href="#1-pripravte-povinné-údaje" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Pred zostavením draftu si pripravte aspoň tieto údaje. Presné podmienené požiadavky závisia od profilu, krajín, kategórie DPH a spôsobu platby.</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Oblasť</th><th>Čo pripraviť</th></tr></thead><tbody><tr><td>Hlavička</td><td>Číslo faktúry, dátum vystavenia, typ dokladu a kód meny ISO 4217.<br><code class="nb">UblDocumentDraft</code> predvolene nastaví <code class="nb">CustomizationID</code> na <code>urn:cen.<wbr>eu:en16931:2017#compliant#urn:fdc:peppol.<wbr>eu:2017:poacc:billing:3.<wbr>0</code> a <code class="nb">ProfileID</code> na <code>urn:fdc:peppol.<wbr>eu:2017:poacc:billing:01:1.<wbr>0</code>; pri inom podporovanom procese nastavte <code class="nb">withSpecification()</code>.</td></tr><tr><td>Dodávateľ a odberateľ</td><td>Názov, poštovú adresu s kódom krajiny a elektronickú adresu vo forme EAS <code class="nb">schemeID</code> + hodnota. Dodávateľ musí mať identifikátor dodávateľa, registračný identifikátor alebo IČ DPH; konkrétne daňové identifikátory môžu byť povinné podľa kategórie DPH.<br>UBL <code class="nb">EndpointID</code> a transportný <code class="nb">Participant</code> sú samostatné hodnoty.</td></tr><tr><td>Referencia</td><td>Referenciu odberateľa alebo číslo objednávky. Peppol vyžaduje aspoň jednu z nich.</td></tr><tr><td>Každý riadok</td><td>ID riadka, názov položky, množstvo, kód jednotky, čistú jednotkovú cenu a čistú sumu riadka. Priraďte kategóriu DPH; sadzbu uveďte pre kategórie, ktoré ju vyžadujú.</td></tr><tr><td>DPH a súhrn</td><td>Rozpis základu a dane pre každú odlišnú kombináciu kategórie DPH a sadzby, plus súčty riadkov, základ bez DPH, celkovú DPH, sumu s DPH a sumu na úhradu.<br>Pri kladnej sume na úhradu predbežná kontrola draftu vyžaduje dátum splatnosti alebo platobné podmienky.</td></tr></tbody></table></div>
+<p>Prílohy, zľavy a poplatky, preddavky, oslobodenie od DPH, daňový zástupca, účtovná mena či platobné údaje sa dopĺňajú podľa konkrétneho prípadu. Niektoré sú povinné len za určitých okolností alebo pre konkrétnu národnú úpravu.</p>
+<p>Autoritatívny zoznam business rules je v <a href="https://test-docs.peppol.eu/poacc/billing/3.0/2026-Q4-MR/bis/" class="ext" rel="noopener">Peppol BIS Billing 3.0, vydanie 2026-Q4-MR</a> a v <a href="https://test-docs.peppol.eu/poacc/billing/3.0/2026-Q4-MR/rules/ubl-peppol/" class="ext" rel="noopener">zozname pravidiel Peppol</a>. Lokálna implementácia validačných súborov je opísaná v <a href="Validation.html">lokálnej validácii</a>.</p>
+<h3 id="2-vypočítajte-riadky-dph-a-celkové-sumy"><span class="mw-h">2. Vypočítajte riadky, DPH a celkové sumy</span><a class="anchor" href="#2-vypočítajte-riadky-dph-a-celkové-sumy" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Peppol očakáva sumy v mene faktúry s najviac dvoma desatinnými miestami. Čistá suma riadka sa vypočíta takto:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-text" data-lang="text">suma riadka = zaokrúhliť(cena bez DPH / základné množstvo × fakturované množstvo, 2)
+              + súčet riadkových poplatkov
+              - súčet riadkových zliav</code></pre></div>
+<p>Zaokrúhlite výsledok <code>(cena / základné množstvo × fakturované množstvo)</code> a každú sumu riadkovej zľavy alebo poplatku samostatne na dve desatinné miesta; potom z nich zostavte čistú sumu riadka.</p>
+<p>Riadková zľava/poplatok sa započíta do daného riadka. Zľava/poplatok na úrovni dokladu sa eviduje samostatne a musí mať vlastnú kategóriu DPH.</p>
+<p>DPH počítajte po skupinách podľa kombinácie kategórie DPH a sadzby:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-text" data-lang="text">základ skupiny = súčet čistých súm riadkov danej skupiny
+                 + poplatky na úrovni dokladu danej skupiny
+                 - zľavy na úrovni dokladu danej skupiny
+DPH skupiny = zaokrúhliť(základ skupiny × sadzba / 100, 2)</code></pre></div>
+<p>Vystavte jeden <code class="nb">UblDraftTaxSubtotal</code> pre každú takúto skupinu. Celková DPH je súčet DPH skupín. Napríklad pri jednom riadku <code>2 × 50,<wbr>00 EUR</code>, kategórii <code class="nb">S</code> a ilustračnej sadzbe <code>23 %</code> je čistá suma riadka aj základ skupiny <code>100,<wbr>00 EUR</code>, DPH <code>23,<wbr>00 EUR</code> a suma s DPH <code>123,<wbr>00 EUR</code>.</p>
+<p>Sadzba v príklade slúži iba na ukážku aritmetiky.</p>
+<p>Bežné kódy v <code class="nb">TaxCategoryCode</code> sú <code class="nb">S</code> (štandardná sadzba), <code class="nb">Z</code> (nulová sadzba), <code class="nb">E</code> (oslobodenie) a <code class="nb">O</code> (mimo rozsahu DPH). Kategóriu zvoľte podľa daňového režimu konkrétneho plnenia, nie iba podľa číselnej sadzby.</p>
+<p>Kódy, sadzby a prípadné dôvody oslobodenia sa kontrolujú v kontexte celej faktúry; <code class="nb">O</code> je výnimka, pri ktorej Peppol nevyžaduje percento sadzby.</p>
+<p>Z týchto hodnôt vytvorte polia <code class="nb">UblDraftTotals</code>:</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Pole draftu</th><th>Výpočet</th></tr></thead><tbody><tr><td><code class="nb">lineExtensionAmount</code></td><td>Súčet čistých súm všetkých riadkov.</td></tr><tr><td><code class="nb">taxExclusiveAmount</code></td><td>Súčet čistých súm riadkov − zľavy na úrovni dokladu + poplatky na úrovni dokladu.</td></tr><tr><td><code class="nb">taxAmount</code></td><td>Súčet DPH zo všetkých daňových skupín.</td></tr><tr><td><code class="nb">taxInclusiveAmount</code></td><td>Základ bez DPH + celková DPH.</td></tr><tr><td><code class="nb">payableAmount</code></td><td>Suma s DPH − už zaplatené preddavky + prípadné zaokrúhlenie splatnej sumy.</td></tr><tr><td><code class="nb">taxSubtotals</code></td><td>Základ, vypočítaná DPH a kategória pre každú skupinu DPH.</td></tr></tbody></table></div>
+<p>Pri zľavách, poplatkoch alebo preddavkoch vyplňte aj súvisiace súčtové polia cez <code>UblDraftTotals::<wbr>withAdditionalAmounts()</code>. Hodnoty musia byť navzájom konzistentné: zapisovač ich iba zapíše a sám ich nevypočítava ani neopravuje.</p>
+<p>Na výpočty peňazí používajte desatinnú aritmetiku alebo celé najmenšie menové jednotky. Do draftov odovzdávajte hodnoty vytvorené cez <code>UblDecimal::<wbr>fromString(&#39;123.<wbr>00&#39;)</code>, <code class="nb">UblDecimal::fromMinorUnits()</code> alebo <code class="nb">UblDecimal::fromFloat()</code>.</p>
+<p>Hodnota zachová desatinný zápis, no nevypočíta DPH ani súčty faktúry.</p>
+<h3 id="3-spustite-kontroly-v-správnom-poradí"><span class="mw-h">3. Spustite kontroly v správnom poradí</span><a class="anchor" href="#3-spustite-kontroly-v-správnom-poradí" aria-label="Odkaz na sekciu">¶</a></h3>
+<ol>
+<li>Zavolajte <code>PeppolBillingDraftRulesInterface::<wbr>assertSatisfied($draft)</code>. Ide o predbežnú kontrolu vybraných polí draftu, nie o úplnú Peppol validáciu ani kontrolu výpočtov.</li>
+<li>Zapíšte XML cez <code>UblDocumentWriterInterface::<wbr>write($draft)</code>.</li>
+<li>Výsledné XML načítajte cez <code>UblXmlDocumentLoaderInterface::<wbr>parse($xml)</code> a odovzdajte <code>LocalUblValidationInterface::<wbr>validateDocument($document)</code>. Predvolený Laravel pipeline kontroluje UBL 2.1 XSD, doplnkové pravidlo BR-CO-25 pre faktúry a CEN/EN 16931 aj Peppol Schematron; vydanie Q4-MR obsahuje slovenské pravidlá.</li>
+<li>Ak <code class="nb">LocalUblValidationResult::isValid()</code> vráti <code class="nb">false</code>, odoslanie zastavte a opravte chyby; neúplný report s vynechanými nálezmi tiež nie je platný. Slovenské pravidlá v Q4-MR Schematrone vracajú upozornenia, preto ich skontrolujte aj pri výsledku <code>isValid() === true</code>.</li>
+<li>Pred odoslaním môžete samostatne zavolať vzdialenú kontrolu Gateway <code>POST /<wbr>v1/<wbr>validate-document</code>. Je to sieťová operácia a môže používať inú verziu pravidiel než lokálne zdroje.</li>
+</ol>
+<p>Nižšie je kompletný príklad pre samostatné použitie bez Laravelu. Predpokladá, že Composer autoloader je v <code class="nb">vendor/autoload.php</code>, validačné zdroje sú dostupné v balíku a PHP má povolené <code class="nb">proc_open</code> a <code class="nb">flock</code>; lokálny Schematron navyše potrebuje Javu 11+.</p>
+<p>Voliteľné odosielanie a trvalý záznam pokusu vyžadujú aj rozšírenie <code class="nb">pdo_sqlite</code>. Všetky identifikátory a údaje strán sú syntetické.</p>
+<p>Odoslanie je predvolene vypnuté; na jeho zapnutie treba nastaviť <code class="nb">EFAKTURA_SEND_SANDBOX=1</code>, použiť presnú sandbox URL a pred odoslaním nahradiť syntetické údaje skutočnými testovacími údajmi pridelenými pre Sandbox.</p>
+<details>
+<summary>Zobraziť celý PHP príklad</summary>
+
+<!-- sapi-timeout-simulation-example:start -->
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">&lt;?php
+
+use DreaM1\EfakturaConnector\Core\Configuration\SapiClientConfiguration;
+use DreaM1\EfakturaConnector\Domain\Ubl\UblEndpointIdentifier;
+use DreaM1\EfakturaConnector\Domain\Ubl\CodeList\TaxCategoryCode;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftAddress;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftIdentifier;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftLine;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftParty;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftTaxCategory;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftTaxSubtotal;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftTotals;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDecimal;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDocumentDraft;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftDates;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftReferences;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDocumentNumber;
+use DreaM1\EfakturaConnector\Domain\Ubl\LocalDate;
+use DreaM1\EfakturaConnector\Domain\Ubl\UblDocumentRoot;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\CurrencyCodeList;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\UnitCodeList;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Reader\UblXmlDocumentLoader;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Validation\PeppolBillingDraftRules;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Writer\UblDocumentWriter;
+use DreaM1\EfakturaConnector\Core\Documents\DocumentRequestContext;
+use DreaM1\EfakturaConnector\Core\Documents\IdempotencyKey;
+use DreaM1\EfakturaConnector\Core\Documents\IdempotencyKeyGenerator;
+use DreaM1\EfakturaConnector\Core\Documents\OutboundDocumentPayload;
+use DreaM1\EfakturaConnector\Core\Documents\SentDocumentReference;
+use DreaM1\EfakturaConnector\Core\Documents\SentDocumentStatus;
+use DreaM1\EfakturaConnector\Core\Exceptions\ProviderErrorResponseException;
+use DreaM1\EfakturaConnector\Support\HashAlgorithm;
+use DreaM1\EfakturaConnector\Core\Ubl\PeppolDocumentTypeIdentifierBuilder;
+use DreaM1\EfakturaConnector\Domain\EFaktura\Participant;
+use DreaM1\EfakturaConnector\Domain\EFaktura\PeppolDocumentTypeIdentifier;
+use DreaM1\EfakturaConnector\Domain\EFaktura\PeppolProcessIdentifier;
+use DreaM1\EfakturaConnector\Domain\EFaktura\SubmittedDocumentId;
+use DreaM1\EfakturaConnector\Domain\EFaktura\ProviderDocumentId;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\CountryCodeList;
+use DreaM1\EfakturaConnector\Domain\Ubl\CodeList\TaxSchemeCode;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftPartyTaxScheme;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\LocalUblValidator;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\PeppolBillingHeaderValidationStage;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\UblSchematronReportParser;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\PeppolSchematronValidationStage;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\PeppolSchematronValidator;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\SaxonProcessExecutor;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schematron\SaxonSchematronRunner;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schema\UblSchemaValidationStage;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\Schema\UblSchemaValidator;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Validation\ValidationResources;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\ApiConnector;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Authentication\AuthenticatedRequestSender;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Authentication\SapiToken;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Authentication\SapiTokenCacheInterface;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Authentication\SapiTokenProvider;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Endpoints\Sapi\SendDocumentEndpoint;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Endpoints\Sapi\RequestTokenEndpoint;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Endpoints\PeppolGateway\GetMessageLevelStatusContentEndpoint;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Endpoints\PeppolGateway\ListMessageLevelStatusesEndpoint;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Endpoints\PeppolGateway\GetSentDocumentEndpoint;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Transport\Execution\DefaultHttpRequestExecutorFactory;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Transport\Execution\HttpRequestExecutorOptions;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Transport\ProviderTransport;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Documents\PeppolGatewayDocumentTrackingProvider;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Documents\SapiDocumentSubmissionGateway;
+use DreaM1\EfakturaConnector\Support\Timestamp;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Validation\PeppolBillingHeaderRules;
+
+require __DIR__ . '/vendor/autoload.php';
+
+// Získanie kanonických kódov z pribalených číselníkov.
+$country = CountryCodeList::resolve(CountryCodeList::SLOVAKIA);
+$currency = CurrencyCodeList::resolve('EUR');
+$unit = UnitCodeList::unit('ks'); // z textu ('ks', 'hod', 'kg') alebo z presného kódu UN/ECE
+if ($country === null || $currency === null) {
+    throw new \LogicException('A required code is missing from the bundled code lists.');
+}
+
+// Obe strany potrebujú poštovú adresu a elektronickú adresu Peppol.
+$supplierAddress = (new UblDraftAddress($country))
+    -&gt;withLines('Ukážková 1')
+    -&gt;withLocality('Bratislava', '811 01');
+$supplier = (new UblDraftParty(
+    UblEndpointIdentifier::fromSchemeAndValue('9915', 'TESTSELLER001'),
+    'Ukážkový dodávateľ s.r.o.',
+    $country
+))
+    -&gt;withAddress($supplierAddress)
+    // Ukážka uvádza identifikátor dodávateľa aj inú daňovú registráciu pre riadok so štandardnou DPH.
+    -&gt;withLegalCompanyId(new UblDraftIdentifier('SYNTHETIC-SELLER-REGISTRATION'))
+            -&gt;withTaxScheme(new UblDraftPartyTaxScheme(
+                new UblDraftIdentifier('SYNTHETIC-SELLER-TAX-REGISTRATION'),
+                TaxSchemeCode::fromString(TaxSchemeCode::OTHER)
+            ));
+
+$customerAddress = (new UblDraftAddress($country))
+    -&gt;withLines('Testovacia 2')
+    -&gt;withLocality('Košice', '040 01');
+$customer = (new UblDraftParty(
+    UblEndpointIdentifier::fromSchemeAndValue('9915', 'TESTBUYER001'),
+    'Ukážkový odberateľ s.r.o.',
+    $country
+))-&gt;withAddress($customerAddress);
+
+// Jeden riadok: 2 × 50,00 EUR = 100,00 EUR bez DPH; ilustračná sadzba 23 % dáva DPH 23,00 EUR.
+$vatCategory = new UblDraftTaxCategory(
+    TaxCategoryCode::fromString(TaxCategoryCode::STANDARD),
+    UblDecimal::fromString('23')
+);
+$line = new UblDraftLine(
+    new UblDraftIdentifier('1'),
+    UblDecimal::fromString('2'),
+    $unit,
+    UblDecimal::fromString('100.00'),
+    'Ukážková služba',
+    $vatCategory,
+    UblDecimal::fromString('50.00')
+);
+$totals = new UblDraftTotals(
+    UblDecimal::fromString('100.00'),
+    UblDecimal::fromString('100.00'),
+    UblDecimal::fromString('123.00'),
+    null,
+    UblDecimal::fromString('123.00'),
+    UblDecimal::fromString('23.00'),
+    [new UblDraftTaxSubtotal(
+        UblDecimal::fromString('100.00'),
+        UblDecimal::fromString('23.00'),
+        $vatCategory
+    )]
+);
+
+$draft = (new UblDocumentDraft(
+    UblDocumentRoot::fromString(UblDocumentRoot::INVOICE),
+    UblDocumentNumber::fromString('DEMO-INV-001'),
+    LocalDate::fromString('2026-11-23'),
+    $currency,
+    $supplier,
+    $customer,
+    $totals
+))-&gt;withReferences(UblDraftReferences::none()-&gt;withBuyerReference('DEMO-ORDER-001'))
+    -&gt;withDates(UblDraftDates::none()-&gt;withDueDate(LocalDate::fromString('2026-12-23')))
+    -&gt;withLines([$line]);
+
+// Predbežná kontrola preverí vybrané polia draftu; Schematron nižšie kontroluje obchodné pravidlá a sumy.
+(new PeppolBillingDraftRules())-&gt;assertSatisfied($draft);
+$xml = (new UblDocumentWriter())-&gt;write($draft);
+$document = (new UblXmlDocumentLoader())-&gt;parse($xml);
+
+// Zostavenie lokálneho pipeline: UBL XSD, doplnková BR-CO-25 kontrola a CEN/Peppol Schematron (vrátane SK-R pravidiel).
+$resources = ValidationResources::directory();
+$schematronRunner = new SaxonSchematronRunner(
+    $resources,
+    sys_get_temp_dir(),
+    new SaxonProcessExecutor()
+);
+$schematronValidator = new PeppolSchematronValidator(
+    new UblSchematronReportParser(),
+    $schematronRunner,
+    $resources
+);
+$localValidator = new LocalUblValidator([
+    new UblSchemaValidationStage(new UblSchemaValidator($resources)),
+    new PeppolBillingHeaderValidationStage(new PeppolBillingHeaderRules()),
+    new PeppolSchematronValidationStage($schematronValidator),
+]);
+$result = $localValidator-&gt;validateDocument($document);
+
+foreach ($result-&gt;issues() as $finding) {
+    printf(
+        &quot;[%s] %s: %s\n&quot;,
+        strtoupper($finding-&gt;severity()-&gt;value()),
+        $finding-&gt;code() ?? 'UBL',
+        $finding-&gt;message()
+    );
+}
+
+if (! $result-&gt;isValid()) {
+    throw new \RuntimeException('Invoice did not pass local validation.');
+}
+
+echo &quot;Faktúra prešla lokálnou validáciou.\n&quot;;
+
+// Sieťové odoslanie je predvolene vypnuté; najprv nahraďte syntetické údaje testovacími údajmi Sandboxu.
+if (getenv('EFAKTURA_SEND_SANDBOX') !== '1') {
+    echo &quot;Odoslanie je vypnuté. Pre sandbox nastavte EFAKTURA_SEND_SANDBOX=1.\n&quot;;
+    return;
+}
+
+$configuration = SapiClientConfiguration::fromArray([
+    'base_url' =&gt; getenv('EFAKTURA_BASE_URL') ?: '',
+    'client_id' =&gt; getenv('EFAKTURA_CLIENT_ID') ?: '',
+    'client_secret' =&gt; getenv('EFAKTURA_CLIENT_SECRET') ?: '',
+    'client_scope' =&gt; getenv('EFAKTURA_CLIENT_SCOPE') ?: '',
+]);
+$configuration-&gt;assertReady();
+
+// Ochrana proti náhodnému odoslaniu do iného prostredia; URL zodpovedá sandbox serveru v OpenAPI balíka.
+if ($configuration-&gt;baseUrl()-&gt;value() !== 'https://test-sapisk.datahosting.sk') {
+    throw new \RuntimeException('Sandbox sending requires https://test-sapisk.datahosting.sk.');
+}
+
+// Tieto testovacie Participant ID musia byť pridelené vášmu Sandbox účtu a zhodovať sa s UBL EndpointID vyššie.
+$senderParticipant = Participant::parse('9915:TESTSELLER001');
+$receiverParticipant = Participant::parse('9915:TESTBUYER001');
+$candidateCreationDateTime = Timestamp::fromDateTimeImmutable(
+    new \DateTimeImmutable('now', new \DateTimeZone('UTC'))
+);
+
+$documentTypeId = PeppolDocumentTypeIdentifierBuilder::forDocument(
+    $draft-&gt;kind()-&gt;value(),
+    $draft-&gt;customizationId()-&gt;value()
+);
+$payloadChecksum = \DreaM1\EfakturaConnector\Core\Documents\Sha256Checksum::fromContent($xml);
+$candidatePayload = new OutboundDocumentPayload(
+    SubmittedDocumentId::fromString($draft-&gt;number()-&gt;value()),
+    $documentTypeId,
+    $draft-&gt;profileId(),
+    $senderParticipant,
+    $receiverParticipant,
+    $candidateCreationDateTime,
+    $xml,
+    $payloadChecksum
+);
+
+// SQLite záznam obsahuje aj XML faktúry; umiestnite ho do adresára prístupného iba aplikácii.
+$submissionDbPath = getenv('EFAKTURA_SUBMISSION_DB')
+    ?: __DIR__ . '/var/sapi-submissions.sqlite';
+$submissionDbDirectory = dirname($submissionDbPath);
+if (
+    ! is_dir($submissionDbDirectory)
+    &amp;&amp; ! mkdir($submissionDbDirectory, 0700, true)
+    &amp;&amp; ! is_dir($submissionDbDirectory)
+) {
+    throw new \RuntimeException('Could not create the submission database directory.');
+}
+
+$previousUmask = umask(0077);
+try {
+    $submissionDb = new \PDO(
+        'sqlite:' . $submissionDbPath,
+        null,
+        null,
+        [
+            \PDO::ATTR_ERRMODE =&gt; \PDO::ERRMODE_EXCEPTION,
+            \PDO::ATTR_DEFAULT_FETCH_MODE =&gt; \PDO::FETCH_ASSOC,
+        ]
+    );
+} finally {
+    umask($previousUmask);
+}
+$submissionDb-&gt;exec('PRAGMA busy_timeout = 5000');
+$submissionDb-&gt;exec('PRAGMA synchronous = FULL');
+$submissionDb-&gt;exec(
+    'CREATE TABLE IF NOT EXISTS sapi_submission_attempts (
+        logical_submission_id TEXT PRIMARY KEY,
+        document_id TEXT NOT NULL,
+        sender_participant_id TEXT NOT NULL,
+        receiver_participant_id TEXT NOT NULL,
+        document_type_id TEXT NOT NULL,
+        process_id TEXT NOT NULL,
+        creation_datetime TEXT NOT NULL,
+        payload_xml TEXT NOT NULL,
+        checksum TEXT NOT NULL,
+        idempotency_key TEXT NOT NULL UNIQUE,
+        status TEXT NOT NULL,
+        provider_document_id TEXT,
+        tracking_status TEXT,
+        response_timestamp TEXT,
+        received_at TEXT
+    )'
+);
+$submissionColumns = $submissionDb-&gt;query('PRAGMA table_info(sapi_submission_attempts)')
+    -&gt;fetchAll(\PDO::FETCH_COLUMN, 1);
+if (! in_array('tracking_status', $submissionColumns, true)) {
+    $submissionDb-&gt;exec('ALTER TABLE sapi_submission_attempts ADD COLUMN tracking_status TEXT');
+}
+
+// Verziu zvýšte iba pri úmyselne novom pokuse s opraveným payloadom; retry po timeoute ponechá rovnakú verziu.
+$submissionRevision = getenv('EFAKTURA_SUBMISSION_REVISION') ?: '1';
+// Identita pokusu je stabilná medzi spusteniami a odlišuje odosielateľa, číslo faktúry aj verziu pokusu.
+$logicalSubmissionId = hash(
+    HashAlgorithm::SHA_256,
+    $senderParticipant-&gt;identifier() . &quot;\0&quot; . $draft-&gt;number()-&gt;value() . &quot;\0&quot; . $submissionRevision
+);
+$submissionDb-&gt;beginTransaction();
+$hasStoredAttempt = false;
+try {
+    $selectAttempt = $submissionDb-&gt;prepare(
+        'SELECT * FROM sapi_submission_attempts WHERE logical_submission_id = :logical_submission_id'
+    );
+    $selectAttempt-&gt;execute(['logical_submission_id' =&gt; $logicalSubmissionId]);
+    $storedAttempt = $selectAttempt-&gt;fetch();
+    $selectAttempt-&gt;closeCursor();
+
+    if ($storedAttempt === false) {
+        // Záznam s kľúčom a presným payloadom sa commitne ešte pred akýmkoľvek HTTP volaním.
+        $idempotencyKey = IdempotencyKeyGenerator::generate();
+        $insertAttempt = $submissionDb-&gt;prepare(
+            'INSERT INTO sapi_submission_attempts (
+                logical_submission_id, document_id, sender_participant_id, receiver_participant_id,
+                document_type_id, process_id, creation_datetime, payload_xml, checksum,
+                idempotency_key, status
+            ) VALUES (
+                :logical_submission_id, :document_id, :sender_participant_id, :receiver_participant_id,
+                :document_type_id, :process_id, :creation_datetime, :payload_xml, :checksum,
+                :idempotency_key, :status
+            )'
+        );
+        $insertAttempt-&gt;execute([
+            'logical_submission_id' =&gt; $logicalSubmissionId,
+            'document_id' =&gt; $candidatePayload-&gt;documentId()-&gt;value(),
+            'sender_participant_id' =&gt; $senderParticipant-&gt;identifier(),
+            'receiver_participant_id' =&gt; $receiverParticipant-&gt;identifier(),
+            'document_type_id' =&gt; $candidatePayload-&gt;documentTypeId()-&gt;value(),
+            'process_id' =&gt; $candidatePayload-&gt;processId()-&gt;value(),
+            'creation_datetime' =&gt; $candidatePayload-&gt;creationDateTime()-&gt;value(),
+            'payload_xml' =&gt; $candidatePayload-&gt;xml(),
+            'checksum' =&gt; $candidatePayload-&gt;checksum()-&gt;value(),
+            'idempotency_key' =&gt; $idempotencyKey-&gt;value(),
+            'status' =&gt; 'PENDING',
+        ]);
+        $payload = $candidatePayload;
+        $storedStatus = 'PENDING';
+        $storedProviderDocumentId = null;
+    } else {
+        $hasStoredAttempt = true;
+        // Rovnaké číslo faktúry sa nesmie poslať s iným obsahom pod pôvodným idempotency kľúčom.
+        if (
+            $storedAttempt['document_id'] !== $draft-&gt;number()-&gt;value()
+            || $storedAttempt['sender_participant_id'] !== $senderParticipant-&gt;identifier()
+            || $storedAttempt['receiver_participant_id'] !== $receiverParticipant-&gt;identifier()
+            || $storedAttempt['document_type_id'] !== $documentTypeId-&gt;value()
+            || $storedAttempt['process_id'] !== $draft-&gt;profileId()-&gt;value()
+            || $storedAttempt['payload_xml'] !== $xml
+            || ! hash_equals($storedAttempt['checksum'], $payloadChecksum-&gt;value())
+        ) {
+            throw new \RuntimeException(
+                'A stored submission exists for this attempt, but its payload changed; do not reuse its idempotency key.'
+            );
+        }
+
+        $idempotencyKey = IdempotencyKey::fromString($storedAttempt['idempotency_key']);
+        $payload = new OutboundDocumentPayload(
+            SubmittedDocumentId::fromString($storedAttempt['document_id']),
+            PeppolDocumentTypeIdentifier::fromString($storedAttempt['document_type_id']),
+            PeppolProcessIdentifier::fromString($storedAttempt['process_id']),
+            $senderParticipant,
+            $receiverParticipant,
+            Timestamp::fromIso8601($storedAttempt['creation_datetime']),
+            $storedAttempt['payload_xml'],
+            \DreaM1\EfakturaConnector\Core\Documents\Sha256Checksum::fromString(
+                $storedAttempt['checksum']
+            )
+        );
+        $storedStatus = $storedAttempt['status'];
+        $storedProviderDocumentId = $storedAttempt['provider_document_id'];
+    }
+    $submissionDb-&gt;commit();
+} catch (\Throwable $exception) {
+    if ($submissionDb-&gt;inTransaction()) {
+        $submissionDb-&gt;rollBack();
+    }
+    throw $exception;
+}
+
+/* SAPI_TIMEOUT_SIMULATION_ADAPTERS_START */
+// Pre jednorazový CLI príklad zostáva token iba v pamäti procesu.
+$tokenCache = new class implements SapiTokenCacheInterface {
+    /** @var array&lt;string, SapiToken&gt; */
+    private array $tokens = [];
+
+    /**
+     * Returns a token stored in this process-local cache.
+     *
+     * @param string $key Token cache key.
+     * @return SapiToken|null Cached token, or null when the key is absent.
+     */
+    public function load(string $key): ?SapiToken
+    {
+        return $this-&gt;tokens[$key] ?? null;
+    }
+
+    /**
+     * Stores the token in memory for the current process.
+     *
+     * @param string $key Token cache key.
+     * @param SapiToken $token Token to retain.
+     */
+    public function store(string $key, SapiToken $token): void
+    {
+        $this-&gt;tokens[$key] = $token;
+    }
+
+    /**
+     * Removes the token for this key; an absent entry is not an error.
+     *
+     * @param string $key Token cache key to remove.
+     */
+    public function forget(string $key): void
+    {
+        unset($this-&gt;tokens[$key]);
+    }
+};
+
+$transport = ProviderTransport::forSapiClient(
+    $configuration,
+    DefaultHttpRequestExecutorFactory::create(HttpRequestExecutorOptions::defaults())
+);
+$tokenProvider = new SapiTokenProvider(
+    new RequestTokenEndpoint($transport),
+    $tokenCache,
+    $configuration
+);
+$connector = new ApiConnector(new AuthenticatedRequestSender($transport, $tokenProvider));
+$gateway = new SapiDocumentSubmissionGateway(new SendDocumentEndpoint($connector));
+$trackingProvider = new PeppolGatewayDocumentTrackingProvider(
+    new GetSentDocumentEndpoint($connector),
+    new ListMessageLevelStatusesEndpoint($connector),
+    new GetMessageLevelStatusContentEndpoint($connector)
+);
+/* SAPI_TIMEOUT_SIMULATION_ADAPTERS_END */
+
+$readTrackingStatus = static function (ProviderDocumentId $providerDocumentId) use (
+    $trackingProvider,
+    $senderParticipant,
+    $draft
+): ?SentDocumentStatus {
+    try {
+        return $trackingProvider-&gt;getSentDocumentStatus(
+            new SentDocumentReference(
+                $senderParticipant,
+                $providerDocumentId,
+                new DocumentRequestContext($providerDocumentId-&gt;value(), $draft-&gt;number()-&gt;value())
+            )
+        );
+    } catch (ProviderErrorResponseException $exception) {
+        if ($exception-&gt;httpStatusCode() !== null &amp;&amp; $exception-&gt;httpStatusCode()-&gt;isNotFound()) {
+            return null;
+        }
+        throw $exception;
+    }
+};
+
+$saveTrackingStatus = static function (?string $status) use (
+    $submissionDb,
+    $logicalSubmissionId,
+    $idempotencyKey
+): void {
+    $saveTracking = $submissionDb-&gt;prepare(
+        'UPDATE sapi_submission_attempts SET tracking_status = :tracking_status
+         WHERE logical_submission_id = :logical_submission_id AND idempotency_key = :idempotency_key'
+    );
+    $saveTracking-&gt;execute([
+        'tracking_status' =&gt; $status,
+        'logical_submission_id' =&gt; $logicalSubmissionId,
+        'idempotency_key' =&gt; $idempotencyKey-&gt;value(),
+    ]);
+};
+
+// Ak už máme ID poskytovateľa, najprv skontrolujeme tracking a pri nájdenom zázname nič znovu neposielame.
+if ($storedProviderDocumentId !== null) {
+    $trackedStatus = $readTrackingStatus(ProviderDocumentId::fromString($storedProviderDocumentId));
+    if ($trackedStatus !== null) {
+$saveTrackingStatus($trackedStatus-&gt;status() === null ? null : $trackedStatus-&gt;status()-&gt;value());
+        printf(
+            &quot;Tracking stav: %s; ID dokladu: %s\n&quot;,
+            $trackedStatus-&gt;status() === null ? 'neznámy' : $trackedStatus-&gt;status()-&gt;value(),
+            $storedProviderDocumentId
+        );
+        return;
+    }
+
+    if ($storedStatus !== 'PENDING') {
+        printf(
+            &quot;Uložený výsledok SAPI: %s; tracking záznam zatiaľ nie je dostupný pre ID %s.\n&quot;,
+            $storedStatus,
+            $storedProviderDocumentId
+        );
+        return;
+    }
+}
+
+if ($storedStatus !== 'PENDING') {
+    printf(
+        &quot;Už uložený výsledok SAPI: %s; ID dokladu: %s\n&quot;,
+        $storedStatus,
+        $storedProviderDocumentId
+    );
+    return;
+}
+
+if ($hasStoredAttempt &amp;&amp; $storedProviderDocumentId === null) {
+    echo &quot;Po timeoute nie je známe ID pre tracking; opakujem iba s uloženým payloadom a tým istým idempotency kľúčom.\n&quot;;
+}
+
+// Pri timeout-e bez providerDocumentId je toto idempotentné opakovanie zároveň spôsob, ako získať ID pre tracking.
+$submission = $gateway-&gt;send(new \DreaM1\EfakturaConnector\Core\Documents\SendDocumentRequest(
+    $senderParticipant,
+    $payload,
+    $idempotencyKey
+));
+
+$saveResponse = $submissionDb-&gt;prepare(
+    'UPDATE sapi_submission_attempts
+     SET status = :status, provider_document_id = :provider_document_id,
+         response_timestamp = :response_timestamp, received_at = :received_at
+     WHERE logical_submission_id = :logical_submission_id AND idempotency_key = :idempotency_key'
+);
+$saveResponse-&gt;execute([
+    'status' =&gt; $submission-&gt;status()-&gt;value(),
+    'provider_document_id' =&gt; $submission-&gt;providerDocumentId()-&gt;value(),
+    'response_timestamp' =&gt; $submission-&gt;timestamp()-&gt;value(),
+    'received_at' =&gt; $submission-&gt;receivedAt() === null ? null : $submission-&gt;receivedAt()-&gt;value(),
+    'logical_submission_id' =&gt; $logicalSubmissionId,
+    'idempotency_key' =&gt; $idempotencyKey-&gt;value(),
+]);
+
+$trackedStatus = $readTrackingStatus($submission-&gt;providerDocumentId());
+if ($trackedStatus !== null) {
+    $saveTrackingStatus($trackedStatus-&gt;status() === null ? null : $trackedStatus-&gt;status()-&gt;value());
+    printf(
+        &quot;Tracking stav: %s\n&quot;,
+        $trackedStatus-&gt;status() === null ? 'neznámy' : $trackedStatus-&gt;status()-&gt;value()
+    );
+} else {
+    echo &quot;Tracking záznam ešte nie je dostupný; pri ďalšom spustení sa najprv zopakuje tracking podľa uloženého ID.\n&quot;;
+}
+
+printf(
+    &quot;SAPI stav: %s; ID dokladu: %s\n&quot;,
+    $submission-&gt;status()-&gt;value(),
+    $submission-&gt;providerDocumentId()-&gt;value()
+);
+if ($submission-&gt;status()-&gt;value() === 'ACCEPTED') {
+    echo &quot;SAPI technicky prijalo doklad na spracovanie; nejde ešte o potvrdenie doručenia príjemcovi.\n&quot;;
+}</code></pre></div>
+<!-- sapi-timeout-simulation-example:end -->
+</details>
+
+<p>Databáza sa predvolene vytvorí v <code class="nb">var/sapi-submissions.sqlite</code>; cestu možno nastaviť cez <code class="nb">EFAKTURA_SUBMISSION_DB</code>. Obsahuje fakturačné XML, preto ju umiestnite do adresára chráneného prístupovými právami.</p>
+<p>Pri timeoute zostane pokus v stave <code class="nb">PENDING</code>; konektor POST automaticky neopakuje. Endpoint trackingu <code>GET /<wbr>v1/<wbr>sent-documents/<wbr>{identifier}</code> vyžaduje ID pridelené poskytovateľom, nevyhľadáva podľa čísla faktúry ani idempotency kľúča.</p>
+<p>Ak sa odpoveď stratí skôr, než sa toto ID uloží, tracking pred prvým opakovaním nie je možný. Príklad vtedy zopakuje presne uložený payload s rovnakým kľúčom, získa pôvodné ID a následne zavolá tracking.</p>
+<p>Ak je provider ID známe už pred opakovaním, tracking sa zavolá najprv a pri nájdenom zázname sa faktúra neposiela znova. Po zmene obsahu príklad zastaví odoslanie pre tú istú verziu pokusu.</p>
+<p>Novú verziu nastavte cez <code class="nb">EFAKTURA_SUBMISSION_REVISION</code> iba pri úmyselnom novom pokuse s opraveným payloadom; po timeoute verziu nemeňte.</p>
+<p>V produkčnej aplikácii uložte tieto údaje do vlastného transakčného úložiska a pred opakovaním neistej požiadavky najprv overte stav dokladu, ak máte provider ID.</p>
+<h3 id="spustenie-lokálnych-simulácií-opakovania-sapi"><span class="mw-h">Spustenie lokálnych simulácií opakovania SAPI</span><a class="anchor" href="#spustenie-lokálnych-simulácií-opakovania-sapi" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Z koreňového adresára projektu spustite:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-sh" data-lang="sh">php tools/simulate-sapi-submission-retries.php</code></pre></div>
+<p>Skript spustí dvadsaťdva samostatných scenárov s lokálnymi databázami. Odpovede trackingu sa nastavujú ako postupnosť HTTP stavov; po spotrebovaní postupnosti sa opakuje jej posledný stav.</p>
+<details>
+<summary>Zobraziť prehľad scenárov</summary>
+
+<ul>
+<li>Uložené provider ID a tracking 404: príklad zopakuje odoslanie; test overí poradie <code>odoslanie → tracking 404 → odoslanie → tracking 200</code> a zhodu idempotency kľúča aj všetkých polí payloadu.</li>
+<li>Uložené provider ID a nájdený tracking záznam: príklad skončí bez druhého odoslania.</li>
+<li>Provider ID nie je uložené: tracking sa zatiaľ nedá zavolať, preto príklad zopakuje uložený payload s rovnakým kľúčom a potom zavolá tracking podľa získaného ID.</li>
+<li>Tracking vráti 500: príklad skončí chybou bez opakovaného odoslania.</li>
+<li>Tracking vráti 204 alebo hraničný úspešný stav 299: odpoveď v rozsahu 2xx nespôsobí opakované odoslanie.</li>
+<li>Tracking vráti hraničný stav 300: presmerovanie sa považuje za chybu a nespustí ďalšie odoslanie.</li>
+<li>Tracking vráti 400: chyba klienta zastaví opakovanie bez ďalšieho odoslania.</li>
+<li>Tracking vráti 404 a po opakovanom odoslaní 500: príklad skončí chybou trackingu a neposiela dokument tretíkrát.</li>
+<li>Payload faktúry sa zmení po timeoute: príklad skončí pred trackingom a odoslaním; test overí, že odoslaniu zostane iba pôvodný idempotency kľúč a nevznikne druhá požiadavka, ktorá by ho použila pre nový payload.</li>
+<li>Payload sa zmení a <code class="nb">EFAKTURA_SUBMISSION_REVISION</code> sa zvýši na <code class="nb">2</code>: vznikne samostatný nový pokus s novým idempotency kľúčom. Test overí, že databáza obsahuje pôvodný pokus <code class="nb">PENDING</code> aj nový pokus <code class="nb">ACCEPTED</code>, každý s vlastným payloadom a kľúčom.</li>
+<li>Po tracking 404 zostane stav pokusu <code class="nb">ACCEPTED</code> alebo <code class="nb">REJECTED</code>: príklad rešpektuje uložený konečný stav a nič znovu neodošle.</li>
+<li>Dve opakované odoslania skončia timeoutom: ďalší pokus použije uložený payload a ten istý idempotency kľúč; pri známej odpovedi overí aj rovnaké ID poskytovateľa.</li>
+<li>SAPI prijme faktúru, ale SQLite odmietne uložiť odpoveď: test overí, že pokus zostal atomicky <code class="nb">PENDING</code> bez provider ID. Keďže tracking ešte nemá podľa čoho vyhľadať doklad, ďalšie spustenie odošle uložený payload s pôvodným kľúčom, získa rovnaké ID a zavolá tracking.</li>
+<li>Dve opakovania sa spustia súčasne: test overí, že obe použijú rovnaký payload a kľúč a v databáze zostane jeden úspešne dokončený pokus.</li>
+<li>Tracking vráti 401 alebo 429: príklad skončí chybou bez opakovaného odoslania.</li>
+<li>Tracking vráti 429 a pri ďalšom spustení 200: príklad sa po rate limite obnoví ďalším trackingom bez opätovného odoslania faktúry.</li>
+<li>Tracking vráti 403: chyba oprávnenia zastaví opakovanie bez ďalšieho odoslania.</li>
+<li>Pri neznámom provider ID nastanú dva timeouty po sebe: každé odoslanie použije rovnaký payload a idempotency kľúč; tracking sa zavolá až po získaní ID.</li>
+<li>Opakované odoslanie vráti stav SAPI <code class="nb">REJECTED</code>: databáza uloží zamietnutie a provider ID, pričom tracking zostane samostatným výsledkom.</li>
+</ul>
+</details>
+
+<p>Faktúra prejde lokálnou validáciou pri každom spustení príkladu. Simulácia skončí chybou, ak sa poradie volaní alebo počet odoslaní líši od očakávania.</p>
+<p>Simulácie nahrádzajú SAPI aj tracking lokálnymi falošnými adaptérmi, nevyžadujú prihlasovacie údaje a neposielajú HTTP požiadavky. Potrebujú <code class="nb">pdo_sqlite</code>, <code class="nb">proc_open</code>, <code class="nb">flock</code>, Composer závislosti, validačné zdroje a Javu 11+ pre Schematron.</p>
+<p>Dočasné dáta po dokončení odstránia. Zdroj simulácií: <a href="../../tools/simulate-sapi-submission-retries.php">tools/simulate-sapi-submission-retries.php</a>.</p>
+<p>Konkrétny PHP príklad načítania XML a spracovania výsledku je v časti <a href="Validation.html#kontroly">Lokálna validácia</a>. Samotné <code class="nb">send()</code> lokálne ani vzdialené validácie automaticky nespúšťa.</p>
+<h2 id="číselné-hodnoty-a-kódy"><span class="mw-h">Číselné hodnoty a kódy</span><a class="anchor" href="#číselné-hodnoty-a-kódy" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/UBL-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Peppol sumové polia sú desatinné hodnoty podľa XML Schema; pravidlá Billing povoľujú najviac dve desatinné miesta a neurčujú limit počtu číslic pred desatinnou bodkou. Jednotlivé sumy aj tak musia spĺňať príslušné výpočtové a zaokrúhľovacie pravidlá EN 16931.</p>
+<p>Sumy, množstvá a sadzby v drafte sú typované cez <code class="nb">UblDecimal</code>. <code class="nb">UblDecimal::fromString()</code> zachová presný desatinný zápis, zatiaľ čo <code class="nb">fromMinorUnits()</code> a <code class="nb">fromFloat()</code> ho vytvoria z číselného vstupu.</p>
+<p>Trieda hodnoty validuje, ale nerobí finančné výpočty.</p>
+<p>Kódy kategórie DPH, oslobodenia od DPH, obdobia a dôvodu zľavy či poplatku sa zadávajú cez <code class="nb">TaxCategoryCode</code>, <code class="nb">VatExemptionReasonCode</code>, <code class="nb">PeriodDescriptionCode</code> a <code class="nb">AllowanceChargeReasonCode</code>; tieto typy vytvárajte cez <code class="nb">fromString()</code> a zachovávajú neznáme neprázdne kódy.</p>
+<p>Ďalšie pomenované konštanty pre bežné kódy poskytujú <code class="nb">DocumentTypeCode</code>, <code class="nb">CreditNoteTypeCode</code>, <code class="nb">TaxSchemeCode</code>, <code class="nb">PaymentMeansCode</code> a <code class="nb">PartyIdentifierScheme</code>.</p>
+<p>Konštruktory draftu vyžadujú typované <code class="nb">CountryCode</code>, <code class="nb">CurrencyCode</code> a <code class="nb">UnitCode</code>; pre kontrolu členstva v číselníku ich získajte cez <code class="nb">resolve()</code>. <code class="nb">UnitCodeList::resolve()</code> prijíma iba presný kanonický UN/ECE kód, napríklad <code class="nb">H87</code>, a pri inej hodnote vráti <code class="nb">null</code>.</p>
+<p><code class="nb">UblDocumentDraft::currency()</code> a <code class="nb">UblDraftLine::unitCode()</code> vracajú typované hodnoty; krajina strany je dostupná cez <code class="nb">address()-&gt;countryCode()</code> a UBL endpoint cez <code class="nb">endpoint()</code>.</p>
+<p><code class="nb">UblDraftParty::withAddress()</code> prijíma zdieľaný <code class="nb">UblDraftAddress</code>, ktorého riadky a lokalita sa nastavujú cez <code class="nb">withLines()</code> a <code class="nb">withLocality()</code>. UBL endpoint a transportný <code class="nb">Participant</code> sú samostatné hodnoty.</p>
+<p><code class="nb">withPaymentMeans()</code> nahradí aktuálny spôsob platby, kým <code class="nb">withAdditionalPaymentMeans()</code> pridá ďalší. <code class="nb">withBillingReference()</code> nastaví jednu referenciu na faktúru a zachová ostatné typy odkazov; všeobecné odkazy pridáva <code class="nb">withDocumentReference()</code>.</p>
+<p><code class="nb">UnitCodeList::resolve()</code> porovnáva hodnotu presne s oficiálnym UN/ECE kódom. Neprekladá lokálne názvy a neupravuje veľkosť písmen ani okolité medzery. Draft drží typovaný <code class="nb">UnitCode</code> a writer zapíše jeho kanonickú hodnotu do <code class="nb">@unitCode</code>.</p>
+<p>Na prevod textu ako <code class="nb">ks</code> slúži samostatná voliteľná pomôcka <code class="nb">UnitCodeList::unit()</code> opísaná nižšie.
+<strong>Aliasy jednotiek (voliteľná pomôcka).</strong> Keď máte jednotku ako text zo zdroja (<code class="nb">ks</code>, <code class="nb">kg</code>, <code class="nb">hod</code>), použite <code class="nb">UnitCodeList::unit()</code> alebo <code class="nb">UnitCodeList::fromLabel()</code>.</p>
+<p>Presný kód UN/ECE vrátia ako je; iný vstup normalizujú (orezanie medzier, malé písmená, vynechanie diakritiky a koncovej bodky, <code class="nb">m²</code> ako <code class="nb">m2</code>) a vyhľadajú v pribalenom súbore <code class="nb">resources/code-lists/unit-aliases.json</code>.</p>
+<p><code class="nb">unit()</code> pri neznámom vstupe vyhodí <code class="nb">InvalidInputException</code>, takže sa dá vložiť priamo do <code class="nb">UblDraftLine</code>; <code class="nb">fromLabel()</code> vráti <code class="nb">null</code>. <code class="nb">resolve()</code>, <code class="nb">isCanonical()</code>, validácia aj writer ostávajú prísne.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">$line = new UblDraftLine(
+    new UblDraftIdentifier('1'),
+    UblDecimal::fromString('2'),
+    UnitCodeList::unit($row['unit']),      // 'ks' → H87, 'Hod.' → HUR, 'H87' → H87, 'xyz' → výnimka
+    UblDecimal::fromString('100.00'),
+    'Konzultačná služba',
+    $vatCategory,
+    UblDecimal::fromString('50.00')
+);
+
+// Vlastné alebo prepísané aliasy majú prednosť pred pribalenými:
+$unit = UnitCodeList::unit('ks', ['ks' =&gt; 'C62', 'pal' =&gt; 'XPX']);</code></pre></div>
+<p>Aliasy nie sú súčasťou oficiálneho číselníka; ide o odporúčané mapovanie, ktoré možno prepísať.</p>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p>Presný kód má vždy prednosť a nikdy sa nehľadá bez ohľadu na veľkosť písmen (<code class="nb">h87</code> nie je <code class="nb">H87</code>).</p></div></div>
+<p>Pribalená sada (v tabuľke s diakritikou, v súbore bez nej):</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Oblasť</th><th>Aliasy → kód</th></tr></thead><tbody><tr><td>Kus</td><td><code class="nb">ks</code>, <code class="nb">kus</code>, <code class="nb">kusy</code>, <code class="nb">kusov</code>, <code class="nb">kusa</code> → <code class="nb">H87</code></td></tr><tr><td>Hmotnosť</td><td><code class="nb">mg</code>, <code class="nb">miligram</code> → <code class="nb">MGM</code>; <code class="nb">g</code>, <code class="nb">gram</code>, <code class="nb">gramy</code>, <code class="nb">gramov</code> → <code class="nb">GRM</code>; <code class="nb">dkg</code>, <code class="nb">dekagram</code> → <code class="nb">DJ</code>; <code class="nb">kg</code>, <code class="nb">kilo</code>, <code class="nb">kilogram</code>, <code class="nb">kilogramy</code>, <code class="nb">kilogramov</code> → <code class="nb">KGM</code>; <code class="nb">t</code>, <code class="nb">ton</code>, <code class="nb">tona</code>, <code class="nb">tony</code> → <code class="nb">TNE</code>; <code class="nb">lb</code> → <code class="nb">LBR</code>; <code class="nb">oz</code> → <code class="nb">ONZ</code></td></tr><tr><td>Objem kvapalín</td><td><code class="nb">ml</code>, <code class="nb">mililiter</code> → <code class="nb">MLT</code>; <code class="nb">cl</code>, <code class="nb">centiliter</code> → <code class="nb">CLT</code>; <code class="nb">dl</code>, <code class="nb">deciliter</code> → <code class="nb">DLT</code>; <code class="nb">l</code>, <code class="nb">lt</code>, <code class="nb">liter</code>, <code class="nb">litre</code>, <code class="nb">litrov</code> → <code class="nb">LTR</code>; <code class="nb">hl</code>, <code class="nb">hektoliter</code> → <code class="nb">HLT</code>; <code class="nb">gal</code> → <code class="nb">GLL</code></td></tr><tr><td>Dĺžka</td><td><code class="nb">mm</code>, <code class="nb">milimeter</code> → <code class="nb">MMT</code>; <code class="nb">cm</code>, <code class="nb">centimeter</code> → <code class="nb">CMT</code>; <code class="nb">dm</code>, <code class="nb">decimeter</code> → <code class="nb">DMT</code>; <code class="nb">m</code>, <code class="nb">meter</code>, <code class="nb">metre</code>, <code class="nb">metrov</code> → <code class="nb">MTR</code>; <code class="nb">km</code>, <code class="nb">kilometer</code>, <code class="nb">kilometre</code>, <code class="nb">kilometrov</code> → <code class="nb">KMT</code>; <code class="nb">bm</code>, <code class="nb">m.b</code>, <code>bežný meter</code> → <code class="nb">LM</code>; <code class="nb">ft</code> → <code class="nb">FOT</code>; <code class="nb">yd</code> → <code class="nb">YRD</code></td></tr><tr><td>Plocha a objem</td><td><code class="nb">cm2</code> → <code class="nb">CMK</code>, <code class="nb">m2</code> → <code class="nb">MTK</code>, <code class="nb">km2</code> → <code class="nb">KMK</code>, <code class="nb">cm3</code> → <code class="nb">CMQ</code>, <code class="nb">m3</code> → <code class="nb">MTQ</code></td></tr><tr><td>Čas</td><td><code class="nb">s</code>, <code class="nb">sek</code>, <code class="nb">sekunda</code>, <code class="nb">sekundy</code> → <code class="nb">SEC</code>; <code class="nb">min</code>, <code class="nb">minúta</code>, <code class="nb">minúty</code>, <code class="nb">minút</code> → <code class="nb">MIN</code>; <code class="nb">h</code>, <code class="nb">hod</code>, <code class="nb">hodina</code>, <code class="nb">hodiny</code>, <code class="nb">hodín</code> → <code class="nb">HUR</code>; <code class="nb">d</code>, <code class="nb">deň</code>, <code class="nb">dni</code>, <code class="nb">dní</code>, <code class="nb">dňa</code> → <code class="nb">DAY</code>; <code class="nb">týž</code>, <code class="nb">týždeň</code>, <code class="nb">týždne</code>, <code class="nb">týždňov</code> → <code class="nb">WEE</code>; <code class="nb">mes</code>, <code class="nb">mesiac</code>, <code class="nb">mesiace</code>, <code class="nb">mesiacov</code> → <code class="nb">MON</code>; <code class="nb">štvrťrok</code>, <code class="nb">kvartál</code> → <code class="nb">QAN</code>; <code class="nb">rok</code>, <code class="nb">roky</code>, <code class="nb">rokov</code>, <code class="nb">roka</code> → <code class="nb">ANN</code></td></tr><tr><td>Energia, výkon, elektrina</td><td><code class="nb">j</code> → <code class="nb">JOU</code>, <code class="nb">wh</code> → <code class="nb">WHR</code>, <code class="nb">kwh</code> → <code class="nb">KWH</code>, <code class="nb">mwh</code> → <code class="nb">MWH</code>, <code class="nb">gwh</code> → <code class="nb">GWH</code>, <code class="nb">w</code> → <code class="nb">WTT</code>, <code class="nb">mw</code> → <code class="nb">MAW</code>, <code class="nb">kva</code> → <code class="nb">KVA</code>, <code class="nb">a</code> → <code class="nb">AMP</code>, <code class="nb">v</code> → <code class="nb">VLT</code>, <code class="nb">hz</code> → <code class="nb">HTZ</code></td></tr><tr><td>Rýchlosť, teplota, tlak</td><td><code class="nb">km/h</code> → <code class="nb">KMH</code>, <code class="nb">m/s</code> → <code class="nb">MTS</code>, <code class="nb">°C</code> → <code class="nb">CEL</code>, <code class="nb">bar</code> → <code class="nb">BAR</code>, <code class="nb">pa</code> → <code class="nb">PAL</code> (pascal)</td></tr><tr><td>Dáta</td><td><code class="nb">byte</code> → <code class="nb">AD</code>, <code class="nb">mb</code> → <code class="nb">4L</code>, <code class="nb">tb</code> → <code class="nb">E35</code> (bez <code class="nb">kb</code> a <code class="nb">gb</code>, pozri nižšie)</td></tr><tr><td>Balenie</td><td><code class="nb">bal</code>, <code class="nb">balenie</code>, <code class="nb">balenia</code> → <code class="nb">XPK</code>; <code class="nb">balíček</code>, <code class="nb">balíčky</code> → <code class="nb">XPA</code>; <code class="nb">škatuľa</code>, <code class="nb">škatule</code>, <code class="nb">krabica</code>, <code class="nb">krabice</code> → <code class="nb">XBX</code>; <code class="nb">kartón</code>, <code class="nb">kartóny</code> → <code class="nb">XCT</code>; <code class="nb">vrece</code>, <code class="nb">vreca</code>, <code class="nb">vrecko</code>, <code class="nb">vrecká</code> → <code class="nb">XBG</code>; <code class="nb">sak</code>, <code class="nb">saky</code> → <code class="nb">XSA</code>; <code class="nb">fľaša</code>, <code class="nb">fľaše</code> → <code class="nb">XBO</code>; <code class="nb">plechovka</code> → <code class="nb">XCX</code>; <code class="nb">konzerva</code> → <code class="nb">XTN</code>; <code class="nb">tuba</code> → <code class="nb">XTU</code>; <code class="nb">sud</code>, <code class="nb">sudy</code> → <code class="nb">XBA</code>; <code class="nb">kanister</code> → <code class="nb">XJY</code>; <code class="nb">vedro</code> → <code class="nb">XBJ</code>; <code class="nb">kaď</code> → <code class="nb">XVA</code>; <code class="nb">vedierko</code> → <code class="nb">XPL</code>; <code class="nb">bedňa</code>, <code class="nb">bedne</code> → <code class="nb">XCR</code>; <code class="nb">prepravka</code>, <code class="nb">prepravky</code> → <code class="nb">XBC</code>; <code class="nb">paleta</code>, <code class="nb">palety</code> → <code class="nb">XPX</code>; <code class="nb">kontajner</code> → <code class="nb">XCN</code>; <code class="nb">kôš</code> → <code class="nb">XBK</code>; <code class="nb">zväzok</code> → <code class="nb">XBE</code>; <code class="nb">kytica</code> → <code class="nb">XBH</code>; <code class="nb">rola</code>, <code class="nb">rolka</code>, <code class="nb">zvitok</code> → <code class="nb">XRO</code>; <code class="nb">tyč</code> → <code class="nb">XRD</code>; <code class="nb">list</code> → <code class="nb">XST</code>; <code class="nb">doska</code> → <code class="nb">XBD</code>; <code class="nb">podnos</code> → <code class="nb">XPU</code>; <code class="nb">ries</code> → <code class="nb">RM</code>; <code class="nb">kniha</code> → <code class="nb">D63</code></td></tr><tr><td>Sady a množstvá</td><td><code class="nb">pár</code>, <code class="nb">páry</code>, <code class="nb">párov</code> → <code class="nb">PR</code>; <code class="nb">sada</code>, <code class="nb">sady</code> → <code class="nb">SET</code>; <code class="nb">tucet</code>, <code class="nb">tucty</code> → <code class="nb">DZN</code>; <code class="nb">gros</code> → <code class="nb">GRO</code>; <code class="nb">stovka</code> → <code class="nb">CEN</code>; <code class="nb">tis</code>, <code class="nb">tisíc</code>, <code class="nb">tisíce</code> → <code class="nb">MIL</code></td></tr><tr><td>Iné</td><td><code class="nb">paušál</code>, <code class="nb">paušály</code> → <code class="nb">LS</code>; <code class="nb">služba</code>, <code class="nb">služby</code> → <code class="nb">E48</code>; <code class="nb">%</code> → <code class="nb">P1</code>; <code class="nb">promile</code> → <code class="nb">NX</code></td></tr></tbody></table></div>
+<p><strong>Diakritika.</strong> V súbore <code class="nb">unit-aliases.json</code> sú aliasy uložené bez diakritiky a malými písmenami, ale vstup sa pred vyhľadaním vždy normalizuje, takže <code class="nb">paušál</code>, <code class="nb">Týždeň</code>, <code class="nb">ŠKATUĽA</code> či <code class="nb">deň</code> fungujú rovnako ako <code class="nb">pausal</code>, <code class="nb">tyzden</code>, <code class="nb">skatula</code> a <code class="nb">den</code>.</p>
+<p>V tabuľke sú aliasy napísané s diakritikou len pre čitateľnosť. Aliasy <code class="nb">kw</code>, <code class="nb">kj</code>, <code class="nb">kb</code> a <code class="nb">gb</code> zámerne chýbajú: presné kódy <code class="nb">KW</code>, <code class="nb">KJ</code>, <code class="nb">KB</code> a <code class="nb">GB</code> sú iné jednotky (kilogram na milimeter, kilosegment, kilocharacter a galón za deň), takže by alias zakryl odlišný význam.</p>
+<p>Použite <code class="nb">KWT</code>, <code class="nb">KJO</code>, <code class="nb">2P</code> a <code class="nb">E34</code>.</p>
+<p>Voľba <code class="nb">ks</code> → <code class="nb">H87</code> (nie <code class="nb">C62</code>) je odporúčanie; ak preferujete <code class="nb">C62</code>, prepíšte ju druhým argumentom, ako je uvedené vyššie. Súbor aliasov je vždy overený testom: každý alias musí smerovať na kanonický kód z <code class="nb">unece-rec20-names.json</code>.</p>
+<p><code class="nb">CountryCodeList</code> obsahuje ISO 3166-1 kódy a špeciálne kódy podporované Peppolom. <code class="nb">CurrencyCodeList</code> používa pribalený ISO 4217 zoznam Peppol Billing; obe triedy poskytujú kódy, názvy, výber možností a <code class="nb">resolve()</code>.</p>
+<p>Explicitné volanie <code class="nb">resolve()</code> môže vstup normalizovať a vrátiť typovaný kód; <code class="nb">isCanonical()</code> overí presný zápis aj členstvo bez normalizácie. <code class="nb">UnitCodeList</code> používa pribalený UN/ECE zoznam a vyžaduje presnú zhodu s kanonickým kódom.</p>
+<p><code class="nb">CountryCode::fromCanonical()</code>, <code class="nb">CurrencyCode::fromCanonical()</code> a <code class="nb">UnitCode::fromCanonical()</code> vytvoria syntakticky kanonickú hodnotu bez lookupu. Draftová a hlavičková Peppol validácia používajú <code class="nb">isCanonical()</code>: odmietnu nepodporovaný kód, malé písmená aj okolité medzery.</p>
+<p>Rovnaké typy sa používajú aj v zdieľanom <code class="nb">UblDraftAddress</code>, <code class="nb">withOriginCountryCode()</code>, <code class="nb">withPriceBaseQuantity()</code> a <code class="nb">withTaxCurrencyCode()</code>. Preflight kontroluje aj krajinu v adrese dodania, adrese daňového zástupcu a pôvod každej položky.</p>
+<p>Writer serializuje hodnoty, ktoré už draft drží, a nevyberá ani nenormalizuje obchodné údaje.</p>
+<p><code class="nb">PeppolBillingCodeList</code> poskytuje úplné doplnkové číselníky vydania Billing <code class="nb">2026-Q4-MR</code>: ISO 6523 ICD, UNCL 5305, UNCL 7143, UNCL 1001 pre faktúry a dobropisy, UNCL 1153, UNCL 2005, UNCL 4461, UNCL 5189, UNCL 7161, MIME, SEPA a VATEX.</p>
+<p><code class="nb">all()</code> vráti kódy, <code class="nb">name()</code> ich názov a <code class="nb">options()</code> dvojice vhodné pre výber. <code class="nb">contains()</code>, <code class="nb">isCanonical()</code> a <code class="nb">resolve()</code> používajú presnú zhodu bez normalizácie. Verziu a pôvod konkrétneho zoznamu získate cez <code class="nb">version()</code> a <code class="nb">source()</code>; <code class="nb">release()</code> vráti vydanie Peppol.</p>
+<p><code class="nb">CodeListRegistryInterface</code> poskytuje prístup k číselníkom cez ich <code class="nb">CodeListInterface</code>. Identifikátory sú v <code class="nb">CodeListIdentifiers</code>; Peppol Billing zoznamy majú samostatné identifikátory s prefixom <code class="nb">peppol_billing.</code>.</p>
+<p>Každá položka je <code class="nb">CodeListOption</code> s presnou reťazcovou hodnotou a popisom. <code class="nb">options()</code> zachováva poradie zdrojového zoznamu; <code class="nb">get()</code> pri neznámom identifikátore vyhodí <code class="nb">InvalidArgumentException</code>. Jednotky obsahujú iba kanonické UN/ECE kódy, nie lokálne aliasy.</p>
+<p>EAS a participant schémy používajú ako popis samotný kód, pretože pribalené zdroje neobsahujú názvy.</p>
+<p>Registry obsahuje tieto základné zoznamy; <code class="nb">identifiers()</code> vráti dostupné identifikátory v poradí registrácie:</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Identifikátor</th><th>Obsah</th></tr></thead><tbody><tr><td><code class="nb">CodeListIdentifiers::COUNTRIES</code></td><td>Krajiny ISO 3166-1 a špeciálne kódy podporované Peppolom.</td></tr><tr><td><code class="nb">CodeListIdentifiers::CURRENCIES</code></td><td>Meny ISO 4217 z pribaleného vydania Peppol Billing.</td></tr><tr><td><code class="nb">CodeListIdentifiers::UNITS</code></td><td>Kanonické jednotky UN/ECE Recommendation 20.</td></tr><tr><td><code>CodeListIdentifiers::<wbr>ELECTRONIC_<wbr>ADDRESS_<wbr>SCHEMES</code></td><td>Schémy EAS pre UBL <code class="nb">EndpointID</code>.</td></tr><tr><td><code>CodeListIdentifiers::<wbr>PARTICIPANT_<wbr>IDENTIFIER_<wbr>SCHEMES</code></td><td>Aktívne a registrovateľné transportné schémy z eDEC 9.7.</td></tr><tr><td><code>CodeListIdentifiers::<wbr>UBL_<wbr>DOCUMENT_<wbr>TYPES</code></td><td>Kódy typov Invoice z <code class="nb">DocumentTypeCode</code>.</td></tr><tr><td><code>CodeListIdentifiers::<wbr>ADDITIONAL_<wbr>DOCUMENT_<wbr>TYPES</code></td><td>Kódy typov referenčných dokumentov z <code class="nb">AdditionalDocumentTypeCode</code>.</td></tr><tr><td><code class="nb">CodeListIdentifiers::TAX_SCHEMES</code></td><td>Kódy daňových schém z <code class="nb">TaxSchemeCode</code>.</td></tr></tbody></table></div>
+<p>Ďalších 13 zoznamov má identifikátor <code>CodeListIdentifiers::<wbr>peppolBilling($sourceIdentifier)</code> a zodpovedá hodnotám <code class="nb">PeppolBillingCodeList</code> uvedeným v <a href="../../resources/code-lists/README.md">README pribalených číselníkov</a>. Tieto zdroje obsahujú kódy, názvy a verzie.</p>
+<p>Registry ich sprístupňuje rovnakým rozhraním ako ostatné zoznamy.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\CodeLists\CodeListIdentifiers;
+use DreaM1\EfakturaConnector\Core\Contracts\CodeListRegistryInterface;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\CodeListRegistry;
+
+/** @var CodeListRegistryInterface $registry */
+$registry = new CodeListRegistry();
+$unitOptions = $registry-&gt;get(CodeListIdentifiers::UNITS)-&gt;options();
+$vatCategories = $registry-&gt;get(CodeListIdentifiers::PEPPOL_BILLING_VAT_CATEGORY)-&gt;options();
+
+foreach ($unitOptions as $option) {
+    $code = $option-&gt;value();
+    $label = $option-&gt;label();
+}</code></pre></div>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\PeppolBillingCodeList;
+
+$isListedVatCategory = PeppolBillingCodeList::contains(
+    PeppolBillingCodeList::VAT_CATEGORY,
+    TaxCategoryCode::REVERSE_CHARGE
+);
+$vatExemptionName = PeppolBillingCodeList::name(
+    PeppolBillingCodeList::VATEX,
+    'VATEX-EU-G'
+);
+$paymentMeansCodes = PeppolBillingCodeList::all(PeppolBillingCodeList::PAYMENT_MEANS);</code></pre></div>
+<p>Tieto zdroje obsahujú úplné hodnoty Peppol Billing, nielen slovenskú podmnožinu.</p>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p>Samotné členstvo v číselníku preto nepotvrdzuje, že kód je povolený pre konkrétnu krajinu, profil alebo kombináciu polí; tie kontroluje Schematron.</p></div></div>
+<p>ISO 6523 ICD je odlišný od transportného zoznamu <code class="nb">ParticipantIdentifierSchemeCodeList</code> a od UBL EAS pre <code class="nb">EndpointID</code>.</p>
+<h2 id="typ-dokladu"><span class="mw-h">Typ dokladu</span><a class="anchor" href="#typ-dokladu" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/UBL-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">UblDocumentRoot</code> je hodnotový objekt pre koreňový element (<code class="nb">Invoice</code> alebo <code class="nb">CreditNote</code>), nie pre každý obchodný variant.</p>
+<p>Draft ho prijíma v konštruktore a vracia cez <code class="nb">kind()</code>; vytvoríte ho cez <code>UblDocumentRoot::<wbr>fromString(UblDocumentRoot::<wbr>INVOICE)</code> alebo <code>UblDocumentRoot::<wbr>fromString(UblDocumentRoot::<wbr>CREDIT_<wbr>NOTE)</code>. Na reťazec XML koreňa sa prevedie cez <code class="nb">value()</code>.</p>
+<p>Čítaný model <code class="nb">UblDocument</code> si zachováva textový <code class="nb">kind()</code>, aby vedel sprístupniť aj iné koreňové elementy. Ťarchopis je koreňový <code class="nb">Invoice</code> s kódom <code class="nb">DocumentTypeCode::DEBIT_NOTE</code> (383). Faktúra má predvolený kód 380, dobropis 381.</p>
+<p>Pre UBL CreditNote sa dátum splatnosti zapisuje do <code class="nb">PaymentMeans/PaymentDueDate</code>, pretože UBL 2.1 CreditNote nemá <code class="nb">DueDate</code>. Draft so splatnosťou dobropisu preto potrebuje aj platobné údaje. Dôvod oslobodenia od DPH sa zapisuje do súhrnu <code class="nb">TaxSubtotal</code>, nie do riadku.</p>
+<h2 id="hranice-použitia"><span class="mw-h">Hranice použitia</span><a class="anchor" href="#hranice-použitia" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/UBL-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<ul>
+<li>Writer negeneruje účtovné údaje zo zdrojového systému.</li>
+<li>Reader nezamieta doklad iba preto, že neprejde obchodnými pravidlami Peppol.</li>
+<li>Bezpečné načítanie XML nenahrádza XSD ani Schematron validáciu.</li>
+<li>Hostiteľ zodpovedá za lokalizované texty pravidiel, mapovanie lokálnych označení jednotiek na UN/ECE kódy a predvolenú menu.</li>
+</ul>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li><a href="Validation.html">Lokálna validácia</a></li>
+<li><a href="Sending-Documents.html">Odosielanie dokladov</a></li>
+<li><a href="Receiving-Documents.html">Príjem dokladov</a></li>
+<li><a href="Source-Alignment.html">API špecifikácie a pokrytie</a></li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#tok-zápisu-čítania-a-validácie"><span class="n">1</span> <span class="x">Tok zápisu, čítania a validácie</span></a></li><li class="t2"><a href="#bezpečné-načítanie-xml-a-čítanie-dokladu"><span class="n">2</span> <span class="x">Bezpečné načítanie XML a čítanie dokladu</span></a></li><li class="t2"><a href="#mapovanie-medzi-draftom-xml-a-čítaným-modelom"><span class="n">3</span> <span class="x">Mapovanie medzi draftom, XML a čítaným modelom</span></a></li><li class="t2"><a href="#zápis-invoice-a-creditnote"><span class="n">4</span> <span class="x">Zápis Invoice a CreditNote</span></a></li><li class="t3"><a href="#dobropis-s-referenciou-na-pôvodnú-faktúru"><span class="n">4.1</span> <span class="x">Dobropis s referenciou na pôvodnú faktúru</span></a></li><li class="t2"><a href="#praktický-návod-na-vytvorenie-faktúry"><span class="n">5</span> <span class="x">Praktický návod na vytvorenie faktúry</span></a></li><li class="t3"><a href="#1-pripravte-povinné-údaje"><span class="n">5.1</span> <span class="x">1. Pripravte povinné údaje</span></a></li><li class="t3"><a href="#2-vypočítajte-riadky-dph-a-celkové-sumy"><span class="n">5.2</span> <span class="x">2. Vypočítajte riadky, DPH a celkové sumy</span></a></li><li class="t3"><a href="#3-spustite-kontroly-v-správnom-poradí"><span class="n">5.3</span> <span class="x">3. Spustite kontroly v správnom poradí</span></a></li><li class="t3"><a href="#spustenie-lokálnych-simulácií-opakovania-sapi"><span class="n">5.4</span> <span class="x">Spustenie lokálnych simulácií opakovania SAPI</span></a></li><li class="t2"><a href="#číselné-hodnoty-a-kódy"><span class="n">6</span> <span class="x">Číselné hodnoty a kódy</span></a></li><li class="t2"><a href="#typ-dokladu"><span class="n">7</span> <span class="x">Typ dokladu</span></a></li><li class="t2"><a href="#hranice-použitia"><span class="n">8</span> <span class="x">Hranice použitia</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Practical-Scenarios.html"><small>← Predchádzajúca</small><b>Praktické scenáre a diagramy</b></a><a class="nx" href="Validation.html"><small>Ďalšia →</small><b>Lokálna validácia</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a></li><li><a href="Validation.html">Lokálna validácia</a></li><li><a href="Sending-Documents.html">Odosielanie dokladov</a></li><li><a href="Receiving-Documents.html">Príjem dokladov</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li><li><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a></li><li><a href="Validation.html">Lokálna validácia</a></li><li><a href="Sending-Documents.html">Odosielanie dokladov</a></li><li><a href="Receiving-Documents.html">Príjem dokladov</a></li><li><a href="API-Reference.html">Prehľad API</a></li><li><a href="Public-API.html">Verejné PHP API</a></li><li><a href="Data-Flow-and-Classes.html">Tok dát a prehľad tried</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-práca-s-dokladmi">Práca s dokladmi</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/UBL-Documents.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/UBL-Documents.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

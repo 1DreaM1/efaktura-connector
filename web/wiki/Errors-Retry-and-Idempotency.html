@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Výnimky konektora dedia z EFakturaException . Kategóriu zlyhania určujte podľa triedy výnimky; text getMessage() je technická anglická správa pre logy. Používateľské hlásenie mapuje hostiteľská aplikácia podľa typu a dos">
+<title>Výnimky, retry a idempotencia – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html" aria-current="page">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Errors-Retry-and-Idempotency.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Errors-Retry-and-Idempotency.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Errors-Retry-and-Idempotency.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-referencia">Referencia</a></div><h1 class="title">Výnimky, retry a idempotencia</h1><div class="sub"><span class="chip">Čítanie ≈ 14 min</span><span class="chip">8 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead">Výnimky konektora dedia z <code class="nb">EFakturaException</code>. Kategóriu zlyhania určujte podľa triedy výnimky; text <code class="nb">getMessage()</code> je technická anglická správa pre logy. Používateľské hlásenie mapuje hostiteľská aplikácia podľa typu a dostupných údajov.</p>
+<p>PHP ukážka nižšie je samostatný offline skript. Po <code>composer install</code> uložte ju ako <code class="nb">docs/wiki/offline-example.php</code> a spustite z koreňa repozitára príkazom <code>php docs/<wbr>wiki/<wbr>offline-example.<wbr>php</code>.</p>
+<p>Používa syntetický payload a lokálnu náhradu gatewaya, ktorá vyvolá simulované zlyhanie spojenia; API nekontaktuje.</p>
+<h2 id="rýchle-rozhodnutie-podľa-výsledku"><span class="mw-h">Rýchle rozhodnutie podľa výsledku</span><a class="anchor" href="#rýchle-rozhodnutie-podľa-výsledku" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Errors-Retry-and-Idempotency.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<pre class="mermaid">flowchart TD
+    Call[Volanie konektora] --&gt; Outcome{Čo sa stalo?}
+    Outcome --&gt;|Požiadavka sa neodoslala| Local[ConfigurationException, RequestEncodingException, RequestCoordinationException alebo RequestDeferredException]
+    Outcome --&gt;|HTTP mimo 2xx| Http[ProviderErrorResponseException: status, hlavičky, telo a prípadný error envelope]
+    Outcome --&gt;|HTTP 2xx, neplatné telo| Invalid[InvalidProviderResponseException]
+    Outcome --&gt;|Sieťové zlyhanie| Connection[ProviderConnectionException]
+    Outcome --&gt;|Negatívna kontrola| Preflight[DocumentPreflightException alebo validačné nálezy]
+    Local --&gt; Retry[Zistiť, či request vôbec odišiel a kedy možno skúsiť znova]
+    Http --&gt; Retry
+    Invalid --&gt; Diagnose[Skontrolovať kontrakt a bezpečne redigované diagnostické údaje]
+    Connection --&gt; Unknown[Pri odoslaní dokladu môže byť výsledok neistý]
+    Unknown --&gt; Preserve[Zachovať payload a pôvodný idempotency key]</pre>
+<p>Rozhodujte podľa typu výsledku, nie podľa textu výnimky.</p>
+<p>Každá <code class="nb">ProviderApiException</code> má <code class="nb">requestMayHaveReachedProvider()</code>: <code class="nb">false</code> znamená, že sa požiadavka určite neodoslala (<code class="nb">RequestDeferredException</code>, <code class="nb">TokenRequestException</code>, <code class="nb">CircuitBreakerOpenException</code> a zlyhanie cURL pred odoslaním), takže jej zopakovanie nemôže duplikovať vedľajší účinok.</p>
+<p><code class="nb">true</code> je konzervatívna odpoveď pre všetko ostatné; pri odosielaní dokladu môže ísť o prípad, keď provider dokument prijal, ale odpoveď sa stratila.</p>
+<h3 id="rozhodnutie-z-jedného-miesta-failureclassifier"><span class="mw-h">Rozhodnutie z jedného miesta: <code class="nb">FailureClassifier</code></span><a class="anchor" href="#rozhodnutie-z-jedného-miesta-failureclassifier" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Aby hostiteľ (queue job, scheduler) nemusel skúmať triedy výnimiek, <code class="nb">FailureClassifier::classify(Throwable)</code> vráti <code class="nb">FailureAssessment</code>. Je to čistá funkcia: nič neposiela a nerozhoduje za hostiteľa.</p>
+<p>Správu výnimky nepreberá, takže ostáva technická anglická.</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Metóda</th><th>Význam</th></tr></thead><tbody><tr><td><code class="nb">category()</code></td><td>Jedna z konštánt <code class="nb">FailureAssessment::CATEGORY_*</code>: <code class="nb">authentication</code>, <code class="nb">deferred</code>, <code class="nb">transient</code>, <code class="nb">rejected</code>, <code class="nb">invalid_response</code>, <code class="nb">invalid_input</code>, <code class="nb">configuration</code>, <code class="nb">internal</code>.</td></tr><tr><td><code class="nb">isRetryable()</code></td><td>Zopakovanie rovnakej operácie môže uspieť bez zmeny vstupu alebo konfigurácie.</td></tr><tr><td><code class="nb">requestMayHaveReachedProvider()</code></td><td>Rovnaké pravidlo ako pri <code class="nb">ProviderApiException</code>; cudzie a interné výnimky sú konzervatívne <code class="nb">true</code>.</td></tr><tr><td><code class="nb">isOutcomeUnknown()</code></td><td>Provider mohol požiadavku spracovať bez toho, aby hostiteľ poznal výsledok (sieťové zlyhanie, 5xx, 408, nečitateľná 2xx odpoveď).</td></tr><tr><td><code class="nb">isSafeToRepeatBlindly()</code></td><td>Retryable a požiadavka určite neodišla. Len vtedy je zopakovanie bez rizika duplicity.</td></tr><tr><td><code class="nb">needsAdministratorAttention()</code></td><td>Chybné poverenia, scope alebo konfigurácia; retry nepomôže.</td></tr><tr><td><code class="nb">retryAt()</code></td><td>Najskorší odporúčaný čas z <code class="nb">Retry-After</code> alebo z lokálneho backpressure.</td></tr></tbody></table></div>
+<p><code class="nb">isRetryable()</code> neznamená „zopakuj naslepo“. Pri odoslaní dokladu platí <code class="nb">isOutcomeUnknown()</code> a <code class="nb">requestMayHaveReachedProvider()</code>: zopakujte s rovnakým idempotency key a rovnakým payloadom, alebo najprv skontrolujte stav cez tracking.</p>
+<p>Konektor odoslanie dokladu automaticky neopakuje.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\Exceptions\FailureClassifier;
+use DreaM1\EfakturaConnector\Support\Exceptions\ConnectorThrowable;
+
+try {
+    $client-&gt;documentSubmissionGateway()-&gt;send($request);
+} catch (ConnectorThrowable $failure) {
+    $assessment = FailureClassifier::classify($failure);
+
+    if ($assessment-&gt;needsAdministratorAttention()) {
+        // alarm: poverenia alebo konfigurácia
+    } elseif ($assessment-&gt;isRetryable()) {
+        // znova zaradiť s rovnakým payloadom a idempotency key; nie skôr ako $assessment-&gt;retryAt()
+    } else {
+        // označiť ako zlyhané; pri isOutcomeUnknown() najprv overiť stav cez tracking
+    }
+}</code></pre></div>
+<h2 id="api-a-transport"><span class="mw-h">API a transport</span><a class="anchor" href="#api-a-transport" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Errors-Retry-and-Idempotency.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<div class="tw"><table class="wikitable"><thead><tr><th>Typ výnimky</th><th>Kedy vzniká</th><th>Dostupné údaje</th></tr></thead><tbody><tr><td><code class="nb">ProviderConnectionException</code></td><td>Požiadavku nebolo možné dokončiť, napr. sieťové zlyhanie. Poskytovateľ ju mohol dostať, okrem zlyhania pred odoslaním (<code>requestMayHaveReachedProvider() === false</code>).</td><td></td></tr><tr><td><code class="nb">CircuitBreakerOpenException</code></td><td>Otvorený circuit breaker odmietol požiadavku lokálne. Podtrieda <code class="nb">ProviderConnectionException</code>, ale nič sa neodoslalo (<code>requestMayHaveReachedProvider() === false</code>).</td><td>Základné údaje chyby poskytovateľa.</td></tr><tr><td><code class="nb">ProviderErrorResponseException</code></td><td>Poskytovateľ odpovedal HTTP mimo 2xx.</td><td>Typovaný <code class="nb">httpStatusCode()</code> alebo <code class="nb">null</code>, surový <code class="nb">rawStatusCode()</code>, <code class="nb">responseHeaders()</code>, <code>retryAt(): ?RetryDeadline</code>, surové <code class="nb">body()</code> a parsované <code class="nb">errorEnvelope()</code> (alebo <code class="nb">null</code>, ak telo nemá známy formát).</td></tr><tr><td><code class="nb">InvalidProviderResponseException</code></td><td>HTTP 2xx, ale JSON/XML alebo povinné polia nezodpovedajú kontraktu.</td><td>Zachytené <code class="nb">httpStatusCode()</code> alebo <code class="nb">null</code>, <code class="nb">rawStatusCode()</code>, <code class="nb">responseHeaders()</code>, <code class="nb">schema()</code> a <code class="nb">field()</code> ak sú známe.</td></tr><tr><td><code class="nb">ProviderResponseTooLargeException</code></td><td>Transport prerušil čítanie, keď telo prekročilo nakonfigurovaný limit; odpoveď sa automaticky neopakuje.</td><td><code class="nb">responseBodyLimit()</code> a dostupné <code class="nb">httpStatusCode()</code>, <code class="nb">rawStatusCode()</code> a <code class="nb">responseHeaders()</code>.</td></tr><tr><td><code class="nb">RequestDeferredException</code></td><td>Backpressure vrstva odložila požiadavku pred odoslaním.</td><td><code class="nb">retryAt()</code> ako <code class="nb">RetryDeadline</code>; Unix timestamp získate cez <code class="nb">unixTimestamp()</code>.</td></tr><tr><td><code class="nb">RequestCoordinationException</code></td><td>Nebolo možné získať nakonfigurovaný lokálny alebo zdieľaný HTTP lock; chránená požiadavka sa nespustila.</td><td>Pôvodnú príčinu cez <code class="nb">getPrevious()</code>, ak je dostupná.</td></tr><tr><td><code class="nb">TokenRequestException</code></td><td>Zlyhalo získanie OAuth tokenu.</td><td>Pôvodná príčina v <code class="nb">getPrevious()</code>.</td></tr><tr><td><code class="nb">RequestEncodingException</code></td><td>Request body sa nedá enkódovať. Volanie ešte nebolo odoslané.</td><td>Technická správa.</td></tr><tr><td><code class="nb">RequestBodyTooLargeException</code></td><td>Serializované batch telo prekročilo lokálny limit; HTTP volanie sa nespustilo.</td><td><code class="nb">maxBytes()</code> vracia nastavený limit v bajtoch.</td></tr><tr><td><code class="nb">ConfigurationException</code></td><td>Chýba alebo je neplatná konfigurácia.</td><td>Technická správa.</td></tr></tbody></table></div>
+<p><code class="nb">ApiConnector</code> zachová pôvodné telo chyby a na API hranici ho tolerantne spracuje cez <code class="nb">ProviderErrorEnvelopeParser::parse()</code>. Rozpoznaný výsledok pripojí k <code>ProviderErrorResponseException::<wbr>errorEnvelope()</code>; výnimka vytvorená priamo bez typovaného envelope telo sama neparsuje.</p>
+<p><code class="nb">ProviderApiException</code> je spoločný predok API/transport chýb. <code class="nb">httpStatusCode()</code> vracia typovaný <code class="nb">HttpStatusCode</code> iba pre platné HTTP statusy 100–599; <code class="nb">rawStatusCode()</code> zachová prijatú číselnú hodnotu pre diagnostiku.</p>
+<p>Neplatný prijatý status sa pri klasifikácii spracuje ako 5xx podľa <a href="https://www.rfc-editor.org/rfc/rfc9110.html#section-15" class="ext" rel="noopener">RFC 9110, §15</a>.</p>
+<p>Neznáma hodnota enumu v úspešnej providerovej odpovedi sama osebe nie je chybný tvar odpovede. Neprázdne statusy a typy webhook udalostí sa zachovajú; pri statusových value objectoch použite <code class="nb">isKnown()</code> a pri <code class="nb">WebhookEventType</code> <code class="nb">isSupported()</code>.</p>
+<p><code class="nb">payloadFormat</code> a <code class="nb">TokenStatus::tokenType()</code> sú reťazce a zachovávajú nové hodnoty. Vstupné value objecty si zachovávajú svoje doterajšie <code class="nb">fromString()</code> pravidlá a requesty overujú povolené hodnoty pre danú operáciu.</p>
+<p>OAuth <code class="nb">token_type</code> pre SAPI sa porovnáva bez ohľadu na veľkosť písmen a normalizuje na <code class="nb">Bearer</code>.</p>
+<p>Výnimky UBL a Peppol validácie patria do namespace <code class="nb">Core\Ubl\Exceptions</code>; ich validačné dátové typy zostávajú v <code class="nb">Core\Ubl\Validation</code>.</p>
+<p>Každú zámerne vyvolanú výnimku konektora implementuje rozhranie <code class="nb">Support\Exceptions\ConnectorThrowable</code>, takže ich hostiteľ zachytí jedným <code class="nb">catch</code> bez toho, aby zachytil cudzie chyby.</p>
+<p>Patria sem <code class="nb">EFakturaException</code> a jej potomkovia, <code class="nb">InvalidInputException</code>, <code class="nb">InvariantViolationException</code>, <code class="nb">XmlParseException</code> a <code class="nb">LockStorageException</code>.</p>
+<p>Hierarchia má viac koreňov: <code class="nb">EFakturaException</code> dedí z <code class="nb">RuntimeException</code>, <code class="nb">InvalidInputException</code> z <code class="nb">InvalidArgumentException</code> a <code class="nb">InvariantViolationException</code> z <code class="nb">LogicException</code>.</p>
+<p>Preto na zachytenie všetkých zámerných chýb konektora použite <code>catch (ConnectorThrowable $e)</code>; <code>catch (EFakturaException $e)</code> nezachytí neplatný vstup.</p>
+<p><code class="nb">XmlParseException</code> a <code class="nb">LockStorageException</code> sú nízkoúrovňové; balík ich na verejných hraniciach prevádza na <code class="nb">InvalidXmlException</code> alebo <code class="nb">InvalidProviderResponseException</code> (XML), resp. <code class="nb">RequestCoordinationException</code> alebo <code class="nb">LocalValidationInfrastructureException</code> (zámky), a vidíte ich hlavne pri priamom použití tried zo <code class="nb">Support</code> alebo pri zlom nastavení lock adresára.</p>
+<p>Neplatná hodnota odovzdaná value objectu alebo requestu (prázdny identifikátor, veľkosť stránky mimo rozsahu, zlý formát účastníka) vyvolá <code>Support\<wbr>Exceptions\<wbr>InvalidInputException</code>.</p>
+<p>Je to podtyp <code class="nb">InvalidArgumentException</code>, takže existujúce <code>catch (InvalidArgumentException)</code> ho stále zachytí.</p>
+<p>Chyba konfigurácie, ktorú opraví administrátor (napríklad továreň executora, ktorá nevrátila <code class="nb">HttpRequestExecutorInterface</code>, alebo nesplnená podmienka v príkaze <code class="nb">CheckConnectorCommand</code>), vyvolá <code class="nb">ConfigurationException</code>.</p>
+<p>Porušený interný invariant (zatvorený cURL handle, opakovaný vstup do poolovaného executora, chýbajúca základná URL v transporte, nesprávne použitie UBL writera) vyvolá <code>Support\<wbr>Exceptions\<wbr>InvariantViolationException</code>; ide o chybu v balíku alebo jeho zneužitie, nie o hodnotu od hostiteľa.</p>
+<p>Balík nevyhadzuje holé výnimky SPL; architektonický test to stráži.</p>
+<p>Neplatný vstup dodaný hostiteľom pri parsovaní webhooku vyvolá <code class="nb">InvalidWebhookPayloadException</code>, ktorá dedí z <code class="nb">InvalidInputException</code>. Nejde o chybu HTTP receivera ani overenia podpisu; tieto zodpovednosti zostávajú hostiteľovi.</p>
+<h2 id="dokument-a-validácia"><span class="mw-h">Dokument a validácia</span><a class="anchor" href="#dokument-a-validácia" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Errors-Retry-and-Idempotency.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<div class="tw"><table class="wikitable"><thead><tr><th>Typ výnimky</th><th>Význam</th></tr></thead><tbody><tr><td><code class="nb">RecipientUnsupportedException</code></td><td>Discovery úspešne odpovedalo, že príjemca nepodporuje požadovaný typ alebo proces.</td></tr><tr><td><code class="nb">DocumentRejectedByProviderException</code></td><td>Vzdialená validácia vrátila <code>valid: false</code>.</td></tr><tr><td><code class="nb">DocumentPreflightException</code></td><td>Abstraktný predok negatívnych výsledkov kontroly. Nie je to HTTP/transport chyba.</td></tr><tr><td><code class="nb">InvalidXmlException</code></td><td>XML je neplatné alebo nebezpečné; <code class="nb">isUnsafe()</code> rozlišuje bezpečnostný dôvod.</td></tr><tr><td><code class="nb">UnsupportedDocumentTypeException</code></td><td>Koreň nie je podporovaný UBL Invoice alebo CreditNote.</td></tr><tr><td><code class="nb">SchemaValidationException</code></td><td>UBL XSD validácia neprešla; obsahuje <code class="nb">version()</code>, <code class="nb">issues()</code> a <code class="nb">omittedCount()</code>.</td></tr><tr><td><code class="nb">PeppolBillingViolationException</code></td><td>Spoločný abstraktný predok oboch výnimiek nižšie; nesie <code class="nb">violatedRules()</code>.</td></tr><tr><td><code class="nb">PeppolBillingRulesException</code></td><td>Hlavička porušuje doplnkové pravidlo BR-CO-25; obsahuje <code class="nb">violatedRules()</code>.</td></tr><tr><td><code class="nb">PeppolBillingDraftRulesException</code></td><td><code>PeppolBillingDraftRulesInterface::<wbr>assertSatisfied()</code> odmietlo draft pred serializáciou; <code class="nb">violatedRules()</code> vráti identifikátory porušených pravidiel.</td></tr><tr><td><code class="nb">LocalValidationInfrastructureException</code></td><td>Validáciu nebolo možné vykonať pre Java, Saxon, proces alebo zdroje.</td></tr></tbody></table></div>
+<p>Peppol Schematron nálezy sa vracajú ako <code class="nb">PeppolSchematronValidationResult</code>, nie ako výnimky. Upozornenia a informačné nálezy neblokujú validitu, chyba ju blokuje a vynechané nálezy označujú neúplný výsledok.</p>
+<p><code class="nb">LocalValidationInfrastructureException</code> signalizuje, že validáciu nebolo možné spustiť alebo dokončiť.</p>
+<h2 id="http-chyba-a-zamietnutie-požiadavky"><span class="mw-h">HTTP chyba a zamietnutie požiadavky</span><a class="anchor" href="#http-chyba-a-zamietnutie-požiadavky" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Errors-Retry-and-Idempotency.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Negatívna odpoveď na úspešne vykonanú kontrolu je <code class="nb">DocumentPreflightException</code>. HTTP 400 pri validácii zostáva <code class="nb">ProviderErrorResponseException</code>. Výnimka zachováva pôvodné telo cez <code class="nb">body()</code> a rozpoznanú JSON obálku sprístupní cez <code class="nb">errorEnvelope()</code>.</p>
+<p><code class="nb">ProviderErrorEnvelope::category()</code> vracia nullable <code class="nb">ProviderErrorCategory</code>; cez <code class="nb">value()</code> získate presný text a <code class="nb">isKnown()</code> rozpozná kategórie <code class="nb">AUTH</code>, <code class="nb">VALIDATION</code>, <code class="nb">PROCESSING</code>, <code class="nb">TEMPORARY</code> a <code class="nb">PERMANENT</code>.</p>
+<p><code class="nb">ProviderErrorEnvelope::code()</code> vracia nullable <code class="nb">ProviderErrorCode</code>; jeho <code class="nb">value()</code> zachová presný kód poskytovateľa vrátane neznámych hodnôt. Neznáme kategórie sa zachovajú, no bezpečný API log ich nezapisuje.</p>
+<p>Hostiteľ rozhoduje, čo <code class="nb">category</code>, <code class="nb">code</code> a <code class="nb">details</code> znamenajú pre aplikáciu; pri retry kandidátoch transport požiadavku zopakuje iba pri rozpoznanej hodnote <code>retryable: true</code>.</p>
+<p>Zachovajte surový obsah iba podľa bezpečnostnej a retenčnej politiky hostiteľa. Ak ho logujete, redigujte tajomstvá, osobné údaje a voľný text podľa potrieb aplikácie.</p>
+<h2 id="token-endpoint-a-neplatné-odpovede"><span class="mw-h">Token endpoint a neplatné odpovede</span><a class="anchor" href="#token-endpoint-a-neplatné-odpovede" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Errors-Retry-and-Idempotency.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Ak backpressure počas obnovy tokenu odloží požiadavku na SAPI token endpoint, <code class="nb">SapiTokenProvider::getToken()</code> vyhodí priamo <code class="nb">RequestDeferredException</code>. Tokenový request sa ešte neodoslal; výnimka sa neobalí do <code class="nb">TokenRequestException</code>.</p>
+<p>Naplánujte ďalší pokus podľa <code class="nb">retryAt()-&gt;unixTimestamp()</code>. <code class="nb">TokenRequestException</code> označuje zlyhanie samotného volania token endpointu, napríklad chybu spojenia, HTTP chybu alebo neplatnú odpoveď; pôvodnú výnimku nájdete v <code class="nb">getPrevious()</code>.</p>
+<p>Aj voliteľné polia odpovede môžu mať obsahové obmedzenia. Ak prítomná hodnota poruší validáciu svojho tvaru alebo obsahu, napríklad prázdne <code class="nb">documentId</code>, vznikne <code class="nb">InvalidProviderResponseException</code> so schémou, poľom a dostupným HTTP kontextom.</p>
+<h2 id="retry-politika"><span class="mw-h">Retry politika</span><a class="anchor" href="#retry-politika" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Errors-Retry-and-Idempotency.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">RetryPolicy::default()</code> povoľuje najviac 3 pokusy celkovo, začína oneskorením 500 ms a exponenciálne ho zvyšuje až po konfigurovaný strop 30 sekúnd. Predvolený počet pokusov preto čaká 500 ms a potom 1 sekundu.</p>
+<p>Konfigurácia môže nastaviť 1 až 10 celkových pokusov vrátane prvého volania. <code class="nb">ApiRequest</code> predvolene povoľuje retry iba pre GET; každú inú HTTP metódu môže endpoint výslovne označiť ako bezpečnú.</p>
+<p>Integrator klient takto označuje vytvorenie/aktiváciu s idempotency key a úplnú náhradu participant prístupov cez PUT; rotáciu secretu ani odstránenie klienta automaticky neopakuje.</p>
+<p><code class="nb">RetryingHttpRequestExecutor</code> opakuje sieťové zlyhania a odpovede 5xx/429 len pre retry-safe požiadavky. Pri HTTP 5xx alebo 429 predvolená skladba navyše vyžaduje rozpoznanú chybovú obálku s <code>retryable: true</code>; chýbajúci, nečitateľný alebo <code class="nb">false</code> príznak retry zastaví.</p>
+<p>Pri chybe spojenia bez HTTP odpovede sa čaká podľa exponenciálneho oneskorenia politiky (predvolene 500 ms a potom 1 sekunda); ak je oneskorenie dlhšie než inline limit politiky, executor nečaká a vyhodí pôvodnú <code class="nb">ProviderConnectionException</code>.</p>
+<p>Pri retry po HTTP odpovedi sa synchronne čaká najviac 1 sekundu; ak platná hlavička <code class="nb">Retry-After</code> vyžaduje dlhšie čakanie, executor vráti provider odpoveď bez ďalšieho pokusu.</p>
+<p><code class="nb">ProviderApiException::retryAt()</code> prevedie platnú hlavičku na <code class="nb">RetryDeadline</code>; Unix timestamp získate cez <code class="nb">unixTimestamp()</code>.</p>
+<p>Ak retry vrstva vráti konečnú HTTP 429 odpoveď, backpressure uloží cooldown z <code class="nb">Retry-After</code> alebo sekundový fallback. Ďalšie volania v rovnakom transportnom scope vyvolajú <code class="nb">RequestDeferredException</code> ešte pred sieťovým volaním.</p>
+<p>Pre SAPI/Gateway scope sa identifikuje originom, OAuth klientom a scope a zostáva stabilný po obnove Bearer tokenu; pre Integrator API vychádza z originu a hashovanej integrator konfigurácie.</p>
+<p>Výnimka poskytuje <code class="nb">retryAt()</code> a znamená, že konkrétna požiadavka nebola odoslaná. Dlhé čakanie patrí do hostiteľskej fronty; pri opakovaní odoslania dokladu použite rovnaký idempotency key a identický payload.</p>
+<p>SAPI acknowledge je podľa OpenAPI idempotentný, preto ho endpoint označuje ako bezpečný na automatický retry.</p>
+<p>Predvolená skladba používa príznak <code class="nb">retryable</code> z chybovej odpovede. Odosielanie dokladov je v balíku nebezpečné na automatické retry; klient pri opakovanom pokuse musí použiť rovnaký idempotency key a identický payload.</p>
+<p>HTTP význam hlavičky <code class="nb">Retry-After</code> a stavov 429/5xx je opísaný v <a href="https://www.rfc-editor.org/rfc/rfc9110" class="ext" rel="noopener">RFC 9110</a>.</p>
+<p>Konektor túto všeobecnú sémantiku kombinuje s retry príznakom v odpovedi poskytovateľa a limitmi <code class="nb">RetryPolicy</code>; všeobecný HTTP štandard sám neurčuje, či je konkrétna operácia SAPI alebo Gateway bezpečné opakovať.</p>
+<p>Konkrétne pravidlá a odkazy na provider kontrakty sú v <a href="Source-Alignment.html">Source-Alignment</a>.</p>
+<h2 id="backpressure-a-circuit-breaker"><span class="mw-h">Backpressure a circuit breaker</span><a class="anchor" href="#backpressure-a-circuit-breaker" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Errors-Retry-and-Idempotency.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">BackpressureHttpRequestExecutor</code> pred každým pokusom skontroluje uložený cooldown (aj pred opakovaním po čakaní retry vrstvy); termín z odpovede 429 zapisuje <code class="nb">RateLimitRecordingHttpRequestExecutor</code> po každom pokuse (z <code class="nb">Retry-After</code>, alebo sekundový cooldown, ak hlavička chýba či nie je platná); retry vrstva ho prečíta pred určením čakania.</p>
+<p>Ďalšie požiadavky v rovnakom transportnom scope sa do tohto termínu neodošlú a vyvolajú <code class="nb">RequestDeferredException</code>. SAPI/Gateway scope sa nemení pri obnove Bearer tokenu; Integrator API používa samostatný hashovaný scope z originu a ID integratora; rotácia tokenu ho nemení.</p>
+<p>Výnimka obsahuje najskorší čas ďalšieho pokusu v <code class="nb">retryAt()</code>. Samostatná predvolená skladba používa <code class="nb">InMemoryHttpRequestBackpressure</code>, ktorá zdieľa cooldown iba medzi volaniami tej istej inštancie procesu.</p>
+<p><code class="nb">CircuitBreakerHttpRequestExecutor</code> obklopí retry vrstvu. <code class="nb">InMemoryCircuitBreaker</code> otvorí obvod po piatich neúspešných operáciách (chyba spojenia alebo odpoveď HTTP 5xx) v priebehu 60 sekúnd a blokuje nové volania 30 sekúnd; v polootvorenom stave povolí jeden skúšobný request.</p>
+<p>HTTP 429 sa nezapočítava ako zlyhanie. <code class="nb">DefaultHttpRequestExecutorFactory</code> zahŕňa oba dekorátory a v samostatnom použití predvolene používa in-memory úložiská.</p>
+<p>Circuit breaker má jediný kontrakt, <code class="nb">CircuitBreakerInterface</code>. <code class="nb">acquireExecutionPermit()</code> atomicky povolí požiadavku, ktorá môže byť jedinou sondou v polootvorenom stave, alebo vráti <code class="nb">null</code>, keď je okruh otvorený.</p>
+<p>Permit je viazaný na generáciu stavu, takže výsledok pomalej požiadavky zo staršej generácie nemôže prepísať novší stav.</p>
+<p>Výsledok sa hlási cez <code class="nb">recordSuccessForPermit()</code>, <code class="nb">recordFailureForPermit()</code> alebo neutrálne cez <code class="nb">recordNeutralForPermit()</code>; HTTP 429 a lokálne chyby sú neutrálne. <code class="nb">isOpen()</code> je len diagnostika. Vstavaný in-memory aj Laravel cache breaker zdieľajú rovnaký stavový automat.</p>
+<p>Chyba spojenia a konečná odpoveď HTTP 5xx sú zlyhania; neočakávaná lokálna výnimka, vrátane <code class="nb">RequestDeferredException</code> z backpressure, uvoľní permit neutrálne. Odpoveď HTTP 429 je neutrálna, takže nezmení históriu chýb ani neuzavrie breaker úspechom sondy.</p>
+<p>Breaker obklopuje retry vrstvu, preto vyhodnocuje celú operáciu, nie jednotlivé pokusy:</p>
+<ul>
+<li>Operácia, ktorá po všetkých pokusoch skončí chybou spojenia alebo 5xx, sa počíta ako jedno zlyhanie; prah <code class="nb">failure_threshold</code> teda znamená počet operácií, nie pokusov. Pokus s úspešnou odpoveďou po predchádzajúcich 5xx sa počíta ako úspech.</li>
+<li>Počas retry cyklu sa stav breakera znova nekontroluje. Operácia, ktorá už bola povolená, dobehne všetky svoje pokusy aj vtedy, keď sa obvod medzitým otvoril.</li>
+<li>V polootvorenom stave drží skúšobný permit celá operácia vrátane čakania medzi pokusmi. Ostatné požiadavky sú dovtedy odmietnuté, kým sonda neskončí úspechom, zlyhaním alebo neutrálne.</li>
+<li>Odmietnutie otvoreným obvodom vyhodí <code class="nb">ProviderConnectionException</code> ešte pred retry vrstvou, takže sa neopakuje.</li>
+</ul>
+<p>Logger a metriky sú pod breakerom a vidia iba skutočné pokusy.</p>
+<p>Odmietnutia otvoreným obvodom (<code class="nb">CircuitBreakerOpenException</code>, podtrieda <code class="nb">ProviderConnectionException</code>) a odloženia cez backpressure zaznamená najvonkajšia <code class="nb">RejectionObservingHttpRequestExecutor</code> raz za operáciu: metrika s výsledkom <code class="nb">circuit_open</code> alebo <code class="nb">deferred</code> a udalosť <code class="nb">recordFailure</code> loggera.</p>
+<p>Laravel bridge nahrádza tieto úložiská implementáciami <code class="nb">LaravelCacheHttpRequestBackpressure</code> a <code class="nb">LaravelCacheCircuitBreaker</code>, takže zdieľaný Laravel cache store uchováva cooldown aj breaker medzi workermi.</p>
+<p>Cache store s podporou atomických zámkov koordinuje aj aktualizácie naprieč hostmi; bez tejto podpory sa aktualizácie zamykajú lokálne cez súbory. Pri zlyhaní cache je backpressure najlepšia snaha a circuit breaker prejde na lokálny stav v pamäti.</p>
+<h2 id="idempotentné-odoslanie"><span class="mw-h">Idempotentné odoslanie</span><a class="anchor" href="#idempotentné-odoslanie" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Errors-Retry-and-Idempotency.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Pre nové odoslanie vytvorte <code class="nb">IdempotencyKey</code> cez <code class="nb">IdempotencyKeyGenerator::generate()</code> a uložte ho spolu s payloadom.</p>
+<p>Hodnotový objekt uchováva UUID v4 kompatibilné s formátom v DataHosting OpenAPI; pri ukladaní použite <code class="nb">value()</code> a pri načítaní ho obnovte cez <code class="nb">IdempotencyKey::fromString()</code>.</p>
+<p>Kľúč sa vždy uloží malými písmenami, takže ten istý UUID zapísaný veľkými aj malými písmenami dá rovnakú hlavičku <code class="nb">Idempotency-Key</code>; <code class="nb">value()</code> preto môže vrátiť iný zápis, než ste odovzdali. Pri opakovaní toho istého pokusu použite rovnaký objekt kľúča a identický payload.</p>
+<p><code class="nb">SendDocumentRequest</code> nesie kľúč spolu s participantom a payloadom; endpoint neoznačí odosielací POST ako bezpečný na automatický retry.</p>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p>Ak požiadavka skončí timeoutom alebo chybou, stav odoslania môže byť neistý; pred ďalším krokom skontrolujte stav cez tracking API.</p></div></div>
+<p>Zmena XML znamená nový payload a nový idempotency key.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">&lt;?php
+use DreaM1\EfakturaConnector\Core\Documents\IdempotencyKey;
+use DreaM1\EfakturaConnector\Core\Documents\IdempotencyKeyGenerator;
+use DreaM1\EfakturaConnector\Core\Documents\DocumentSubmissionResult;
+use DreaM1\EfakturaConnector\Core\Documents\OutboundDocumentPayload;
+use DreaM1\EfakturaConnector\Core\Documents\Sha256Checksum;
+use DreaM1\EfakturaConnector\Core\Documents\SendDocumentRequest;
+use DreaM1\EfakturaConnector\Core\Exceptions\ProviderConnectionException;
+use DreaM1\EfakturaConnector\Core\Contracts\DocumentSubmissionGatewayInterface;
+use DreaM1\EfakturaConnector\Core\Ubl\PeppolDocumentTypeIdentifierBuilder;
+use DreaM1\EfakturaConnector\Domain\EFaktura\Participant;
+use DreaM1\EfakturaConnector\Domain\EFaktura\PeppolProcessIdentifier;
+use DreaM1\EfakturaConnector\Domain\EFaktura\SubmittedDocumentId;
+use DreaM1\EfakturaConnector\Domain\Ubl\PeppolBillingProfile;
+use DreaM1\EfakturaConnector\Support\Timestamp;
+
+require dirname(__DIR__, 2) . '/vendor/autoload.php';
+
+final class WikiOfflineFailingGateway implements DocumentSubmissionGatewayInterface
+{
+    public function send(SendDocumentRequest $request): DocumentSubmissionResult
+    {
+        throw new ProviderConnectionException('Synthetic offline connection failure.');
+    }
+}
+
+$participant = Participant::parse('9915:sender-demo');
+$receiver = Participant::parse('9915:receiver-demo');
+$xml = '&lt;Invoice xmlns=&quot;urn:oasis:names:specification:ubl:schema:xsd:Invoice-2&quot;&gt;&lt;ID&gt;OFFLINE-RETRY-001&lt;/ID&gt;&lt;/Invoice&gt;';
+$payload = new OutboundDocumentPayload(
+    SubmittedDocumentId::fromString('OFFLINE-RETRY-001'),
+    PeppolDocumentTypeIdentifierBuilder::forDocument('Invoice'),
+    PeppolProcessIdentifier::fromString(PeppolBillingProfile::PROCESS_ID),
+    $participant,
+    $receiver,
+    Timestamp::fromDateTimeImmutable(new DateTimeImmutable('2026-11-26T12:00:00+00:00')),
+    $xml,
+    Sha256Checksum::fromContent($xml)
+);
+$gateway = new WikiOfflineFailingGateway();
+$idempotencyKey = IdempotencyKeyGenerator::generate();
+$storedAttempt = [
+    'idempotency_key' =&gt; $idempotencyKey-&gt;value(),
+    'payload' =&gt; $payload,
+];
+
+try {
+    $gateway-&gt;send(new SendDocumentRequest(
+        $participant,
+        $payload,
+        $idempotencyKey
+    ));
+} catch (ProviderConnectionException $exception) {
+    // Obnovte kľúč z uloženej hodnoty a zostavte retry z toho istého payloadu.
+    $retryKey = IdempotencyKey::fromString($storedAttempt['idempotency_key']);
+    $retryRequest = new SendDocumentRequest(
+        $participant,
+        $storedAttempt['payload'],
+        $retryKey
+    );
+
+    echo 'Synthetic failure: ', $exception-&gt;getMessage(), PHP_EOL;
+    echo 'Retry keeps key ', $retryRequest-&gt;idempotencyKey()-&gt;value(), ' and document ',
+        $retryRequest-&gt;payload()-&gt;documentId()-&gt;value(), PHP_EOL;
+}</code></pre></div>
+<p>Pole <code class="nb">storedAttempt</code> je v tomto príklade iba v pamäti. Aplikácia má pred prvým odoslaním trvalo uložiť identický XML payload a hodnotu kľúča, aby ich vedela obnoviť po reštarte.</p>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li><a href="Transport-and-Authentication.html">HTTP transport a autentifikácia</a></li>
+<li><a href="Sending-Documents.html">Odosielanie dokladov</a></li>
+<li><a href="Troubleshooting.html">Riešenie problémov</a></li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#rýchle-rozhodnutie-podľa-výsledku"><span class="n">1</span> <span class="x">Rýchle rozhodnutie podľa výsledku</span></a></li><li class="t3"><a href="#rozhodnutie-z-jedného-miesta-failureclassifier"><span class="n">1.1</span> <span class="x">Rozhodnutie z jedného miesta: FailureClassifier</span></a></li><li class="t2"><a href="#api-a-transport"><span class="n">2</span> <span class="x">API a transport</span></a></li><li class="t2"><a href="#dokument-a-validácia"><span class="n">3</span> <span class="x">Dokument a validácia</span></a></li><li class="t2"><a href="#http-chyba-a-zamietnutie-požiadavky"><span class="n">4</span> <span class="x">HTTP chyba a zamietnutie požiadavky</span></a></li><li class="t2"><a href="#token-endpoint-a-neplatné-odpovede"><span class="n">5</span> <span class="x">Token endpoint a neplatné odpovede</span></a></li><li class="t2"><a href="#retry-politika"><span class="n">6</span> <span class="x">Retry politika</span></a></li><li class="t2"><a href="#backpressure-a-circuit-breaker"><span class="n">7</span> <span class="x">Backpressure a circuit breaker</span></a></li><li class="t2"><a href="#idempotentné-odoslanie"><span class="n">8</span> <span class="x">Idempotentné odoslanie</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Source-Alignment.html"><small>← Predchádzajúca</small><b>API špecifikácie a pokrytie</b></a><a class="nx" href="Architecture-and-Testing.html"><small>Ďalšia →</small><b>Architektúra a testovanie</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Source-Alignment.html">API špecifikácie a pokrytie</a></li><li><a href="Architecture-and-Testing.html">Architektúra a testovanie</a></li><li><a href="API-Reference.html">Prehľad API</a></li><li><a href="Integrator-API.html">Integrator API</a></li><li><a href="Public-API.html">Verejné PHP API</a></li><li><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li><li><a href="Configuration.html">Konfigurácia</a></li><li><a href="Transport-and-Authentication.html">HTTP transport a autentifikácia</a></li><li><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a></li><li><a href="Sending-Documents.html">Odosielanie dokladov</a></li><li><a href="Receiving-Documents.html">Príjem dokladov</a></li><li><a href="Data-Flow-and-Classes.html">Tok dát a prehľad tried</a></li><li><a href="Troubleshooting.html">Riešenie problémov</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-referencia">Referencia</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Errors-Retry-and-Idempotency.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Errors-Retry-and-Idempotency.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

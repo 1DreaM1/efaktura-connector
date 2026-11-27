@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Táto stránka sleduje údaje od verejného kontraktu konektora po API odpoveď alebo výsledný UBL model. Opisuje implementáciu balíka; poradie kontrol, uloženie dokladov a obchodný workflow určuje hostiteľská aplikácia.">
+<title>Tok dát a prehľad tried – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html" aria-current="page">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Data-Flow-and-Classes.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Data-Flow-and-Classes.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Data-Flow-and-Classes.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-referencia">Referencia</a></div><h1 class="title">Tok dát a prehľad tried</h1><div class="sub"><span class="chip">Čítanie ≈ 17 min</span><span class="chip">6 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead">Táto stránka sleduje údaje od verejného kontraktu konektora po API odpoveď alebo výsledný UBL model. Opisuje implementáciu balíka; poradie kontrol, uloženie dokladov a obchodný workflow určuje hostiteľská aplikácia.</p>
+<h2 id="zostavenie-služieb"><span class="mw-h">Zostavenie služieb</span><a class="anchor" href="#zostavenie-služieb" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Data-Flow-and-Classes.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Hostiteľ používa kontrakty z <code class="nb">Core</code> a môže ich napojiť na predvolené implementácie v <code class="nb">Infrastructure</code>. Laravel service provider skladá predvolené služby do kontajnera. Pri samostatnom použití bez Laravelu vytvorí tieto objekty hostiteľ.</p>
+<pre class="mermaid">flowchart LR
+    Host[Hostiteľská aplikácia] --&gt; RegistryPort[Core SapiClientRegistryInterface]
+    Registry[SapiClientRegistry] -.implementuje.-&gt; RegistryPort
+    Registry --&gt;|alias alebo predvolený klient| SapiFactory[SapiClientFactory]
+    SapiFactory --&gt; SapiClient
+    SapiClient -.implementuje.-&gt; SapiClientPort[Core SapiClientInterface]
+    Host --&gt; SapiClientPort
+    SapiClientPort --&gt; Core[Core kontrakt operácie]
+    Core --&gt; Adapter[Infrastructure adaptér]
+    Adapter --&gt; Endpoint[SAPI alebo Peppol endpoint]
+    Endpoint --&gt; Api[ApiConnector]
+    Api --&gt; Auth[AuthenticatedRequestSender]
+    Auth --&gt; Transport[ProviderTransport]
+    Transport --&gt; Executor[HTTP executor stack]
+    Host --&gt; IntegratorFactoryPort[Core IntegratorAccountClientFactoryInterface]
+    IntegratorFactory[Infrastructure IntegratorAccountClientFactory] -.implementuje.-&gt; IntegratorFactoryPort
+    IntegratorFactoryPort --&gt; IntegratorFactory
+    IntegratorFactory --&gt; IntegratorClient[Infrastructure IntegratorAccountClient]
+    IntegratorFactory --&gt; IntegratorTransport[ProviderTransport]
+    IntegratorClient -.implementuje.-&gt; IntegratorPort[Core IntegratorAccountClientInterface]
+    Host --&gt; IntegratorPort
+    IntegratorClient --&gt; ClientFacade[IntegratorClientManagementFacade]
+    IntegratorClient --&gt; ParticipantFacade[IntegratorParticipantManagementFacade]
+    IntegratorClient --&gt; DocumentFacade[IntegratorDocumentFacade]
+    IntegratorClient --&gt; PdsFacade[IntegratorPdsFacade]
+    SapiClient --&gt;|lazy typované služby| Adapter
+    ClientFacade --&gt; IntegratorEndpoint[Integrator endpoint + ApiConnector]
+    ParticipantFacade --&gt; IntegratorEndpoint
+    DocumentFacade --&gt; IntegratorEndpoint
+    IntegratorEndpoint --&gt; IntegratorAuth[IntegratorTokenRequestSender]
+    IntegratorAuth --&gt; IntegratorTransport
+    PdsFacade --&gt; PdsEndpoint[SubmitPdsSubjectsEndpoint + ApiConnector]
+    PdsEndpoint --&gt; PdsAuth[PdsAuthenticatedRequestSender]
+    PdsAuth --&gt; IntegratorTransport
+    IntegratorTransport --&gt; Executor
+    Executor --&gt; Provider[SAPI-SK, Peppol Gateway alebo Integrator API]
+    Adapter --&gt; Domain[Doménové hodnoty]
+    Core --&gt; Domain</pre>
+<p><code class="nb">SapiClientRegistry</code> vracia klienta podľa aliasu alebo predvoleného nastavenia a vytvára ho až pri prvom použití. <code class="nb">SapiClientFactory</code> pre daný profil skladá autentifikovaný <code class="nb">ApiConnector</code> a <code class="nb">SapiClient</code>; každý klient má vlastný <code class="nb">SapiTokenProvider</code>.</p>
+<p>Executor môže byť zdieľaný alebo vytvorený pre konkrétny profil podľa konfigurácie factory. <code class="nb">SapiClient</code> vytvára jednotlivé adaptéry až pri prvom vyžiadaní príslušnej služby a potom ich uchováva v typovaných vlastnostiach.</p>
+<p><code class="nb">UblDraftSubmission</code> zdieľa SAPI submission gateway a kontrola schopnosti príjemcu zdieľa discovery provider. <code class="nb">SapiClient</code> preto drží služby bez reťazcovej mapy cache; verejné Core kontrakty klienta sa nemenia.</p>
+<p><code class="nb">Core</code> definuje verejné porty, vstupné a výstupné dátové objekty a technické výnimky. <code class="nb">Domain</code> normalizuje hodnoty, napríklad identifikátor participanta, stav dokladu či UBL údaje. <code class="nb">Infrastructure</code> vytvára API požiadavky, vykonáva HTTP a mapuje odpovede na typované modely.</p>
+<p><code class="nb">IntegratorAccountClientFactory</code> skladá jeden <code class="nb">ProviderTransport</code> (<code class="nb">forIntegratorAccount()</code>) a dva <code class="nb">ApiConnector</code> objekty.</p>
+<p>Bežné operácie idú cez <code class="nb">IntegratorTokenRequestSender</code>, ktorý nastaví <code class="nb">X-Integrator-Token</code>; PDS endpoint používa <code class="nb">PdsAuthenticatedRequestSender</code> nad tým istým transportom. PDS sender vyžaduje práve jeden neprázdny <code class="nb">X-PDS-Secret</code> a odstráni hlavičky <code class="nb">Authorization</code> aj <code class="nb">X-Integrator-Token</code>.</p>
+<p>Obe vetvy obchádzajú <code class="nb">AuthenticatedRequestSender</code> a <code class="nb">SapiTokenProvider</code>. Oba konektory dostane <code class="nb">IntegratorAccountClient</code>, ktorý z nich vytvorí typované skupiny pre správu klientov, účastníkov, súhrny dokladov a PDS a deleguje do nich operácie.</p>
+<p>Toto rozdelenie je interné pre Infrastructure; verejné operácie naďalej poskytuje jedno <code class="nb">IntegratorAccountClientInterface</code>. Integrator OAuth klienti sa preto dajú spravovať bez toho, aby integrátorský token vstupoval do konfigurácie bežného SAPI OAuth klienta.</p>
+<h2 id="spoločný-tok-vzdialenej-požiadavky"><span class="mw-h">Spoločný tok vzdialenej požiadavky</span><a class="anchor" href="#spoločný-tok-vzdialenej-požiadavky" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Data-Flow-and-Classes.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Endpoint zostaví nemenný <code class="nb">ApiRequest</code>. Ten nesie HTTP metódu, cestu, query, hlavičky, JSON telo, participanta, kontext logovania a príznak bezpečného opakovania. Cesta s parametrami sa URL-kóduje a query sa serializuje v RFC 3986 formáte.</p>
+<pre class="mermaid">sequenceDiagram
+    participant Host as Hostiteľ / Core volanie
+    participant Registry as SapiClientRegistry
+    participant Client as SapiClient
+    participant Adapter as Infrastructure adaptér
+    participant Endpoint as SAPI/Gateway endpoint
+    participant TokenEndpoint as RequestTokenEndpoint
+    participant TokenAPI as ApiConnector pre token
+    participant API as ApiConnector
+    participant Auth as AuthenticatedRequestSender
+    participant Token as SapiTokenProvider
+    participant Cache as SapiTokenCacheInterface
+    participant Lock as Voliteľný refresh lock
+    participant HTTP as Transport
+    participant Stack as HTTP executor stack
+    participant Remote as SAPI alebo Gateway
+    Host-&gt;&gt;Registry: client(alias) alebo defaultClient()
+    Registry--&gt;&gt;Host: vytvorí alebo vráti SapiClient
+    Host-&gt;&gt;Client: získa Core kontrakt a zavolá operáciu
+    Client-&gt;&gt;Adapter: volanie operácie
+    Adapter-&gt;&gt;Endpoint: typovaný vstup
+    Endpoint-&gt;&gt;API: ApiRequest + mapper odpovede
+    API-&gt;&gt;Auth: HttpExchangeRequest
+    Auth-&gt;&gt;Token: getToken()
+    alt použiteľný token v pamäti
+        Token--&gt;&gt;Auth: SapiToken
+    else pamäťový token chýba alebo expiroval
+        Token-&gt;&gt;Cache: načítanie tokenu z cache
+        alt cache obsahuje použiteľný token
+            Cache--&gt;&gt;Token: SapiToken
+            Token--&gt;&gt;Auth: SapiToken
+        else cache miss alebo expirovaný token
+            opt refresh lock je nakonfigurovaný
+                Token-&gt;&gt;Lock: synchronizácia obnovy
+                Token-&gt;&gt;Cache: opätovné načítanie po získaní zámku
+                Cache--&gt;&gt;Token: aktuálny stav cache
+            end
+            alt po prípadnom opätovnom načítaní je token použiteľný
+                Cache--&gt;&gt;Token: SapiToken
+                Token--&gt;&gt;Auth: SapiToken
+            else token stále chýba alebo je expirovaný
+                Note over Token,TokenEndpoint: Token cache kľúč závisí od provider URL, OAuth klienta a scope, nie od participanta.
+                Token-&gt;&gt;TokenEndpoint: OAuthTokenRequest + client credentials
+                TokenEndpoint-&gt;&gt;TokenAPI: ApiRequest bez Bearer tokenu
+                TokenAPI-&gt;&gt;HTTP: POST /sapi/auth/token cez obyčajný transport
+                HTTP-&gt;&gt;Stack: base URL a scope
+                Stack-&gt;&gt;Remote: HTTPS požiadavka na SAPI
+                Remote--&gt;&gt;Stack: HTTP odpoveď s tokenom
+                Stack--&gt;&gt;HTTP: HttpExchangeResult
+                HTTP--&gt;&gt;TokenAPI: surová HTTP odpoveď
+                TokenAPI--&gt;&gt;TokenEndpoint: SapiTokenResponse
+                TokenEndpoint--&gt;&gt;Token: SapiTokenResponse
+                Token-&gt;&gt;Cache: uloženie tokenu
+                Token--&gt;&gt;Auth: SapiToken
+            end
+        end
+    end
+    Auth-&gt;&gt;HTTP: request s Authorization: Bearer
+    HTTP-&gt;&gt;Stack: base URL a scope
+    Stack-&gt;&gt;Remote: HTTPS požiadavka
+    Remote--&gt;&gt;Stack: HTTP odpoveď
+    Stack--&gt;&gt;HTTP: HttpExchangeResult
+    HTTP--&gt;&gt;Auth: výsledok prenosu
+    opt prvá odpoveď má status 401
+        Auth-&gt;&gt;Token: forget(token) a opätovné getToken()
+        Note over Auth,TokenEndpoint: Obnova používa tú istú tokenovú vetvu, autentifikačný sender zopakuje request najviac raz.
+        Auth-&gt;&gt;HTTP: zopakuje pôvodný request raz s novým tokenom
+        HTTP-&gt;&gt;Stack: nový transportný pokus
+        Stack-&gt;&gt;Remote: HTTPS požiadavka
+        Remote--&gt;&gt;Stack: HTTP odpoveď
+        Stack--&gt;&gt;HTTP: HttpExchangeResult
+        HTTP--&gt;&gt;Auth: výsledok prenosu
+    end
+    Auth--&gt;&gt;API: výsledok, druhá 401 sa odovzdá ďalej
+    alt HTTP status 2xx
+        API--&gt;&gt;Endpoint: dekódované a skontrolované dáta
+        Endpoint--&gt;&gt;Adapter: typovaná odpoveď
+        Adapter--&gt;&gt;Host: Core výsledok
+    else neúspešný status alebo neplatná odpoveď
+        API--&gt;&gt;Endpoint: ProviderErrorResponseException alebo InvalidProviderResponseException
+        Endpoint--&gt;&gt;Adapter: propagovaná výnimka
+        Adapter--&gt;&gt;Host: technická výnimka
+    end</pre>
+<p>SAPI OAuth token sa získava cez štandardné SAPI a používa sa aj pre volania Peppol Gateway.</p>
+<p><code class="nb">SapiTokenProvider</code> najprv kontroluje token v pamäti, potom cache; ak je nakonfigurovaný <code class="nb">SapiTokenRefreshLockInterface</code>, po získaní zámku znovu načíta cache, aby obmedzil duplicitné obnovy.</p>
+<p>Laravel bridge poskytuje cache lock, ak je dostupný, inak lokálny súborový zámok; samostatné použitie môže zámok dodať hostiteľ.</p>
+<p>Identita participanta nie je súčasťou OAuth konfigurácie ani token cache kľúča; endpoint ju pre účastnícke volanie pridá cez <code class="nb">ApiRequest::forParticipant()</code> do hlavičky <code class="nb">X-Peppol-Participant-Id</code>.</p>
+<p>Integrator API má oddelený <code class="nb">IntegratorAccountClient</code>, ktorý neposiela SAPI Bearer token; <code>ProviderTransport::<wbr>forIntegratorAccount()</code> viaže jeho nastavenia na base URL a pripraví scope key pre zdieľanie cooldownu.</p>
+<p>Bežné Integrator volania prechádzajú cez tokenový sender. PDS endpoint používa samostatný <code class="nb">ApiConnector</code> a <code class="nb">PdsAuthenticatedRequestSender</code> nad tým istým transportom; sender overí podpisovú hlavičku a odstráni ostatné autentifikačné hlavičky.</p>
+<p><code class="nb">ApiConnector</code> kontroluje úspešný HTTP status a dekóduje JSON alebo bezpečne parsuje XML. Neúspešný status sa zmení na <code class="nb">ProviderErrorResponseException</code>, ktorá zachová status, hlavičky a telo a dostane rozpoznaný <code class="nb">ProviderErrorEnvelope</code> z <code class="nb">ProviderErrorEnvelopeParser</code>.</p>
+<p>Neplatný JSON/XML alebo chýbajúce povinné polia úspešnej odpovede vyvolajú <code class="nb">InvalidProviderResponseException</code> s HTTP kontextom.</p>
+<p>Predvolený executor vytvára <code class="nb">DefaultHttpRequestExecutorFactory</code>: cURL, voliteľné logovanie a metriky, retry podľa <code class="nb">RetryPolicy</code>, circuit breaker a backpressure. Vykonanie prechádza zvonka dovnútra cez circuit breaker, retry, backpressure, logger, metriky a cURL.</p>
+<p>Bez frameworku používajú tieto ochrany in-memory stav; Laravel bridge ho ukladá do Laravel Cache a koordinuje lock operácie cache alebo lokálnymi súborovými zámkami. GET je štandardne bezpečný na retry.</p>
+<p>Iné metódy sa opakujú iba pri výslovnom označení endpointom. Pri HTTP 401 <code class="nb">AuthenticatedRequestSender</code> zahodí lokálny token a zopakuje volanie s novým tokenom najviac raz. Toto autorizačné opakovanie je samostatné od HTTP retry.</p>
+<p>Napríklad <code class="nb">SendDocumentEndpoint</code> posiela idempotency key, ale nastaví <code class="nb">retrySafe(false)</code>, takže nejednoznačný výsledok odoslania sa automaticky neopakuje pri chybe spojenia ani retryable odpovedi.</p>
+<h3 id="čo-sa-deje-s-jedným-requestom"><span class="mw-h">Čo sa deje s jedným requestom</span><a class="anchor" href="#čo-sa-deje-s-jedným-requestom" aria-label="Odkaz na sekciu">¶</a></h3>
+<pre class="mermaid">flowchart LR
+    Host[Hostiteľ / Core volanie] --&gt; Registry[SapiClientRegistry]
+    Registry --&gt; SapiClient[SapiClient podľa aliasu]
+    SapiClient --&gt; Core[Core kontrakt operácie]
+    Core --&gt; Adapter[Infrastructure adaptér]
+    Adapter --&gt; Endpoint[API endpoint]
+    Endpoint --&gt; ApiRequest[ApiRequest]
+    ApiRequest --&gt; API[ApiConnector a HttpExchangeRequest]
+    API --&gt; Auth[AuthenticatedRequestSender]
+    Auth --&gt; Token[SapiTokenProvider]
+    Token --&gt; TokenCache[Pamäť a token cache]
+    TokenCache --&gt;|použiteľný token| Auth
+    Token -. pri chýbajúcom alebo expirovanom tokene .-&gt; TokenEndpoint[RequestTokenEndpoint]
+    TokenEndpoint --&gt; TokenAPI[ApiConnector pre token bez Bearer]
+    TokenAPI --&gt;|token request| Transport[Transport pridá base URL a scope]
+    Auth --&gt; Transport
+    Transport --&gt; BP[Backpressure a voliteľný request lock]
+    BP --&gt; CB[Circuit breaker]
+    CB --&gt; Retry[Retry]
+    Retry --&gt; Log[Voliteľné logovanie]
+    Log --&gt; Metrics[Voliteľné metriky]
+    Metrics --&gt; Curl[cURL: HTTPS URL a TLS kontroly]
+    Curl --&gt;|HTTPS request| Provider[SAPI / Peppol Gateway]
+    Provider --&gt;|HTTP response| Curl
+    Curl --&gt; Exchange[HttpExchangeResult]
+    Exchange --&gt;|odpoveď bežného requestu| Auth
+    Exchange --&gt;|tokenová odpoveď| TokenAPI
+    TokenAPI --&gt;|SapiTokenResponse| TokenEndpoint
+    TokenEndpoint --&gt;|SapiToken| Token
+    Token --&gt; TokenCache
+    Auth -. prvý status 401: zahodí token a zopakuje request raz .-&gt; Token
+    Auth --&gt; Decode[ApiConnector: status a dekódovanie]
+    Decode --&gt; Factory[Factory alebo Mapper: provider odpoveď → Core model]
+    Factory --&gt; Result[Endpoint vráti Core model; adaptér ho odovzdá hostiteľovi]
+    Result --&gt; Host</pre>
+<ol>
+<li><strong>Vstup a mapovanie.</strong> Hostiteľ podľa potreby získa pomenovaný alebo predvolený <code class="nb">SapiClient</code> cez <code class="nb">SapiClientRegistry</code> a zavolá Core kontrakt poskytnutý klientom s typovanými hodnotami. Adaptér odovzdá typovaný request alebo kontext endpointu, ktorý vráti Core model. Endpoint prevedie vstupné hodnoty na provider hlavičky, query a telo a zostaví <code class="nb">ApiRequest</code>.</li>
+<li><strong>Príprava <code class="nb">ApiRequest</code>.</strong> Cesta zostáva relatívna k poskytovateľovi. Názvy path parametrov musia presne zodpovedať placeholderom v šablóne; hodnoty sú neprázdne reťazce (biele znaky samy nestačia) alebo celé čísla, hodnoty <code class="nb">.</code> a <code class="nb">..</code> sa odmietnu a ostatné sa kódujú cez <code class="nb">rawurlencode()</code> ako jednotlivé segmenty.<br>Query hodnoty môžu byť reťazce, celé čísla alebo <code class="nb">null</code>; <code class="nb">null</code> sa vynechá, <code class="nb">0</code> a prázdny reťazec sa zachovajú a iné typy vyvolajú <code class="nb">InvalidInputException</code>. Pri opakovanom <code class="nb">withQuery()</code> neskoršia nenull hodnota nahradí skoršiu hodnotu s rovnakým kľúčom; <code class="nb">null</code> ju nevymaže.<br>Výsledok sa serializuje vo formáte RFC 3986. <code class="nb">withJsonBody()</code> zakóduje telo hneď pri zostavení requestu; neplatné JSON dáta preto zlyhajú ešte pred získaním tokenu alebo sieťovým volaním. Predvolená hlavička <code class="nb">Accept</code> žiada JSON; endpoint môže zvoliť XML.<br><code class="nb">ApiRequest::forParticipant()</code> pridá SAPI/Gateway participant ID do hlavičky a skontroluje, že jeho schéma je aktívna a registrovateľná. Pri novom dokumente <code class="nb">OutboundDocumentPayload</code> používa rovnakú kontrolu. Integrator requesty namiesto <code class="nb">Participant</code> používajú neprázdne participant ID reťazce a schému číselníka lokálne nekontrolujú.<br><code class="nb">DocumentRequestContext</code> ostáva iba metadátom pre logovanie a neposiela sa poskytovateľovi. <code class="nb">ApiRequest::httpMethod()</code> a <code class="nb">HttpExchangeRequest::httpMethod()</code> vracajú typovaný <code class="nb">HttpMethod</code>; na HTTP hranici sa jeho názov prevedie cez <code class="nb">value()</code>. GET je bezpečný na opakovanie predvolene; ostatné metódy nie.</li>
+<li><strong>Prevod na transportný request.</strong> <code class="nb">ApiRequest</code> a <code class="nb">HttpExchangeRequest</code> zdieľajú internú abstraktnú triedu <code class="nb">AbstractHttpRequest</code>, ktorá drží ich spoločné HTTP údaje. <code class="nb">ApiConnector</code> z nej zostaví <code class="nb">HttpExchangeRequest</code> na jednom mieste: prenesie metódu, cestu s query, hlavičky, telo, <code class="nb">Accept</code>, kontext pre logy a príznak bezpečného opakovania.<br>Base URL a scope sa doplnia neskôr v transportnej vrstve.</li>
+<li><strong>Autorizácia a URL.</strong> Pri SAPI a Gateway volaní <code class="nb">AuthenticatedRequestSender</code> získa token cez <code class="nb">SapiTokenProvider</code> a nahradí prípadnú hlavičku <code class="nb">Authorization</code> aktuálnym <code class="nb">Bearer</code> tokenom. Provider kontroluje najprv token v pamäti a potom cache; pri chýbajúcom alebo čoskoro expirujúcom tokene použije SAPI client-credentials endpoint.<br>Ak je nakonfigurovaný refresh lock, po získaní zámku znovu načíta cache. Samotné tokenové volanie používa obyčajný transport bez Bearer dekorátora. Bežné Integrator volania prechádzajú cez <code class="nb">IntegratorTokenRequestSender</code>, ktorý odstráni <code class="nb">Authorization</code> a nastaví <code class="nb">X-Integrator-Token</code>.<br>PDS endpoint používa samostatný <code class="nb">ApiConnector</code> cez <code class="nb">PdsAuthenticatedRequestSender</code>, ktorý vyžaduje jeden neprázdny <code class="nb">X-PDS-Secret</code> a odstráni <code class="nb">Authorization</code> aj <code class="nb">X-Integrator-Token</code>. Oba Integrator sendery delegujú do toho istého <code class="nb">ProviderTransport</code>; všetky vetvy odovzdajú request executor stacku.<br>Vstavané cURL executory pri vykonaní použijú interný <code>Transport\<wbr>Execution\<wbr>ProviderRequestUrlResolver</code>, ktorý spojí base URL s relatívnou cestou a overí výslednú HTTPS adresu. Iba SAPI/Gateway <code class="nb">401</code> spustí zahodenie SAPI tokenu a jeden pokus s obnoveným tokenom; táto obnova je oddelená od HTTP retry politiky.</li>
+<li><strong>Kontroly a pokusy o prenos.</strong> Predvolený executor je zvonka dovnútra zložený ako (voliteľný) <code class="nb">RejectionObservingHttpRequestExecutor</code> → <code class="nb">CircuitBreakerHttpRequestExecutor</code> → <code class="nb">RetryingHttpRequestExecutor</code> → <code class="nb">BackpressureHttpRequestExecutor</code> → <code class="nb">RateLimitRecordingHttpRequestExecutor</code> → voliteľný logger → voliteľné metriky → cURL executor.<br>Circuit breaker môže volanie zablokovať pri otvorenom okruhu. Backpressure pred každým pokusom skontroluje cooldown pre daný request a pri aktívnom limite vyhodí <code class="nb">RequestDeferredException</code> ešte pred sieťou; zámok drží iba počas pokusu, nie počas čakania pred ďalším pokusom.<br>Retry opakuje iba request označený ako bezpečný: pri chybe spojenia alebo pri odpovedi <code class="nb">429</code>/<code class="nb">5xx</code>, ak to povoľuje retry politika a odpoveď poskytovateľa označuje ako opakovateľnú. Pri <code class="nb">429</code> sa uloží cooldown podľa <code class="nb">Retry-After</code>, alebo podľa nakonfigurovanej náhradnej hodnoty, ak hlavička chýba.<br>Pri opakovaní určuje čakanie platná hlavička <code class="nb">Retry-After</code> alebo backoff politika. Ak sú nakonfigurované, logger a metriky zaznamenajú každý reálny pokus.</li>
+<li><strong>cURL prenos.</strong> Executor odošle metódu, URL, hlavičky a telo. Pridá <code>Content-Type: application/<wbr>json</code>, ak request má telo, a príslušnú <code class="nb">Accept</code> hlavičku. Používa iba HTTPS, overuje TLS certifikát aj názov hostiteľa a nenasleduje presmerovania.<br>Odpoveď číta do konfigurovateľného limitu; po jeho prekročení prenos preruší a vyhodí <code class="nb">ProviderResponseTooLargeException</code>, ktorá sa automaticky neopakuje. Inak vráti surový status, telo a vybrané hlavičky (Content-Type, Retry-After a identifikátory korelácie/požiadavky) v <code class="nb">HttpExchangeResult</code>. cURL vrstva JSON ani XML neinterpretuje.</li>
+<li><strong>Spracovanie odpovede.</strong> <code class="nb">ApiConnector</code> akceptuje iba HTTP status <code class="nb">2xx</code>. Ostatné statusy prevedie na <code class="nb">ProviderErrorResponseException</code> so statusom, hlavičkami a telom odpovede. Pri JSON odpovedi dekóduje objekt alebo zoznam a statická factory endpointu (<code class="nb">&lt;Resource&gt;Factory</code> alebo <code class="nb">&lt;Resource&gt;Mapper</code>) vytvorí Core model; úspešné <code class="nb">204</code> bez tela sa mapperu odovzdá ako prázdne pole.<br>Neplatný JSON/XML alebo neplatná štruktúra odpovede skončí ako <code class="nb">InvalidProviderResponseException</code> s HTTP kontextom. XML sa pred vrátením bezpečne parsuje. Pri <code class="nb">send()</code> sa telo úspešnej odpovede nespracúva, keď ho operácia nepotrebuje. Endpoint vráti Core model (alebo <code class="nb">bool</code>/<code class="nb">void</code>), ktorý adaptér odovzdá hostiteľovi; samostatné response DTO ostáva iba pre OAuth <code class="nb">SapiTokenResponse</code>.</li>
+</ol>
+<p>Konkrétne retry limity, cooldowny, zdieľanie stavu a nastavenie executorov opisuje <a href="Transport-and-Authentication.html">HTTP transport a autentifikácia</a>; typy chýb a správanie pri neistom výsledku sú v <a href="Errors-Retry-and-Idempotency.html">chybách, retry a idempotencii</a>.</p>
+<h2 id="odoslanie-dokladu"><span class="mw-h">Odoslanie dokladu</span><a class="anchor" href="#odoslanie-dokladu" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Data-Flow-and-Classes.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Hostiteľ môže vytvoriť XML alebo ho dostať z iného systému a naplniť <code class="nb">OutboundDocumentPayload</code>. Ak už pracuje s <code class="nb">UblDocumentDraft</code>, môže namiesto ručného skladania payloadu použiť Core kontrakt <code class="nb">UblDraftSubmissionInterface</code>, ktorý implementuje <code class="nb">UblDraftSubmission</code>.</p>
+<p>Obe cesty končia pri rovnakom payload modeli a gatewayi. Konektor poskytuje samostatné lokálne a vzdialené kontroly, ale odosielací adaptér ich sám nespúšťa.</p>
+<pre class="mermaid">flowchart LR
+    Draft[UblDocumentDraft] --&gt;|pri priamom odoslaní| SubmissionService[UblDraftSubmission]
+    SubmissionService --&gt; Writer[UblDocumentWriter]
+    Writer --&gt; XML[UBL XML]
+    XML --&gt; Payload[OutboundDocumentPayload]
+    Source[XML z iného systému] --&gt; Payload
+    Payload --&gt; Local[Voliteľné lokálne čítanie a validácia]
+    Payload --&gt; Discovery[Voliteľný Peppol Discovery]
+    Payload --&gt; RemoteCheck[Voliteľná Gateway validácia]
+    Payload --&gt; Send[DocumentSubmissionGatewayInterface]
+    Send --&gt; Request[SendDocumentRequest]
+    Request --&gt; Endpoint[SendDocumentEndpoint]
+    Endpoint --&gt; Body[DocumentSubmissionRequestMapper]
+    Body --&gt; SAPI[POST /sapi/document/send]
+    SAPI --&gt; Result[DocumentSubmissionResult]</pre>
+<p>Tok volania a mapovanie:</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Krok</th><th>Trieda alebo typ</th><th>Úloha a prenášané údaje</th></tr></thead><tbody><tr><td>Pohodlný vstup</td><td><code class="nb">UblDraftSubmission</code></td><td><code>preparePayload(sender, receiver, draft, creationDateTime)</code> zapíše draft a odvodí metadáta; <code>send(sender, receiver, draft, creationDateTime, idempotencyKey)</code> prijíma <code class="nb">IdempotencyKey</code> a deleguje explicitné transportné identity a payload do gatewaya.</td></tr><tr><td>Aplikačný vstup</td><td><code class="nb">SendDocumentRequest</code></td><td>Nesie <code class="nb">OutboundDocumentPayload</code>, <code class="nb">Participant</code> a <code class="nb">IdempotencyKey</code>; pri vytvorení overí, že participant zodpovedá odosielateľovi payloadu.</td></tr><tr><td>Verejný port</td><td><code class="nb">DocumentSubmissionGatewayInterface</code></td><td>Metóda <code class="nb">send(SendDocumentRequest)</code> predstavuje odoslanie jedného dokladu.</td></tr><tr><td>Adaptér</td><td><code class="nb">SapiDocumentSubmissionGateway</code></td><td>Odovzdá typovaný request endpointu, ktorý vráti <code class="nb">DocumentSubmissionResult</code>.</td></tr><tr><td>Endpoint</td><td><code class="nb">SendDocumentEndpoint</code></td><td>Mapuje hodnoty Core requestu na HTTP hlavičky, telo a <code class="nb">ApiRequest</code>; odosielací POST neoznačí ako automaticky bezpečný na retry.</td></tr><tr><td>API telo</td><td><code class="nb">DocumentSubmissionRequestMapper</code></td><td>Mapuje polia do OpenAPI <code class="nb">SapiSendDocumentRequest</code>: <code class="nb">metadata</code>, <code class="nb">payload</code>, <code>payloadFormat: XML</code>, <code>payloadEncoding: UTF-8</code> a voliteľný <code class="nb">checksum</code>. OpenAPI povoľuje vynechať <code class="nb">payloadEncoding</code> (predvolené UTF-8); konektor ho posiela explicitne.</td></tr><tr><td>Endpoint a odpoveď</td><td><code class="nb">SendDocumentEndpoint</code>, <code class="nb">DocumentSubmissionResultFactory</code></td><td>Pridajú participant/idempotency hlavičky a z odpovede <code class="nb">SapiSendDocumentResponse</code> zostavia priamo <code class="nb">DocumentSubmissionResult</code> (<code class="nb">providerDocumentId</code>, <code class="nb">status</code>, <code class="nb">timestamp</code>, prípadné <code class="nb">receivedAt</code>).</td></tr><tr><td>Výsledok</td><td><code class="nb">DocumentSubmissionResult</code></td><td>Vráti technický výsledok prijatia požiadavky poskytovateľom. Nevyjadruje konečné doručenie v Peppol.</td></tr></tbody></table></div>
+<p>Rovnaký <code class="nb">DocumentSubmissionRequestMapper</code> používa aj <code class="nb">ValidateDocumentEndpoint</code> pre <code>POST /<wbr>v1/<wbr>validate-document</code>. <code class="nb">RecipientCapabilityCheck</code> volá Discovery pre príjemcu, typ a proces. Obe kontroly zostávajú samostatnými volaniami, ktoré hostiteľ spustí podľa svojho workflow.</p>
+<p>Odosielací POST sa pri neistom výsledku odoslania automaticky neopakuje; pred opakovaním treba pracovať s rovnakým idempotency key a overiť stav.</p>
+<h2 id="príjem-dokladu"><span class="mw-h">Príjem dokladu</span><a class="anchor" href="#príjem-dokladu" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Data-Flow-and-Classes.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Príjem pozostáva z troch oddelených volaní. Zoznam obsahuje metadáta a kurzor ďalšej stránky; detail stiahne telo dokumentu; operácia <code class="nb">acknowledge</code> samostatne vykoná technické potvrdenie príjmu.</p>
+<pre class="mermaid">flowchart TD
+    Host[Hostiteľ určí Participant] --&gt; List[GET /sapi/document/receive]
+    List --&gt; ListResponse[ReceivedDocumentPageFactory]
+    ListResponse --&gt; Metadata[ReceivedDocumentMetadata + nextPageToken]
+    Metadata --&gt; Detail[&quot;GET /sapi/document/receive/{documentId}&quot;]
+    Detail --&gt; Payload[ReceivedDocumentPayloadFactory]
+    Payload --&gt; Received[ReceivedDocumentPayload]
+    Received --&gt; Read[&quot;Voliteľné UblDocumentReader::read(xml)&quot;]
+    Read --&gt; Ubl[UblDocument]
+    Received --&gt; Process[Hostiteľ spracuje alebo uloží obsah]
+    Ubl --&gt; Process
+    Process --&gt; Ack[POST acknowledge]</pre>
+<p><code class="nb">SapiReceivedDocumentProvider</code> implementuje <code class="nb">ReceivedDocumentProviderInterface</code> a skladá endpointy pre list, detail a acknowledge. <code class="nb">ReceivedDocumentMetadataFactory</code> validuje povinné polia a vytvára <code>Domain\<wbr>EFaktura\<wbr>ReceivedDocumentMetadata</code>.</p>
+<p><code class="nb">ReceivedDocumentPage</code> nesie položky stránky spolu s <code class="nb">nextPageToken</code>; <code class="nb">ReceivedDocumentPayload</code> obsahuje metadáta detailu cez <code class="nb">metadata()</code>, payload cez <code class="nb">xml()</code> a formát oznámený poskytovateľom cez <code class="nb">payloadFormat()</code>.</p>
+<p><code class="nb">acknowledge()</code> vracia <code class="nb">ReceivedDocumentAcknowledgement</code> s ID dokladu, stavom a časom potvrdenia z odpovede SAPI.</p>
+<p><code>SapiReceivedDocumentProvider::<wbr>getInboxPage()</code> prijíma <code class="nb">ListReceivedDocumentsRequest</code> s participantom a voliteľnými hodnotami <code class="nb">PageToken</code>, <code class="nb">PageSize</code> a status filtrom <code class="nb">RECEIVED</code> alebo <code class="nb">ACKNOWLEDGED</code>. Endpoint mapuje request na hlavičku a query.</p>
+<p>Pri ukladaní kurzora použite <code class="nb">PageToken::value()</code> a pri obnove <code class="nb">PageToken::fromString()</code>; veľkosť vytvorte cez <code class="nb">PageSize::fromInt()</code>. OpenAPI má query <code class="nb">limit</code> ako voliteľnú s predvolenou hodnotou 20.</p>
+<p><code class="nb">ReceivedDocumentPayloadFactory</code> overí metadáta, payload a to, že <code class="nb">payloadFormat</code> je prítomný reťazec (schéma <code class="nb">SapiReceivedDocumentDetailResponse</code>); OpenAPI preň neurčuje enum.</p>
+<p>Adaptér prenesie metadáta vrátane <code class="nb">creationDateTime</code> a hodnotu formátu do Core modelov bez normalizácie; providerové ID v <code class="nb">ReceivedDocumentMetadata</code> a <code class="nb">ReceivedDocumentReference</code> majú typ <code class="nb">ProviderDocumentId</code>.</p>
+<p><code class="nb">ReceivedDocumentPayload</code> poskytuje XML cez <code class="nb">xml()</code>; ak ho hostiteľ chce čítať ako UBL, samostatne zavolá <code class="nb">$ublReader-&gt;read($payload-&gt;xml())</code>. Čítanie nespúšťa obchodnú validáciu ani acknowledge; obe operácie hostiteľ riadi samostatne.</p>
+<p><code class="nb">DocumentRequestContext</code> zostáva samostatnou hostiteľskou logovacou hodnotou; neposiela sa poskytovateľovi a rovnakú referenciu možno použiť na stiahnutie aj potvrdenie.</p>
+<div class="alert info" role="note"><div class="ai" aria-hidden="true">i</div><div class="ac"><div class="at">Poznámka</div><p>Konektor neurčuje, kedy hostiteľ uloží obsah alebo zavolá acknowledge.</p></div></div>
+<h2 id="discovery-stav-a-webhooky"><span class="mw-h">Discovery, stav a webhooky</span><a class="anchor" href="#discovery-stav-a-webhooky" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Data-Flow-and-Classes.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<div class="tw"><table class="wikitable"><thead><tr><th>Core kontrakt</th><th>Predvolená implementácia</th><th>API mapovanie</th></tr></thead><tbody><tr><td><code class="nb">DocumentDiscoveryProviderInterface</code></td><td><code class="nb">PeppolGatewayDiscoveryProvider</code></td><td>Adaptér odovzdá typovaný Core request endpointu, ktorý cez <code>CheckReceivingCapabilityResponseFactory</code> vráti <code class="nb">CheckReceivingCapabilityResponse</code>; adaptér overí, že patrí hľadanému participantovi.</td></tr><tr><td><code class="nb">ParticipantProfileProviderInterface</code></td><td><code>PeppolGatewayParticipantProfileProvider</code></td><td>Prijíma <code class="nb">Participant</code>; endpoint cez <code class="nb">ParticipantProfileFactory</code> vráti Core <code class="nb">ParticipantProfile</code> so schopnosťami.</td></tr><tr><td><code class="nb">DocumentTrackingProviderInterface</code></td><td><code class="nb">PeppolGatewayDocumentTrackingProvider</code></td><td>Odovzdáva typovaný <code class="nb">SentDocumentReference</code> alebo <code class="nb">MessageLevelStatusIdentifier</code> endpointom; endpointy vracajú Core status modely (<code class="nb">SentDocumentStatus</code>, <code class="nb">ProviderMessageLevelStatusResponse</code>, <code class="nb">MessageLevelStatusContent</code>) s typovaným <code class="nb">ProviderDocumentStatus</code>; XML sa parsuje bezpečne.</td></tr><tr><td><code class="nb">WebhookRegistryInterface</code></td><td><code class="nb">PeppolGatewayWebhookRegistry</code></td><td>Odovzdáva Core webhook requesty alebo participant a identifikátor priamo endpointom ; endpointy vracajú Core modely <code class="nb">Webhook*</code> cez factory.</td></tr><tr><td><code class="nb">TokenHealthProviderInterface</code></td><td><code class="nb">SapiTokenHealthProvider</code></td><td><code class="nb">getTokenStatus()</code> vracia Core <code class="nb">TokenStatus</code>; adapter mapuje SAPI odpoveď vrátane expiračných a refresh polí. <code class="nb">isTokenValid()</code> poskytuje zjednodušený bool výsledok.<br>Odpoveď 401 (neplatný alebo expirovaný token) sa vráti ako <code>valid = false</code>; token sa nenahrádza ani sa volanie neopakuje.</td></tr></tbody></table></div>
+<p>Webhook registry spravuje registráciu u Gateway. <code class="nb">PeppolWebhookEventFactory</code> vyžaduje injektovaný podpisový verifikátor, volá ho pred JSON parserom a potom mapuje podporované udalosti na typované modely.</p>
+<p>Knižnica obsahuje <code>PeppolWebhookHmacSha256SignatureVerifier</code>, ktorý overí HMAC-SHA256 nad timestampom, ID z hlavičky a presnými raw body bajtmi podľa testu webhooku od DataHosting. Knižnica neobsahuje HTTP route ani automatický výber algoritmu.</p>
+<p>Hostiteľ zabezpečí route, uloženie signing secretu, výber verifikátora, deduplikáciu a opakované spracovanie.</p>
+<h2 id="ubl-modely-a-lokálne-validácie"><span class="mw-h">UBL modely a lokálne validácie</span><a class="anchor" href="#ubl-modely-a-lokálne-validácie" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Data-Flow-and-Classes.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Načítanie XML, zápis draftu a validácia sú lokálne operácie. Nespúšťajú API volanie.</p>
+<pre class="mermaid">flowchart LR
+    Draft[UblDocumentDraft + UblDraft*] --&gt; Writer[UblDocumentWriter]
+    Writer --&gt; XML[UBL Invoice alebo CreditNote XML]
+    XML --&gt; Loader[UblXmlDocumentLoader]
+    Loader --&gt; XmlDoc[UblXmlDocument]
+    XmlDoc --&gt; Reader[UblDocumentReader]
+    Reader --&gt; Model[UblDocument: header + content]
+    XmlDoc --&gt; XSD[UblSchemaValidator]
+    XmlDoc --&gt; Schematron[PeppolSchematronValidator]
+    XSD --&gt; XsdStage[UblSchemaValidationStage]
+    Schematron --&gt; PeppolStage[PeppolSchematronValidationStage]
+    XsdStage --&gt; Pipeline[UblValidationPipeline]
+    PeppolStage --&gt; Pipeline
+    Pipeline --&gt; Combined[LocalUblValidator]
+    Combined --&gt; Result[LocalUblValidationResult]</pre>
+<div class="tw"><table class="wikitable"><thead><tr><th>Smer</th><th>Triedy</th><th>Výsledné údaje</th></tr></thead><tbody><tr><td>Draft → XML</td><td><code class="nb">UblDocumentDraft</code>, <code class="nb">UblDraftParty</code>, <code class="nb">UblDraftLine</code>, <code class="nb">UblDraftTaxCategory</code>, <code class="nb">UblDraftTaxSubtotal</code>, <code class="nb">UblDraftTotals</code>, <code class="nb">UblDraftPaymentMeans</code>, <code class="nb">UblDocumentWriter</code></td><td>UBL 2.1 Invoice alebo CreditNote XML. Desatinné sumy a množstvá sa prenášajú ako presné reťazce.</td></tr><tr><td>XML → model</td><td><code class="nb">UblXmlDocumentLoader</code>, <code class="nb">UblDocumentReader</code>, <code class="nb">UblDocumentHeaderReader</code>, <code class="nb">UblDocumentContentReader</code></td><td><code class="nb">UblDocument</code> s <code class="nb">UblDocumentHeader</code>, stranami, riadkami a súhrnom DPH. Reader načíta aj všetky riadky.</td></tr><tr><td>XML bezpečnosť</td><td><code class="nb">Support\Xml\SecureXmlDocumentParser</code>, <code class="nb">UblXmlDocumentLoader</code></td><td>Odmietne neplatné/nebezpečné XML a nepodporované korene; načítanie XML samo osebe nie je XSD ani Peppol validácia.</td></tr><tr><td>Doplnkové pravidlo</td><td><code class="nb">PeppolBillingHeaderRules</code>, <code class="nb">PeppolBillingHeaderValidationStage</code></td><td>Kontrola BR-CO-25 pre kladné faktúry bez dátumu splatnosti a platobných podmienok; pribalený Schematron toto pravidlo neobsahuje.</td></tr><tr><td>UBL schéma</td><td><code class="nb">UblSchemaValidator</code></td><td>Kontrola UBL 2.1 XSD cez libxml. Porušenia sú <code class="nb">SchemaValidationException</code>.</td></tr><tr><td>Obchodné pravidlá</td><td><code class="nb">PeppolSchematronValidator</code></td><td>CEN/EN 16931 a Peppol Schematron cez Saxon; vracia nálezy v <code class="nb">PeppolSchematronValidationResult</code>, ktorý adaptačný stage prevedie na všeobecný výsledok pipeline.</td></tr><tr><td>Zložený výsledok</td><td><code class="nb">UblSchemaValidationStage</code>, <code class="nb">PeppolBillingHeaderValidationStage</code>, <code class="nb">PeppolSchematronValidationStage</code>, <code class="nb">UblValidationPipeline</code>, <code class="nb">LocalUblValidator</code></td><td>Spustí nakonfigurované kroky v poradí zo zoznamu; predvolene XSD, doplnkovú kontrolu BR-CO-25 a Schematron. Vráti <code class="nb">LocalUblValidationResult</code> s nálezmi a metadátami každého kroku: trvanie, stav a dostupné verzie pravidiel.</td></tr></tbody></table></div>
+<p>Lokálne kontroly nepodmieňujú čítanie ani zápis UBL a samy nevolajú Gateway. Verzie, licencie, presné cesty súborov a aktualizačný postup sú v <a href="../../resources/validation/README.md">lokálnych validačných podkladoch</a>. Súhrn štandardov je v <a href="../../docs/eFaktura/README.md">technickom prehľade eFaktúry</a>.</p>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li>Zoznam podporovaných ciest a API mapovanie: <a href="API-Reference.html">Prehľad API</a>.</li>
+<li>UBL elementy, drafty a čítaný model: <a href="UBL-Documents.html">Čítanie a zápis UBL</a>.</li>
+<li>XSD, Schematron, verzie a runtime: <a href="Validation.html">Lokálna validácia</a> a <code class="nb">resources/validation/README.md</code>.</li>
+<li>Hranice vrstiev a bezpečnostné zásady: <a href="Architecture-and-Testing.html">Architektúra a hlavné toky</a>.</li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#zostavenie-služieb"><span class="n">1</span> <span class="x">Zostavenie služieb</span></a></li><li class="t2"><a href="#spoločný-tok-vzdialenej-požiadavky"><span class="n">2</span> <span class="x">Spoločný tok vzdialenej požiadavky</span></a></li><li class="t3"><a href="#čo-sa-deje-s-jedným-requestom"><span class="n">2.1</span> <span class="x">Čo sa deje s jedným requestom</span></a></li><li class="t2"><a href="#odoslanie-dokladu"><span class="n">3</span> <span class="x">Odoslanie dokladu</span></a></li><li class="t2"><a href="#príjem-dokladu"><span class="n">4</span> <span class="x">Príjem dokladu</span></a></li><li class="t2"><a href="#discovery-stav-a-webhooky"><span class="n">5</span> <span class="x">Discovery, stav a webhooky</span></a></li><li class="t2"><a href="#ubl-modely-a-lokálne-validácie"><span class="n">6</span> <span class="x">UBL modely a lokálne validácie</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Request-Flow.html"><small>← Predchádzajúca</small><b>Graf toku API requestov</b></a><a class="nx" href="Project-Structure.html"><small>Ďalšia →</small><b>Štruktúra balíka</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Request-Flow.html">Graf toku API requestov</a></li><li><a href="Project-Structure.html">Štruktúra balíka</a></li><li><a href="API-Reference.html">Prehľad API</a></li><li><a href="Integrator-API.html">Integrator API</a></li><li><a href="Public-API.html">Verejné PHP API</a></li><li><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li><li><a href="API-Reference.html">Prehľad API</a></li><li><a href="Request-Flow.html">Graf toku API requestov</a></li><li><a href="Project-Structure.html">Štruktúra balíka a hranice modulov</a></li><li><a href="Architecture-and-Testing.html">Architektúra a hlavné toky</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-referencia">Referencia</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Data-Flow-and-Classes.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Data-Flow-and-Classes.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+name: Upstream validation rules
+
+on:
+  schedule:
+    - cron: '11 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-upstream:
+    name: Check upstream rule releases
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '7.4'
+          extensions: curl, dom, json
+          coverage: none
+
+      - name: Compare published releases with the manifest
+        run: php tools/check-upstream-rule-releases.php > upstream-rule-changes.json
+
+      - name: Create or update the upstream release issue
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- validation-rules-upstream -->';
+            const changes = JSON.parse(fs.readFileSync('upstream-rule-changes.json', 'utf8'));
+            const { owner, repo } = context.repo;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const issue = issues.find((item) => !item.pull_request && item.body && item.body.includes(marker));
+
+            if (changes.length > 0) {
+              const rows = changes.map((change) =>
+                `- **${change.id}**: manifest ${change.current}, upstream ${change.latest} - [source](${change.source})`
+              );
+              const body = [
+                marker,
+                'An upstream validation release differs from the version recorded in `resources/validation/rules-manifest.json`.',
+                '',
+                'Review the release, its effective date, licenses, and rule changes. Prepare a versioned update only after that review.',
+                '',
+                ...rows,
+              ].join('\n');
+              const title = 'Review upstream e-invoicing validation rule updates';
+
+              if (issue) {
+                await github.rest.issues.update({ owner, repo, issue_number: issue.number, title, body });
+              } else {
+                await github.rest.issues.create({ owner, repo, title, body });
+              }
+            } else if (issue) {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issue.number,
+                state: 'closed',
+                body: `${issue.body}\n\nAll monitored upstream versions now match the manifest.`,
+              });
+            }

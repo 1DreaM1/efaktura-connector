@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fafafc">
+<meta name="description" content="Krátke a cielené ukážky pre Laravel aj čisté PHP: zapojenie, odoslanie, chyby, príjem a vytvorenie UBL.">
+<title>Ukážky kódu · eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('efk-theme');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Preskočiť na obsah</a>
+<div class="progress" id="bar"></div>
+<header class="site">
+  <div class="wrap nav">
+    <a class="logo" href="index.html"><i>€</i>eFaktúra <span>Connector</span></a>
+    <nav class="menu" id="menu" aria-label="Hlavná navigácia"><a href="index.html">Prehľad</a><a href="architektura.html">Architektúra</a><a href="toky.html">Toky dokladov</a><a href="ukazky.html" aria-current="page">Ukážky kódu</a><a href="validacia.html">Validácia</a><a href="api.html">API</a><a href="integrator.html">Integrator</a><a href="nastavenie.html">Nastavenie</a><a href="prevadzka.html">Prevádzka</a><a href="wiki/index.html">Wiki</a></nav>
+    <div class="right">
+      <button class="icon-btn" id="theme" type="button" aria-label="Téma">◐</button>
+      <a class="btn pri sm hide-s" href="https://github.com/1DreaM1/efaktura-connector">GitHub ↗</a>
+      <button class="icon-btn burger" id="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menu">☰</button>
+    </div>
+  </div>
+</header>
+<main id="main">
+
+<div class="phead"><div class="mesh"><div class="dots"></div></div><div class="wrap"><div class="crumbs"><a href="index.html">Prehľad</a> / Ukážky kódu</div><span class="kick">Ukážky kódu</span><h1>Menej riadkov. <span class="gt">Jasný zámer.</span></h1><p class="sub">Každá ukážka obsahuje len podstatné kroky; importy a obvyklý kontext sú vynechané. Zvýraznené riadky označujú miesta, kde sa rozhoduje o idempotencii, kontrolách a potvrdení.</p></div></div>
+<div class="wrap">
+<section class="tight">
+<div data-tabs>
+  <div class="seg" role="tablist"><button role="tab" aria-selected="true" aria-controls="g-php">Čisté PHP</button><button role="tab" aria-selected="false" aria-controls="g-lv">Laravel</button></div>
+
+  <div role="tabpanel" id="g-php"><div data-tabs>
+    <div class="subtabs" role="tablist"><button role="tab" aria-selected="true" aria-controls="ph-boot">Zapojenie</button><button role="tab" aria-selected="false" aria-controls="ph-ubl">Vytvorenie UBL</button><button role="tab" aria-selected="false" aria-controls="ph-send">Odoslanie</button><button role="tab" aria-selected="false" aria-controls="ph-batch">Dávka cez Gateway</button><button role="tab" aria-selected="false" aria-controls="ph-err">Chyby</button><button role="tab" aria-selected="false" aria-controls="ph-in">Príjem</button></div>
+    <div role="tabpanel" id="ph-boot" class="ex" hidden><h3>Zapojenie jedným klientom</h3><p><code>ConnectorFactory</code> vytvorí HTTP stack, OAuth a všetky služby. Vytvorený klient uchovajte a používajte opakovane.</p><script type="text/plain" class="src" data-file="app/bootstrap.php" data-hl="3-8,11-14">
+$factory = new ConnectorFactory();   // vlastná token cache: new ConnectorFactory($runtime, $tokenCache)
+
+$client = $factory->createSapiClient('billing', SapiClientConfiguration::fromArray([
+    'base_url'      => getenv('EFAKTURA_BASE_URL'),
+    'client_id'     => getenv('EFAKTURA_CLIENT_ID'),
+    'client_secret' => getenv('EFAKTURA_CLIENT_SECRET'),
+    'client_scope'  => SapiClientConfiguration::SAPI_SCOPE_DOCUMENT_SEND . ' ' . SapiClientConfiguration::SAPI_SCOPE_DOCUMENT_RECEIVE,
+]));
+
+// Klient poskytuje hotové služby. Účastníka (Participant) zadávate pri každej operácii.
+$drafts   = $client->ublDraftSubmission();
+$gateway  = $client->documentSubmissionGateway();
+$inbox    = $client->receivedDocumentProvider();
+$tracking = $client->documentTrackingProvider();
+</script><div class="note info"><span>Predvolená token cache je len procesová. Pri viacerých workeroch odovzdajte vlastnú <code>SapiTokenCacheInterface</code>, ktorá token bezpečne uloží.</span></div></div>
+    <div role="tabpanel" id="ph-ubl" class="ex" hidden><h3>Faktúra z draftu na XML</h3><p>Zostavíte nemenný návrh a zapisovač ho serializuje do UBL 2.1. Nič sa pritom nevaliduje a nepočíta.</p><script type="text/plain" class="src" data-file="app/ubl/write-invoice.php" data-hl="25-29,57-67,69">
+$country  = CountryCodeList::resolve(CountryCodeList::SLOVAKIA);
+$currency = CurrencyCodeList::resolve('EUR');
+$unit     = UnitCodeList::resolve('H87');
+
+$supplier = (new UblDraftParty(
+    UblEndpointIdentifier::fromSchemeAndValue('0245', '2012345676'),
+    'Ukážkový dodávateľ s.r.o.',
+    $country
+))->withAddress(
+    (new UblDraftAddress($country))
+        ->withLines('Hlavná 1')
+        ->withLocality('Bratislava', '811 01')
+);
+
+$customer = (new UblDraftParty(
+    UblEndpointIdentifier::fromSchemeAndValue('0245', '2012345687'),
+    'Ukážkový odberateľ s.r.o.',
+    $country
+))->withAddress(
+    (new UblDraftAddress($country))
+        ->withLines('Druhá 2')
+        ->withLocality('Košice', '040 01')
+);
+
+// Sumy pripravuje aplikácia; zapisovač ich nepočíta.
+$vat = new UblDraftTaxCategory(
+    TaxCategoryCode::fromString(TaxCategoryCode::STANDARD),
+    UblDecimal::fromString('23')
+);
+
+$line = new UblDraftLine(
+    new UblDraftIdentifier('1'),
+    UblDecimal::fromString('2.0000'),
+    $unit,
+    UblDecimal::fromString('100.00'),
+    'Konzultačná služba',
+    $vat,
+    UblDecimal::fromString('50.00')
+);
+
+$totals = new UblDraftTotals(
+    UblDecimal::fromString('100.00'),
+    UblDecimal::fromString('100.00'),
+    UblDecimal::fromString('123.00'),
+    null,
+    UblDecimal::fromString('123.00'),
+    UblDecimal::fromString('23.00'),
+    [
+        new UblDraftTaxSubtotal(
+            UblDecimal::fromString('100.00'),
+            UblDecimal::fromString('23.00'),
+            $vat
+        ),
+    ]
+);
+
+$draft = (new UblDocumentDraft(
+    UblDocumentRoot::fromString(UblDocumentRoot::INVOICE),
+    UblDocumentNumber::fromString('FA-2026-001'),
+    LocalDate::fromString('2026-11-22'),
+    $currency,
+    $supplier,
+    $customer,
+    $totals
+))
+    ->withLines([$line])
+    ->withDates(UblDraftDates::none()->withDueDate(LocalDate::fromString('2026-12-22')));
+
+$xml = (new UblDocumentWriter())->write($draft);   // bez validácie XSD či Peppol
+</script><div class="note info"><span>Syntetické identifikátory slúžia len na príklad. Schéma 0245 je produkčná; v Sandboxe použite 9915 v transportných Participant ID aj v UBL <code>EndpointID/@schemeID</code>.</span></div><details class="acc" style="margin-top:14px"><summary>Celý súbor s importmi a plným zostavením</summary><div class="body"><script type="text/plain" class="src" data-file="app/ubl/write-invoice.php">
+<?php
+
+use DreaM1\EfakturaConnector\Domain\Ubl\CodeList\TaxCategoryCode;
+use DreaM1\EfakturaConnector\Domain\Ubl\CodeList\TaxSchemeCode;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDocumentDraft;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftDates;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftPayment;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftReferences;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDocumentNumber;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDecimal;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftAddress;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftLine;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftIdentifier;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftParty;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftPartyTaxScheme;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftTaxCategory;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftTaxSubtotal;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftTotals;
+use DreaM1\EfakturaConnector\Domain\Ubl\LocalDate;
+use DreaM1\EfakturaConnector\Domain\Ubl\UblDocumentRoot;
+use DreaM1\EfakturaConnector\Domain\Ubl\UblEndpointIdentifier;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\CountryCodeList;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\CurrencyCodeList;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\UnitCodeList;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Writer\UblDocumentWriter;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+function createInvoiceDraft(): UblDocumentDraft
+{
+    // 1. Z číselníkov načítajte krajinu, menu a mernú jednotku.
+    $country = CountryCodeList::resolve(CountryCodeList::SLOVAKIA);
+    $currency = CurrencyCodeList::resolve('EUR');
+    $unit = UnitCodeList::unit('ks');
+
+    if ($country === null || $currency === null) {
+        throw new LogicException('V pribalených číselníkoch chýba potrebný kód.');
+    }
+
+    // 2. Vytvorte dodávateľa a odberateľa vrátane adries.
+    $supplierAddress = (new UblDraftAddress($country))
+        ->withLines('Hlavná 1')
+        ->withLocality('Bratislava', '811 01');
+    $supplier = (new UblDraftParty(
+        UblEndpointIdentifier::fromSchemeAndValue('0245', '2012345676'),
+        'Ukážkový dodávateľ s.r.o.',
+        $country
+    ))
+        ->withAddress($supplierAddress)
+        // Syntetické údaje identifikujú dodávateľa a jeho inú daňovú registráciu.
+        ->withLegalCompanyId(new UblDraftIdentifier('SYNTHETIC-SELLER-REGISTRATION'))
+        ->withTaxScheme(new UblDraftPartyTaxScheme(new UblDraftIdentifier('SYNTHETIC-SELLER-TAX-REGISTRATION'), TaxSchemeCode::fromString(TaxSchemeCode::OTHER)));
+
+    $customerAddress = (new UblDraftAddress($country))
+        ->withLines('Druhá 2')
+        ->withLocality('Košice', '040 01');
+    $customer = (new UblDraftParty(
+        UblEndpointIdentifier::fromSchemeAndValue('0245', '2012345687'),
+        'Ukážkový odberateľ s.r.o.',
+        $country
+    ))->withAddress($customerAddress);
+
+    // 3. Pripravte položku a sumy; zapisovač ich nebude počítať.
+    $vatCategory = new UblDraftTaxCategory(
+        TaxCategoryCode::fromString(TaxCategoryCode::STANDARD),
+        UblDecimal::fromString('23')
+    );
+
+    // Poradie: ID, množstvo, jednotka H87 (kus), čistá suma, názov položky, kategória DPH, jednotková cena.
+    $line = new UblDraftLine(
+        new UblDraftIdentifier('1'),
+        UblDecimal::fromString('2.0000'),
+        $unit,
+        UblDecimal::fromString('100.00'),
+        'Konzultačná služba',
+        $vatCategory,
+        UblDecimal::fromString('50.00')
+    );
+    $totals = new UblDraftTotals(
+        UblDecimal::fromString('100.00'),
+        UblDecimal::fromString('100.00'),
+        UblDecimal::fromString('123.00'),
+        null,
+        UblDecimal::fromString('123.00'),
+        UblDecimal::fromString('23.00'),
+        [
+            new UblDraftTaxSubtotal(
+                UblDecimal::fromString('100.00'),
+                UblDecimal::fromString('23.00'),
+                $vatCategory
+            ),
+        ]
+    );
+
+    // 4. Zostavte nemenný návrh faktúry.
+    return (new UblDocumentDraft(
+        UblDocumentRoot::fromString(UblDocumentRoot::INVOICE),
+        UblDocumentNumber::fromString('FA-2026-001'),
+        LocalDate::fromString('2026-11-22'),
+        $currency,
+        $supplier,
+        $customer,
+        $totals
+    ))->withLines([$line])
+        ->withDates(UblDraftDates::none()->withDueDate(LocalDate::fromString('2026-12-22')))
+        ->withReferences(UblDraftReferences::none()->withBuyerReference('OBJ-2026-001'))
+        ->withPayment(UblDraftPayment::none()->withTermsNote('Úhrada do dátumu splatnosti.'));
+}
+
+function writeInvoice(UblDocumentDraft $draft): void
+{
+    $xml = (new UblDocumentWriter())->write($draft);
+    $path = __DIR__ . '/invoice.xml';
+
+    if (file_put_contents($path, $xml) === false) {
+        throw new RuntimeException('Súbor XML faktúry sa nepodarilo zapísať.');
+    }
+
+    printf('Faktúra bola zapísaná do súboru: %s%s', $path, PHP_EOL);
+}
+
+$draft = createInvoiceDraft();
+writeInvoice($draft);
+</script></div></details></div>
+    <div role="tabpanel" id="ph-send" class="ex" hidden><h3>Odoslanie s uloženým kľúčom</h3><p>Kontroly pred odoslaním sú voliteľné a samostatné. Kľúč a draft uložte pred prvým pokusom.</p><script type="text/plain" class="src" data-file="app/send-invoice.php" data-hl="8,16">
+$sender    = Participant::parse('0245:2012345676');
+$receiver  = Participant::parse('0245:2012345687');
+$createdAt = Timestamp::fromDateTimeImmutable(
+    new DateTimeImmutable('now', new DateTimeZone('UTC'))
+);
+$key = IdempotencyKeyGenerator::generate();   // ulož ho spolu s draftom
+
+$payload = $drafts->preparePayload($sender, $receiver, $draft, $createdAt);
+
+// Voliteľné kontroly: každá je samostatné volanie API.
+$client->recipientCapabilityCheck()->check($payload);
+$client->providerDocumentValidationCheck()->check(
+    new ValidateDocumentRequest($sender, $payload)
+);
+
+$result = $gateway->send(new SendDocumentRequest($sender, $payload, $key));
+
+echo $result->status()->value();                // ACCEPTED = technické prijatie
+echo $result->providerDocumentId()->value();
+</script><div class="note info"><span><code>send()</code> nespúšťa zisťovanie podpory ani validáciu. <b>ACCEPTED</b> je len technické prijatie; stav doručenia a MLS čítajte samostatne.</span></div></div>
+    <div role="tabpanel" id="ph-batch" class="ex" hidden><h3>Dávkové odoslanie cez Gateway</h3><p>Viac dokumentov v jednom volaní, s vlastným Idempotency-Key. Najviac 100 dokumentov, každý do 10 MB.</p><script type="text/plain" class="src" data-file="app/send-batch.php" data-hl="10">
+$request = new SendDocumentsRequest(
+    $sender,
+    [
+        new OutboundGatewayDocument(XmlPayloadFormat::UBL_XML, $invoiceXml, $receiver),
+        new OutboundGatewayDocument(XmlPayloadFormat::SBDH_XML, $sbdhXml),
+    ],
+    IdempotencyKeyGenerator::generate()
+);
+
+$result = $client->peppolGatewayDocumentSubmission()->send($request);
+
+$result->count();                      // počet prijatých dokumentov
+$result->identifiers()[0]->value();    // identifikátor v Gateway
+</script><div class="note info"><span>Pre <code>UBL_XML</code> je <code>receiverParticipantId</code> povinné, pre <code>SBDH_XML</code> voliteľné.</span></div></div>
+    <div role="tabpanel" id="ph-err" class="ex" hidden><h3>Odloženie vs. neistý výsledok</h3><p>Typ výnimky hovorí, či poskytovateľ odpovedal. Pri neistom odoslaní najprv zosúlaďte stav.</p><script type="text/plain" class="src" data-file="app/send-safely.php" data-hl="5-7,9-11">
+try {
+    $result = $gateway->send(new SendDocumentRequest($sender, $payload, $key));
+    $attempt->recordProviderResult($result);
+
+} catch (RequestDeferredException $e) {
+    // Aktívny cooldown po 429. Požiadavka sa vôbec neodoslala.
+    $attempt->markDeferred($e->retryAt()->unixTimestamp());
+
+} catch (ProviderConnectionException | InvalidProviderResponseException $e) {
+    // Výsledok môže byť neistý: najprv zosúladiť, potom zopakovať s TÝM ISTÝM kľúčom.
+    $attempt->markForReconciliation();
+
+} catch (ProviderErrorResponseException $e) {
+    $attempt->markProviderError($e->rawStatusCode());   // telo chyby nelogovať
+}
+</script><div class="note info"><span><code>$attempt</code> je záznam hostiteľskej aplikácie s pôvodným draftom, časom a UUID. Telo HTTP chyby môže obsahovať citlivé údaje, preto ho nelogujte.</span></div></div>
+    <div role="tabpanel" id="ph-in" class="ex" hidden><h3>Načítať, uložiť, potvrdiť</h3><p>Rovnakého účastníka použite pri zozname, stiahnutí aj potvrdení. Potvrdzujte až po úspešnom uložení.</p><script type="text/plain" class="src" data-file="app/receive-inbox.php" data-hl="14-16,30-31">
+$ublReader   = new UblDocumentReader(new UblXmlDocumentLoader());
+$participant = Participant::parse('0245:1234567890');
+$pageToken   = null;
+
+do {
+    $page = $inbox->getInboxPage(new ListReceivedDocumentsRequest(
+        $participant,
+        $pageToken,
+        PageSize::fromInt(50)
+    ));
+    $pageToken = $page->nextPageToken();
+
+    foreach ($page->documents() as $metadata) {
+        if (!$metadata->receiver()->equals($participant)) {
+            throw new UnexpectedValueException('Doklad nepatrí do tejto schránky.');
+        }
+
+        $reference = new ReceivedDocumentReference(
+            $participant,
+            $metadata->documentId(),
+            new DocumentRequestContext(
+                $db->resolveId($metadata->documentId()->value()),
+                $metadata->documentId()->value()
+            )
+        );
+
+        $document = $inbox->getDocumentPayload($reference);
+        $ubl      = $ublReader->read($document->xml());     // len načítanie, bez validácie
+
+        $db->storeIfAbsent($participant, $metadata, $ubl);  // idempotentne
+        $inbox->acknowledge($reference);                    // až po úspešnom uložení
+    }
+} while ($pageToken !== null);
+</script><div class="note info"><span>Ak čítanie alebo uloženie zlyhá, potvrdenie sa nevykoná a doklad možno spracovať znova. Čítačka nenahrádza XSD ani Peppol validáciu.</span></div></div>
+  </div></div>
+
+  <div role="tabpanel" id="g-lv" hidden><div data-tabs>
+    <div class="subtabs" role="tablist"><button role="tab" aria-selected="true" aria-controls="lv-send">Odoslanie</button><button role="tab" aria-selected="false" aria-controls="lv-err">Chyby</button><button role="tab" aria-selected="false" aria-controls="lv-in">Príjem</button><button role="tab" aria-selected="false" aria-controls="lv-ubl">Vytvorenie UBL</button><button role="tab" aria-selected="false" aria-controls="lv-prof">Viac profilov</button></div>
+    <div role="tabpanel" id="lv-send" class="ex" hidden><h3>Odoslanie v kontroléri</h3><p>Služby dodá kontajner cez injekciu do metódy. Kontrolér pripraví payload, spustí kontroly a odošle s uloženým UUID.</p><script type="text/plain" class="src" data-file="app/Http/Controllers/SubmitInvoiceController.php" data-hl="2-6,18-20,22-26">
+public function __invoke(
+    SubmissionAttempt $attempt,
+    UblDraftSubmissionInterface $drafts,
+    RecipientCapabilityCheckInterface $recipient,
+    ProviderDocumentValidationCheckInterface $validation,
+    DocumentSubmissionGatewayInterface $gateway
+): JsonResponse {
+    $sender   = Participant::parse($attempt->senderParticipantId());
+    $receiver = Participant::parse($attempt->receiverParticipantId());
+
+    $payload = $drafts->preparePayload(
+        $sender,
+        $receiver,
+        $attempt->draft(),
+        $attempt->creationDateTime()
+    );
+
+    // Samostatné volania API; send() ich nespúšťa automaticky.
+    $recipient->check($payload);
+    $validation->check(new ValidateDocumentRequest($sender, $payload));
+
+    $result = $gateway->send(new SendDocumentRequest(
+        $sender,
+        $payload,
+        IdempotencyKey::fromString($attempt->idempotencyKey())   // uložené UUID
+    ));
+    $attempt->recordProviderResult($result);
+
+    return response()->json([
+        'status'               => $result->status()->value(),
+        'provider_document_id' => $result->providerDocumentId()->value(),
+    ]);
+}
+</script><div class="note info"><span><code>SubmissionAttempt</code> je model vašej aplikácie (ID účastníkov, draft, čas UTC, UUID). Trasa: <code>Route::post('/submission-attempts/{attempt}/send', SubmitInvoiceController::class);</code></span></div></div>
+    <div role="tabpanel" id="lv-err" class="ex" hidden><h3>Bezpečné odpovede na chyby</h3><p>Oddeľte chyby pred odoslaním od chýb, pri ktorých už mohol poskytovateľ doklad prijať.</p><ul class="list" style="max-width:780px;margin-top:14px"><li><code>DocumentPreflightException</code>: kontrola zamietla doklad ešte pred <code>send()</code>.</li><li><code>RequestDeferredException</code>: nič sa neodoslalo, naplánujte úlohu podľa <code>retryAt()</code>.</li><li><code>ProviderConnectionException</code> a neplatná 2xx: výsledok môže byť neistý.</li></ul><script type="text/plain" class="src" data-file="app/Http/Controllers/SubmitInvoiceController.php" data-hl="6-8,9-11">
+try {
+    $result = $gateway->send(new SendDocumentRequest($sender, $payload, $key));
+    $attempt->recordProviderResult($result);
+
+    return response()->json(['status' => $result->status()->value()]);
+} catch (RequestDeferredException $e) {
+    $attempt->markDeferred($e->retryAt()->unixTimestamp());
+    return response()->json(['status' => 'odlozene'], 429);
+} catch (ProviderConnectionException | InvalidProviderResponseException $e) {
+    $attempt->markForReconciliation();                    // výsledok môže byť neistý
+    return response()->json(['status' => 'potrebne_zosuladenie'], 202);
+} catch (ProviderErrorResponseException $e) {
+    $attempt->markProviderError($e->rawStatusCode());
+    Log::warning('SAPI vrátilo chybu.', ['status' => $e->rawStatusCode()]);   // bez tela odpovede
+    return response()->json(['status' => 'chyba_poskytovatela'], 502);
+}
+</script><div class="note info"><span>Pri opakovaní zachovajte pôvodný draft, čas a UUID. HTTP chyba nie je automaticky obchodné zamietnutie.</span></div></div>
+    <div role="tabpanel" id="lv-in" class="ex" hidden><h3>Príjem organizácie</h3><p>Identitu príjemcu načítajte pre konkrétnu organizáciu. Uložte v transakcii a až potom potvrďte.</p><script type="text/plain" class="src" data-file="app/Http/Controllers/ReceiveInboxController.php" data-hl="7,20-22,32-43,45">
+public function __invoke(
+    Request $request,
+    Tenant $tenant,
+    ReceivedDocumentProviderInterface $inbox,
+    UblDocumentReaderInterface $reader
+): JsonResponse {
+    $participant = Participant::parse($tenant->peppol_participant_id);   // z organizácie, nie z .env
+
+    $pageToken = $request->filled('page_token')
+        ? PageToken::fromString($request->input('page_token'))
+        : null;
+
+    $page = $inbox->getInboxPage(new ListReceivedDocumentsRequest(
+        $participant,
+        $pageToken,
+        PageSize::fromInt(50)
+    ));
+
+    foreach ($page->documents() as $metadata) {
+        if (!$metadata->receiver()->equals($participant)) {
+            throw new UnexpectedValueException('Doklad nepatrí do tejto schránky.');
+        }
+
+        $reference = new ReceivedDocumentReference(
+            $participant,
+            $metadata->documentId(),
+            new DocumentRequestContext('received:' . $metadata->documentId()->value(), null)
+        );
+        $payload = $inbox->getDocumentPayload($reference);
+        $ubl     = $reader->read($payload->xml());
+
+        DB::transaction(function () use ($participant, $metadata, $payload) {
+            ReceivedInvoice::updateOrCreate(
+                [
+                    'receiver_participant_id' => $participant->identifier(),
+                    'provider_document_id'    => $metadata->documentId()->value(),
+                ],
+                [
+                    'sender_participant_id' => $metadata->sender()->identifier(),
+                    'document_xml'          => $payload->xml(),
+                ]
+            );
+        });
+
+        $inbox->acknowledge($reference);   // až po dokončení transakcie
+    }
+
+    return response()->json([
+        'next_page_token' => optional($page->nextPageToken())->value(),
+    ]);
+}
+</script><div class="note info"><span><code>Tenant</code> a <code>ReceivedInvoice</code> patria hostiteľskej aplikácii. Ukážka spracuje jednu stránku s limitom 50; pri väčšom objeme ju spúšťajte vo fronte úloh.</span></div></div>
+    <div role="tabpanel" id="lv-ubl" class="ex" hidden><h3>UBL ako XML odpoveď</h3><p>Zapisovač príde z kontajnera. Kontrolér zostaví draft a vráti XML s typom obsahu.</p><script type="text/plain" class="src" data-file="app/Http/Controllers/InvoiceXmlController.php">
+public function __invoke(UblDocumentWriterInterface $writer): Response
+{
+    $country  = CountryCodeList::resolve(CountryCodeList::SLOVAKIA);
+    $currency = CurrencyCodeList::resolve('EUR');
+    $unit     = UnitCodeList::resolve('H87');
+
+    $supplier = (new UblDraftParty(
+        UblEndpointIdentifier::fromSchemeAndValue('0245', '2012345676'),
+        'Ukážkový dodávateľ s.r.o.',
+        $country
+    ))->withAddress(
+        (new UblDraftAddress($country))
+            ->withLines('Hlavná 1')
+            ->withLocality('Bratislava', '811 01')
+    );
+
+    $customer = (new UblDraftParty(
+        UblEndpointIdentifier::fromSchemeAndValue('0245', '2012345687'),
+        'Ukážkový odberateľ s.r.o.',
+        $country
+    ))->withAddress(
+        (new UblDraftAddress($country))
+            ->withLines('Druhá 2')
+            ->withLocality('Košice', '040 01')
+    );
+
+    // Sumy pripravuje aplikácia; zapisovač ich nepočíta.
+    $vat = new UblDraftTaxCategory(
+        TaxCategoryCode::fromString(TaxCategoryCode::STANDARD),
+        UblDecimal::fromString('23')
+    );
+
+    $line = new UblDraftLine(
+        new UblDraftIdentifier('1'),
+        UblDecimal::fromString('2.0000'),
+        $unit,
+        UblDecimal::fromString('100.00'),
+        'Konzultačná služba',
+        $vat,
+        UblDecimal::fromString('50.00')
+    );
+
+    $totals = new UblDraftTotals(
+        UblDecimal::fromString('100.00'),
+        UblDecimal::fromString('100.00'),
+        UblDecimal::fromString('123.00'),
+        null,
+        UblDecimal::fromString('123.00'),
+        UblDecimal::fromString('23.00'),
+        [
+            new UblDraftTaxSubtotal(
+                UblDecimal::fromString('100.00'),
+                UblDecimal::fromString('23.00'),
+                $vat
+            ),
+        ]
+    );
+
+    $draft = (new UblDocumentDraft(
+        UblDocumentRoot::fromString(UblDocumentRoot::INVOICE),
+        UblDocumentNumber::fromString('FA-2026-001'),
+        LocalDate::fromString('2026-11-22'),
+        $currency,
+        $supplier,
+        $customer,
+        $totals
+    ))
+        ->withLines([$line])
+        ->withDates(UblDraftDates::none()->withDueDate(LocalDate::fromString('2026-12-22')));
+
+    return response($writer->write($draft))
+        ->header('Content-Type', 'application/xml; charset=UTF-8');
+}
+</script><div class="note info"><span>Pred odoslaním spustite samostatnú validáciu XML.</span></div><details class="acc" style="margin-top:14px"><summary>Celý súbor s importmi a plným zostavením</summary><div class="body"><script type="text/plain" class="src" data-file="app/ubl/write-invoice.php">
+<?php
+
+use DreaM1\EfakturaConnector\Domain\Ubl\CodeList\TaxCategoryCode;
+use DreaM1\EfakturaConnector\Domain\Ubl\CodeList\TaxSchemeCode;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDocumentDraft;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftDates;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftPayment;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftReferences;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDocumentNumber;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDecimal;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftAddress;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftLine;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftIdentifier;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftParty;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftPartyTaxScheme;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftTaxCategory;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftTaxSubtotal;
+use DreaM1\EfakturaConnector\Domain\Ubl\Draft\UblDraftTotals;
+use DreaM1\EfakturaConnector\Domain\Ubl\LocalDate;
+use DreaM1\EfakturaConnector\Domain\Ubl\UblDocumentRoot;
+use DreaM1\EfakturaConnector\Domain\Ubl\UblEndpointIdentifier;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\CountryCodeList;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\CurrencyCodeList;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\CodeList\UnitCodeList;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Writer\UblDocumentWriter;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+function createInvoiceDraft(): UblDocumentDraft
+{
+    // 1. Z číselníkov načítajte krajinu, menu a mernú jednotku.
+    $country = CountryCodeList::resolve(CountryCodeList::SLOVAKIA);
+    $currency = CurrencyCodeList::resolve('EUR');
+    $unit = UnitCodeList::unit('ks');
+
+    if ($country === null || $currency === null) {
+        throw new LogicException('V pribalených číselníkoch chýba potrebný kód.');
+    }
+
+    // 2. Vytvorte dodávateľa a odberateľa vrátane adries.
+    $supplierAddress = (new UblDraftAddress($country))
+        ->withLines('Hlavná 1')
+        ->withLocality('Bratislava', '811 01');
+    $supplier = (new UblDraftParty(
+        UblEndpointIdentifier::fromSchemeAndValue('0245', '2012345676'),
+        'Ukážkový dodávateľ s.r.o.',
+        $country
+    ))
+        ->withAddress($supplierAddress)
+        // Syntetické údaje identifikujú dodávateľa a jeho inú daňovú registráciu.
+        ->withLegalCompanyId(new UblDraftIdentifier('SYNTHETIC-SELLER-REGISTRATION'))
+        ->withTaxScheme(new UblDraftPartyTaxScheme(new UblDraftIdentifier('SYNTHETIC-SELLER-TAX-REGISTRATION'), TaxSchemeCode::fromString(TaxSchemeCode::OTHER)));
+
+    $customerAddress = (new UblDraftAddress($country))
+        ->withLines('Druhá 2')
+        ->withLocality('Košice', '040 01');
+    $customer = (new UblDraftParty(
+        UblEndpointIdentifier::fromSchemeAndValue('0245', '2012345687'),
+        'Ukážkový odberateľ s.r.o.',
+        $country
+    ))->withAddress($customerAddress);
+
+    // 3. Pripravte položku a sumy; zapisovač ich nebude počítať.
+    $vatCategory = new UblDraftTaxCategory(
+        TaxCategoryCode::fromString(TaxCategoryCode::STANDARD),
+        UblDecimal::fromString('23')
+    );
+
+    // Poradie: ID, množstvo, jednotka H87 (kus), čistá suma, názov položky, kategória DPH, jednotková cena.
+    $line = new UblDraftLine(
+        new UblDraftIdentifier('1'),
+        UblDecimal::fromString('2.0000'),
+        $unit,
+        UblDecimal::fromString('100.00'),
+        'Konzultačná služba',
+        $vatCategory,
+        UblDecimal::fromString('50.00')
+    );
+    $totals = new UblDraftTotals(
+        UblDecimal::fromString('100.00'),
+        UblDecimal::fromString('100.00'),
+        UblDecimal::fromString('123.00'),
+        null,
+        UblDecimal::fromString('123.00'),
+        UblDecimal::fromString('23.00'),
+        [
+            new UblDraftTaxSubtotal(
+                UblDecimal::fromString('100.00'),
+                UblDecimal::fromString('23.00'),
+                $vatCategory
+            ),
+        ]
+    );
+
+    // 4. Zostavte nemenný návrh faktúry.
+    return (new UblDocumentDraft(
+        UblDocumentRoot::fromString(UblDocumentRoot::INVOICE),
+        UblDocumentNumber::fromString('FA-2026-001'),
+        LocalDate::fromString('2026-11-22'),
+        $currency,
+        $supplier,
+        $customer,
+        $totals
+    ))->withLines([$line])
+        ->withDates(UblDraftDates::none()->withDueDate(LocalDate::fromString('2026-12-22')))
+        ->withReferences(UblDraftReferences::none()->withBuyerReference('OBJ-2026-001'))
+        ->withPayment(UblDraftPayment::none()->withTermsNote('Úhrada do dátumu splatnosti.'));
+}
+
+function writeInvoice(UblDocumentDraft $draft): void
+{
+    $xml = (new UblDocumentWriter())->write($draft);
+    $path = __DIR__ . '/invoice.xml';
+
+    if (file_put_contents($path, $xml) === false) {
+        throw new RuntimeException('Súbor XML faktúry sa nepodarilo zapísať.');
+    }
+
+    printf('Faktúra bola zapísaná do súboru: %s%s', $path, PHP_EOL);
+}
+
+$draft = createInvoiceDraft();
+writeInvoice($draft);
+</script></div></details></div>
+    <div role="tabpanel" id="lv-prof" class="ex" hidden><h3>Viac OAuth profilov</h3><p>Pri viacerých firmách alebo prostrediach vyberte klienta podľa aliasu.</p><script type="text/plain" class="src" data-file="app/Services/BillingService.php" data-hl="2">
+// Viac OAuth profilov: aliasy v config/efaktura-connector.php (clients.<alias>)
+$client = app(SapiClientRegistryInterface::class)->client('tenant-a');
+
+$result = $client->documentSubmissionGateway()->send(new SendDocumentRequest($sender, $payload, $key));
+
+// Priame bindingy (injekcia rozhraní) používajú profil z default_client.
+</script><div class="note info"><span>Pri povereniach uložených v modeli zákazníka použite <code>TenantEFakturaClientResolver</code>.</span></div></div>
+  </div></div>
+</div>
+</section>
+</div>
+<div class="wrap"><div class="pager"><a href="toky.html"><small>← Predchádzajúca</small><b>Toky dokladov</b></a><a class="nx" href="validacia.html"><small>Ďalšia →</small><b>Validácia</b></a></div></div>
+</main>
+<footer class="site">
+  <div class="wrap">
+    <div class="fgrid">
+      <div><a class="logo" href="index.html"><i>€</i>eFaktúra <span>Connector</span></a><p>Frameworkovo nezávislá PHP knižnica pre SAPI-SK, Peppol Gateway a Integrator API. MIT licencia.</p></div>
+      <div><h5>Produkt</h5><a href="architektura.html">Architektúra</a><a href="toky.html">Toky dokladov</a><a href="ukazky.html">Ukážky kódu</a><a href="validacia.html">Validácia</a></div>
+      <div><h5>Referencia</h5><a href="api.html">API operácie</a><a href="integrator.html">Integrator</a><a href="nastavenie.html">Nastavenie</a><a href="prevadzka.html">Prevádzka</a></div>
+      <div><h5>Zdroje</h5><a href="dokumentacia.html">Dokumentácia</a><a href="https://github.com/1DreaM1/efaktura-connector">GitHub</a><a href="wiki/index.html">Wiki</a><a href="../LICENSE">Licencia MIT</a></div>
+    </div>
+    <div class="fbot"><span>© eFaktúra Connector · MIT licencia</span><span>Statická stránka · CSS a JavaScript v priečinku assets</span></div>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+</body>
+</html>

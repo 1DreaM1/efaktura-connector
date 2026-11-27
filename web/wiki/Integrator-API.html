@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Konektor poskytuje samostatného klienta pre DataHosting Integrator API. Bežné operácie používajú X-Integrator-Token ; odoslanie PDS subjects používa podpis X-PDS-Secret .">
+<title>Integrator API – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html" aria-current="page">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Integrator-API.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Integrator-API.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Integrator-API.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-referencia">Referencia</a></div><h1 class="title">Integrator API</h1><div class="sub"><span class="chip">Čítanie ≈ 6 min</span><span class="chip">5 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead">Konektor poskytuje samostatného klienta pre DataHosting Integrator API. Bežné operácie používajú <code class="nb">X-Integrator-Token</code>; odoslanie PDS subjects používa podpis <code class="nb">X-PDS-Secret</code>.</p>
+<p>OAuth client ID a secret, ktoré spravujete cez tieto operácie, slúžia následne na samostatné SAPI a Peppol Gateway volania účastníkov.</p>
+<pre class="mermaid">sequenceDiagram
+    participant Host as Hostiteľská aplikácia
+    participant Integrator as Integrator API
+    participant SAPI as SAPI / Peppol Gateway
+    Host-&gt;&gt;Integrator: createClient + X-Integrator-Token + Idempotency-Key
+    Integrator--&gt;&gt;Host: client ID + jednorazový OAuth secret
+    Host-&gt;&gt;Host: bezpečne uložiť secret
+    Host-&gt;&gt;SAPI: neskoršie volanie s Bearer tokenom a Participant
+    Host-&gt;&gt;Integrator: submitPdsSubjects + X-PDS-Secret
+    Integrator--&gt;&gt;Host: PDS výsledok</pre>
+<p>Klientsky OAuth secret a PDS signing secret sú dve rozdielne poverenia. PDS požiadavka používa vlastný podpis; hlavička <code class="nb">X-Integrator-Token</code> sa na ňu neposiela.</p>
+<h2 id="laravel-konfigurácia"><span class="mw-h">Laravel konfigurácia</span><a class="anchor" href="#laravel-konfigurácia" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Integrator-API.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>V publikovanom <code class="nb">config/efaktura-connector.php</code> nastavte oddiel <code class="nb">integrator_api</code>. Hodnoty možno zadať cez premenné prostredia <code class="nb">EFAKTURA_INTEGRATOR_BASE_URL</code>, <code class="nb">EFAKTURA_INTEGRATOR_ID</code> a <code class="nb">EFAKTURA_INTEGRATOR_API_TOKEN</code>.</p>
+<p>Ak samostatnú URL nenastavíte, použije sa <code class="nb">EFAKTURA_BASE_URL</code>. Voliteľný PDS signing secret nastavte cez <code class="nb">EFAKTURA_PDS_SIGNING_SECRET</code>; Laravel ho načíta z <code class="nb">integrator_api.pds.signing_secret</code> do typovanej <code class="nb">PdsSigningConfiguration</code>.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\Configuration\PdsSigningConfiguration;
+use DreaM1\EfakturaConnector\Core\Contracts\IntegratorAccountClientInterface;
+
+$integrator = app(IntegratorAccountClientInterface::class);
+$pdsSecret  = app(PdsSigningConfiguration::class)-&gt;requireSigningSecret();</code></pre></div>
+<p><code class="nb">PdsSigningConfiguration</code> sa rozlíši aj bez Integrator API poverení. Prázdna alebo chýbajúca hodnota znamená, že secret nie je nastavený: <code class="nb">hasSigningSecret()</code> vráti <code class="nb">false</code> a <code class="nb">requireSigningSecret()</code> vyhodí <code class="nb">ConfigurationException</code>.</p>
+<p>Neznámy kľúč v <code class="nb">integrator_api.pds</code> alebo hodnota obsahujúca iba medzery končí <code class="nb">ConfigurationException</code> pri rozlíšení. Secret sa ku klientovi nepripája automaticky; odovzdáva sa explicitne do <code class="nb">SubmitPdsSubjectsRequest</code>.</p>
+<p>ID integrátora a token sú pri rozlíšení klienta povinné. Token uchovávajte v prostredí alebo secret store. Bez Laravelu vytvorte klienta explicitne podľa nasledujúceho príkladu.</p>
+<h2 id="vytvorenie-klienta"><span class="mw-h">Vytvorenie klienta</span><a class="anchor" href="#vytvorenie-klienta" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Integrator-API.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Vytvorte HTTP executor stack rovnako ako pri ostatných API volaniach a zostavte klienta s URL prostredia, identifikátorom integrátora a Integrator API tokenom:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\Configuration\IntegratorAccountConfiguration;
+use DreaM1\EfakturaConnector\Core\Configuration\IntegratorToken;
+use DreaM1\EfakturaConnector\Core\Documents\IdempotencyKeyGenerator;
+use DreaM1\EfakturaConnector\Core\IntegratorApi\CreateClientRequest;
+use DreaM1\EfakturaConnector\Core\IntegratorApi\IntegratorId;
+use DreaM1\EfakturaConnector\Core\IntegratorApi\IntegratorParticipantAccess;
+use DreaM1\EfakturaConnector\Domain\EFaktura\Participant;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Transport\Execution\DefaultHttpRequestExecutorFactory;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Transport\Execution\HttpRequestExecutorOptions;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Connection\IntegratorAccountClientFactory;
+
+// Načítajte token z bezpečného úložiska hostiteľskej aplikácie.
+$integratorToken = getenv('EFAKTURA_INTEGRATOR_API_TOKEN');
+if ($integratorToken === false || $integratorToken === '') {
+    throw new RuntimeException('Missing Integrator API token.');
+}
+
+$executor = DefaultHttpRequestExecutorFactory::create(
+    HttpRequestExecutorOptions::defaults()
+);
+$integrator = (new IntegratorAccountClientFactory(static function () use ($executor) {
+    return $executor;
+}))-&gt;create(
+    new IntegratorAccountConfiguration(
+        'https://test-sapisk.datahosting.sk',
+        IntegratorId::fromString('your-integrator-id'),
+        IntegratorToken::fromString($integratorToken)
+    )
+);
+
+$created = $integrator-&gt;createClient(new CreateClientRequest(
+    IdempotencyKeyGenerator::generate(),
+    'ERP client',
+    'api@example.sk',
+    [new IntegratorParticipantAccess(
+        Participant::parse('0245:1234567890'),
+        true,
+        true
+    )]
+));
+
+$oneTimeSecret = $created-&gt;clientSecret();
+if ($oneTimeSecret !== null) {
+    $secretValue = $oneTimeSecret-&gt;reveal();
+    // Store this value securely; the API returns it only during create or rotation.
+}</code></pre></div>
+<p>Pre produkciu zmeňte <code class="nb">baseUrl</code> a použite zodpovedajúci integrátorský token. <code class="nb">ProviderBaseUrl</code> vyžaduje bezpečnú HTTPS adresu.</p>
+<p>Bežné operácie posielajú token v hlavičke <code class="nb">X-Integrator-Token</code>; PDS odoslanie používa samostatný <code class="nb">PdsAuthenticatedRequestSender</code> nad spoločným transportom a posiela podpis <code class="nb">X-PDS-Secret</code> bez Integrator API tokenu.</p>
+<h2 id="dostupné-operácie"><span class="mw-h">Dostupné operácie</span><a class="anchor" href="#dostupné-operácie" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Integrator-API.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">IntegratorAccountClientInterface</code> pokrýva tieto volania:</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Metóda rozhrania</th><th>HTTP operácia</th><th>Správanie</th></tr></thead><tbody><tr><td><code class="nb">listClients()</code></td><td><code>GET /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients</code></td><td>Cursor stránkovanie, voliteľné <code class="nb">status</code>, <code class="nb">pageToken</code> a <code class="nb">limit</code>.</td></tr><tr><td><code class="nb">createClient()</code></td><td><code>POST /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients</code></td><td>Vyžaduje <code class="nb">Idempotency-Key</code>; odpoveď môže obsahovať jednorazový secret.</td></tr><tr><td><code class="nb">getClient()</code></td><td><code>GET /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients/<wbr>{clientId}</code></td><td>Vráti metadáta klienta a jeho participant prístupy.</td></tr><tr><td><code class="nb">deleteClient()</code></td><td><code>DELETE /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients/<wbr>{clientId}</code></td><td>Očakáva <code>204 No Content</code>.</td></tr><tr><td><code class="nb">replaceClientParticipantAccess()</code></td><td><code>PUT /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients/<wbr>{clientId}/<wbr>participants</code></td><td>Nahradí celý zoznam <code class="nb">participant_id</code>, <code class="nb">can_send</code>, <code class="nb">can_receive</code>.</td></tr><tr><td><code class="nb">rotateClientSecret()</code></td><td><code>PUT /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>clients/<wbr>{clientId}/<wbr>secret</code></td><td>Vráti nový jednorazový secret; automatický retry je vypnutý, lebo druhá rotácia by mohla zneplatniť prvý výsledok.</td></tr><tr><td><code class="nb">listParticipants()</code></td><td><code>GET /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>participants</code></td><td>Cursor stránkovanie cez <code class="nb">pageToken</code> a <code class="nb">limit</code>.</td></tr><tr><td><code class="nb">getDocumentSummary()</code></td><td><code>GET /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>document-summary</code></td><td><code class="nb">month</code> musí byť kalendárny mesiac vo formáte <code class="nb">yyyyMM</code>.</td></tr><tr><td><code class="nb">requestParticipantActivation()</code></td><td><code>POST /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>participants/<wbr>{participantId}/<wbr>activations</code></td><td>Vyžaduje idempotency UUID a režim <code class="nb">SEND_ONLY</code> alebo <code class="nb">SEND_AND_RECEIVE</code>.</td></tr><tr><td><code class="nb">submitPdsSubjects()</code></td><td><code>POST /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>pds/<wbr>subjects</code></td><td>Odosiela typovaný zoznam PDS subjects podpísaný cez <code class="nb">X-PDS-Secret</code>.</td></tr></tbody></table></div>
+<p>Vstupné DTO <code class="nb">IntegratorParticipantAccess</code> a <code class="nb">ActivateParticipantRequest</code> prijímajú existujúci <code class="nb">Participant</code> z <code class="nb">Domain\EFaktura</code>, vytvorený cez <code class="nb">Participant::parse()</code>. Integrator API používa rovnaký Peppol identifikátor účastníka ako SAPI a Gateway.</p>
+<p>Typ overuje syntax <code class="nb">scheme:value</code>; dostupnosť schémy v code liste sa overuje iba pri operáciách, ktoré ju vyžadujú.</p>
+<p><code class="nb">IntegratorAccountConfiguration</code> prijíma integrátor ID ako <code class="nb">IntegratorId</code> value object a operácie nad OAuth klientom používajú <code class="nb">IntegratorClientReference</code> vytvorený z <code class="nb">OAuthClientId</code>.</p>
+<p>Všetky cesty, query parametre, response polia a chybové statusy sú uvedené v <a href="API-Reference.html">API prehľade</a> a lokálnom OpenAPI snapshote <code class="nb">docs/eFaktura/api/openapi.json</code>. Odpovede sa mapujú na typované Core hodnoty; neúspešné statusy používajú spoločné <code class="nb">ProviderErrorResponseException</code>.</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Operácia</th><th>Čo vráti</th><th>Čo uložiť alebo zvážiť</th></tr></thead><tbody><tr><td><code class="nb">createClient()</code></td><td>Nový client ID a jednorazový client secret</td><td>Secret bezpečne uložiť hneď; z neskoršieho detailu ho nemožno získať.</td></tr><tr><td><code class="nb">rotateClientSecret()</code></td><td>Nový jednorazový secret</td><td>Zachovať ho z odpovede; automatický retry rotácie je vypnutý.</td></tr><tr><td><code class="nb">submitPdsSubjects()</code></td><td>Výsledok prijatia PDS dávky</td><td>PDS signing secret patrí do PDS requestu, nie do SAPI OAuth konfigurácie.</td></tr></tbody></table></div>
+<p>Stav OAuth klienta a režim kontraktu sú uzavreté value objecty. Na filtrovanie použite napríklad <code>IntegratorClientStatus::<wbr>fromString(&#39;APPROVED&#39;)</code>; pri aktivácii odovzdajte <code>ParticipantContractMode::<wbr>fromString(&#39;SEND_<wbr>AND_<wbr>RECEIVE&#39;)</code>.</p>
+<p>Response modely vracajú rovnaké typy, ich textová hodnota je dostupná cez <code class="nb">value()</code>.</p>
+<h2 id="odoslanie-pds-subjects"><span class="mw-h">Odoslanie PDS subjects</span><a class="anchor" href="#odoslanie-pds-subjects" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Integrator-API.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">submitPdsSubjects()</code> odošle typované PDS údaje cez <code>POST /<wbr>v1/<wbr>integrators/<wbr>{integratorId}/<wbr>pds/<wbr>subjects</code>. Telo tvorí <code class="nb">PdsSubjectBatch</code> z hodnôt <code class="nb">PdsSubject</code>; požiadavka nesie samostatný <code class="nb">PdsSigningSecret</code>:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\IntegratorApi\PdsSubject;
+use DreaM1\EfakturaConnector\Core\IntegratorApi\PdsSubjectBatch;
+use DreaM1\EfakturaConnector\Core\IntegratorApi\PdsSigningSecret;
+use DreaM1\EfakturaConnector\Core\IntegratorApi\PdsVerificationToken;
+use DreaM1\EfakturaConnector\Core\IntegratorApi\SubmitPdsSubjectsRequest;
+
+$pdsSecret = getenv('EFAKTURA_PDS_SIGNING_SECRET');
+if ($pdsSecret === false || $pdsSecret === '') {
+    throw new RuntimeException('Missing PDS signing secret.');
+}
+
+$batch = new PdsSubjectBatch([
+    new PdsSubject(
+        null,
+        '2022706466',
+        'Synthetic Company s.r.o.',
+        'info@example.test',
+        null,
+        PdsVerificationToken::fromString('synthetic-verification-token')
+    ),
+]);
+
+$response = $integrator-&gt;submitPdsSubjects(new SubmitPdsSubjectsRequest(
+    $batch,
+    PdsSigningSecret::fromString($pdsSecret)
+));</code></pre></div>
+<p>Endpoint serializuje polia podľa OpenAPI a podpisuje presné bajty odchádzajúceho JSON tela HMAC-SHA512 v hlavičke <code class="nb">X-PDS-Secret</code>; <code class="nb">PdsAuthenticatedRequestSender</code> vyžaduje práve jeden neprázdny podpis, inak vyhodí <code class="nb">InvalidInputException</code>, a odstráni prípadné <code class="nb">Authorization</code> a <code class="nb">X-Integrator-Token</code> hlavičky.</p>
+<p>Pri Laraveli použite namiesto <code class="nb">getenv()</code> priamo <code>app(PdsSigningConfiguration::<wbr>class)-&gt;requireSigningSecret()</code>, ktoré už vráti <code class="nb">PdsSigningSecret</code>; mimo Laravel bridge secret načítajte zo secret store hostiteľskej aplikácie, prípadne cez <code>PdsSigningConfiguration::<wbr>fromArray([&#39;signing_<wbr>secret&#39; =&gt; .<wbr>.<wbr>.<wbr>])</code>.</p>
+<p>PDS signing secret je oddelený od Integrator API tokenu. Osobné údaje, PDS verification token a signing secret sa redigujú pri <code class="nb">var_dump()</code> a v komunikačných logoch.</p>
+<p>OpenAPI opisuje <code class="nb">X-PDS-Secret</code> ako SHA-512 podpis tela, ale nešpecifikuje presný formát; HMAC-SHA512 s hex výstupom je implementačná interpretácia, ktorú treba potvrdiť u DataHosting.</p>
+<h2 id="retry-a-bezpečnosť-údajov"><span class="mw-h">Retry a bezpečnosť údajov</span><a class="anchor" href="#retry-a-bezpečnosť-údajov" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Integrator-API.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>GET operácie používajú predvolenú retry politiku. Vytvorenie klienta a aktivácia účastníka sú retry-safe, pretože každá požiadavka nesie stabilný <code class="nb">Idempotency-Key</code>; pri opakovaní tej istej logickej požiadavky zachovajte rovnaký kľúč aj telo.</p>
+<p>Nahradenie participant prístupov je PUT s rovnakým výsledkom pri opakovanom identickom tele. Rotácia secretu, zmazanie klienta a <code class="nb">submitPdsSubjects()</code> sa automaticky neopakujú.</p>
+<p>Integrátor API token a vydané OAuth secrets sú citlivé poverenia. Tokenový header sa do komunikácie logu nezapisuje, jednorazový secret je v response modeli redigovaný pri <code class="nb">var_dump()</code> a log sanitizer odstraňuje polia pomenované ako token alebo secret.</p>
+<p>Objekty s tajomstvom (<code class="nb">IntegratorToken</code>, <code class="nb">PdsSigningSecret</code>, <code class="nb">PdsVerificationToken</code>, <code class="nb">OAuthClientSecret</code>, <code class="nb">WebhookSigningSecret</code>, <code class="nb">OAuthAccessToken</code>) a objekty, ktoré ich držia (<code class="nb">SapiClientConfiguration</code>, <code class="nb">SapiToken</code>), nejde serializovať: <code class="nb">serialize()</code> vyhodí <code class="nb">InvariantViolationException</code>, aby sa tajomstvo nezapísalo do fronty, cache alebo session.</p>
+<p>Hostiteľ musí citlivé hodnoty bezpečne ukladať a obmedziť ich ďalšie logovanie.</p>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#laravel-konfigurácia"><span class="n">1</span> <span class="x">Laravel konfigurácia</span></a></li><li class="t2"><a href="#vytvorenie-klienta"><span class="n">2</span> <span class="x">Vytvorenie klienta</span></a></li><li class="t2"><a href="#dostupné-operácie"><span class="n">3</span> <span class="x">Dostupné operácie</span></a></li><li class="t2"><a href="#odoslanie-pds-subjects"><span class="n">4</span> <span class="x">Odoslanie PDS subjects</span></a></li><li class="t2"><a href="#retry-a-bezpečnosť-údajov"><span class="n">5</span> <span class="x">Retry a bezpečnosť údajov</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="API-Reference.html"><small>← Predchádzajúca</small><b>Prehľad API</b></a><a class="nx" href="Public-API.html"><small>Ďalšia →</small><b>Verejné PHP API</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="API-Reference.html">Prehľad API</a></li><li><a href="Public-API.html">Verejné PHP API</a></li><li><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a></li><li><a href="Request-Flow.html">Graf toku API requestov</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li><li><a href="Configuration.html">Konfigurácia</a></li><li><a href="Transport-and-Authentication.html">HTTP transport a autentifikácia</a></li><li><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></li><li><a href="API-Reference.html">Prehľad API</a></li><li><a href="Source-Alignment.html">API špecifikácie a pokrytie</a></li><li><a href="Architecture-and-Testing.html">Architektúra a hlavné toky</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-referencia">Referencia</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Integrator-API.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Integrator-API.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

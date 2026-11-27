@@ -1,0 +1,7 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Cache\\Repository\:\:lock\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: integrations/laravel/src/Cache/LaravelCacheStore.php

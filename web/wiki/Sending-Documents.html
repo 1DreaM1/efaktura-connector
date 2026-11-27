@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tento návod sprevádza prípravu payloadu, voliteľné kontroly a samostatné odoslanie cez SAPI.">
+<title>Odosielanie dokladov – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html" aria-current="page">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Sending-Documents.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Sending-Documents.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Sending-Documents.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-práca-s-dokladmi">Práca s dokladmi</a></div><h1 class="title">Odosielanie dokladov</h1><div class="sub"><span class="chip">Čítanie ≈ 9 min</span><span class="chip">8 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead">Tento návod sprevádza prípravu payloadu, voliteľné kontroly a samostatné odoslanie cez SAPI.</p>
+<p><code class="nb">UblDraftSubmissionInterface::send()</code> môže vyhodiť chyby zápisu draftu (<code class="nb">DOMException</code> alebo <code class="nb">InvalidInputException</code>) aj výnimky odosielacieho gatewaya: <code class="nb">ProviderApiException</code> (vrátane odloženia <code class="nb">RequestDeferredException</code>), <code class="nb">RequestEncodingException</code> alebo <code class="nb">RequestCoordinationException</code>.</p>
+<p><code class="nb">preparePayload()</code> iba pripraví payload a nevykonáva sieťové volanie. Typy výnimiek a ich spracovanie sú opísané v <a href="Errors-Retry-and-Idempotency.html">prehľade výnimiek a retry</a>.</p>
+<h2 id="tok-prípravy-a-odoslania"><span class="mw-h">Tok prípravy a odoslania</span><a class="anchor" href="#tok-prípravy-a-odoslania" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Sending-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Nasledujúci tok ukazuje možné kroky hostiteľskej aplikácie. Lokálna validácia, Discovery a vzdialená kontrola sú voliteľné samostatné volania; konektor ich nespúšťa implicitne pri odoslaní.</p>
+<p>Ak sa rozhodnete vykonať vzdialenú validáciu, na ňu aj na SAPI odoslanie odovzdajte ten istý pripravený payload.</p>
+<pre class="mermaid">flowchart TD
+    Start([Hostiteľ pripravuje odoslanie]) --&gt; Input{Zdroj dokumentu}
+    Input --&gt;|Draft| Rules{Voliteľný draft preflight?}
+    Rules --&gt;|Áno| DraftRules[PeppolBillingDraftRules]
+    DraftRules --&gt;|Nálezy| Review[Hostiteľ vyhodnotí nálezy]
+    DraftRules --&gt;|Pokračovať| Writer[UblDocumentWriter alebo preparePayload]
+    Rules --&gt;|Nie| Writer
+    Input --&gt;|Hotové XML| Payload[OutboundDocumentPayload]
+    Writer --&gt; Payload
+    Payload --&gt; Local{Hostiteľ chce lokálnu kontrolu?}
+    Local --&gt;|Áno| LocalCheck[XSD a/alebo Schematron]
+    Local --&gt;|Nie| DiscoveryChoice
+    LocalCheck --&gt; DiscoveryChoice{Hostiteľ chce overiť príjemcu?}
+    DiscoveryChoice --&gt;|Áno| Discovery[POST /v1/discovery/receives]
+    DiscoveryChoice --&gt;|Nie| RemoteChoice
+    Discovery --&gt; RemoteChoice{Hostiteľ chce vzdialenú validáciu?}
+    RemoteChoice --&gt;|Áno| Remote[POST /v1/validate-document s tým istým payloadom]
+    RemoteChoice --&gt;|Nie| Continue{Hostiteľ pokračuje po kontrolách?}
+    Remote --&gt; Continue
+    Continue --&gt;|Áno| Sapi[POST /sapi/document/send + Participant + Idempotency-Key]
+    Continue --&gt;|Nie| EndCheck([Odoslanie zastavené hostiteľom])
+    Sapi --&gt; Result[DocumentSubmissionResult: provider ID a stav]
+    Result --&gt; Track[Samostatný tracking alebo webhooky pre neskorší stav]
+    Sapi --&gt;|Neistý výsledok| Unknown[Uložiť rovnaký payload a idempotency key]
+    Unknown --&gt; HasId{Je známe providerDocumentId?}
+    HasId --&gt;|Áno| Track
+    HasId --&gt;|Nie| Replay[Opakovať presný payload s tým istým kľúčom]</pre>
+<p>SAPI odpoveď <code class="nb">ACCEPTED</code> znamená technické prijatie požiadavky. Konečný stav doručenia čítajte samostatne cez tracking alebo webhooky.</p>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p>Pri neistom výsledku sa nesmie vytvoriť nový idempotency key pre ten istý logický pokus; podrobnosti sú v <a href="Errors-Retry-and-Idempotency.html">idempotencii a neistom výsledku</a>.</p></div></div>
+<h2 id="payload"><span class="mw-h">Payload</span><a class="anchor" href="#payload" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Sending-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">OutboundDocumentPayload</code> je nemenný vstup pre odoslanie aj vzdialené kontroly. Obsahuje číslo dokladu, Peppol document type ID, process ID, identifikátory odosielateľa a príjemcu, čas vytvorenia, UBL XML a voliteľný kontrolný súčet.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\Documents\OutboundDocumentPayload;
+use DreaM1\EfakturaConnector\Core\Documents\Sha256Checksum;
+use DreaM1\EfakturaConnector\Core\Ubl\PeppolDocumentTypeIdentifierBuilder;
+use DreaM1\EfakturaConnector\Domain\Ubl\PeppolBillingProfile;
+use DreaM1\EfakturaConnector\Domain\EFaktura\Participant;
+use DreaM1\EfakturaConnector\Domain\EFaktura\PeppolProcessIdentifier;
+use DreaM1\EfakturaConnector\Domain\EFaktura\SubmittedDocumentId;
+use DreaM1\EfakturaConnector\Support\Timestamp;
+
+$xml = file_get_contents('invoice.xml');
+$senderParticipant = Participant::parse('0245:1234567890');
+$receiverParticipant = Participant::parse('0245:9876543210');
+$payload = new OutboundDocumentPayload(
+    SubmittedDocumentId::fromString('INV-2026-001'),
+    PeppolDocumentTypeIdentifierBuilder::forDocument('Invoice'),
+    PeppolProcessIdentifier::fromString(PeppolBillingProfile::PROCESS_ID),
+    $senderParticipant,
+    $receiverParticipant,
+    Timestamp::fromDateTimeImmutable(new DateTimeImmutable('now', new DateTimeZone('UTC'))),
+    $xml,
+    Sha256Checksum::fromContent($xml),
+);</code></pre></div>
+<p>Pri výrobe payloadu používajte identifikátory a formát dátumu podľa SAPI-SK OpenAPI. <code class="nb">metadata.senderParticipantId</code> zostáva súčasťou payloadu.</p>
+<p>Hlavička <code class="nb">X-Peppol-Participant-Id</code> sa odovzdáva samostatným objektom <code class="nb">Participant</code>; podľa API sa jej identifikátor musí zhodovať s odosielateľom v metadátach.</p>
+<p><code class="nb">SendDocumentRequest</code> a <code class="nb">ValidateDocumentRequest</code> túto zhodu kontrolujú pri vytvorení requestu a pri nesúlade vyhodia <code class="nb">InvalidInputException</code>.</p>
+<p>Príklady s <code class="nb">0245</code> používajú produkčné ID. V eFaktúra Sandboxe participant hlavička aj <code class="nb">metadata.senderParticipantId</code> musia používať sandbox ID so schémou <code class="nb">9915</code>; raw UBL payload musí mať schému <code class="nb">9915</code> aj v <code class="nb">EndpointID/@schemeID</code>.</p>
+<p>Knižnica tieto hodnoty automaticky neprepisuje. Pozrite <a href="https://developers.efaktura.sk/en/docs/sapi-send-receive" class="ext" rel="noopener">dokumentáciu SAPI</a> a <a href="https://developers.efaktura.sk/sk/docs/sandbox" class="ext" rel="noopener">Sandboxu</a>.</p>
+<h2 id="priame-odoslanie-ubl-draftu"><span class="mw-h">Priame odoslanie UBL draftu</span><a class="anchor" href="#priame-odoslanie-ubl-draftu" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Sending-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Ak aplikácia vytvára doklad ako <code class="nb">UblDocumentDraft</code>, môže použiť Core kontrakt <code class="nb">UblDraftSubmissionInterface</code>, ktorý implementuje <code class="nb">UblDraftSubmission</code>.</p>
+<p>Služba draft zapíše cez <code class="nb">UblDocumentWriterInterface</code> a metadáta pre transport zostaví z explicitne dodaných Participant identifikátorov. Pri manuálnom skladaní možno naďalej vytvoriť konkrétnu implementáciu:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Endpoints\Sapi\SendDocumentEndpoint;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Documents\SapiDocumentSubmissionGateway;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Documents\UblDraftSubmission;
+use DreaM1\EfakturaConnector\Infrastructure\Ubl\Writer\UblDocumentWriter;
+use DreaM1\EfakturaConnector\Core\Documents\IdempotencyKeyGenerator;
+
+$gateway = new SapiDocumentSubmissionGateway(new SendDocumentEndpoint($connector));
+$sender = new UblDraftSubmission(new UblDocumentWriter(), $gateway);
+$senderParticipant = Participant::parse('0245:2022706466');
+$receiverParticipant = Participant::parse('0088:7300010000001');
+$creationDateTime = Timestamp::fromDateTimeImmutable(new DateTimeImmutable('now', new DateTimeZone('UTC')));
+$idempotencyKey = IdempotencyKeyGenerator::generate();
+
+$result = $sender-&gt;send(
+    $senderParticipant,
+    $receiverParticipant,
+    $draft,
+    $creationDateTime,
+    $idempotencyKey
+);</code></pre></div>
+<p><code class="nb">documentId</code> sa vezme z čísla draftu, document type ID z druhu dokladu a <code class="nb">CustomizationID</code> a process ID z draftu.</p>
+<p>Participant identifikátory dodávateľa a odberateľa pre transport sa zadávajú samostatne; UBL <code class="nb">EndpointID</code> označuje elektronickú adresu strany a nemožno zaručiť, že je totožná s jej Participant ID.</p>
+<p>Odosielateľ odovzdaný službe musí zodpovedať Participant hlavičke SAPI. Čas vytvorenia nie je súčasťou UBL draftu, preto sa zadáva samostatne. Služba vytvorí SHA-256 checksum nad XML, ktoré zapísal writer.</p>
+<p>Ak treba pred odoslaním vykonať vzdialenú kontrolu, pripravte payload raz a ten istý objekt použite na kontrolu aj odoslanie:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\Documents\SendDocumentRequest;
+use DreaM1\EfakturaConnector\Core\Documents\ValidateDocumentRequest;
+
+$payload = $sender-&gt;preparePayload($senderParticipant, $receiverParticipant, $draft, $creationDateTime);
+$providerValidation-&gt;check(new ValidateDocumentRequest($senderParticipant, $payload));
+$result = $gateway-&gt;send(new SendDocumentRequest($senderParticipant, $payload, $idempotencyKey));</code></pre></div>
+<p>Pri opakovaní po neistom výsledku zachovajte rovnaký draft, čas vytvorenia aj idempotency key, prípadne uložte pripravený payload. <code class="nb">send()</code> nespúšťa lokálnu ani vzdialenú validáciu a nemení pravidlá retry existujúceho gatewaya.</p>
+<h2 id="odoslanie-cez-sapi"><span class="mw-h">Odoslanie cez SAPI</span><a class="anchor" href="#odoslanie-cez-sapi" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Sending-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">SapiDocumentSubmissionGateway</code> implementuje <code class="nb">DocumentSubmissionGatewayInterface</code> a volá štandardný SAPI endpoint <code>POST /<wbr>sapi/<wbr>document/<wbr>send</code>.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">
+$gateway = new SapiDocumentSubmissionGateway(
+    new SendDocumentEndpoint($connector)
+);
+$participant = Participant::parse('0245:1234567890');
+$idempotencyKey = IdempotencyKeyGenerator::generate();
+$result = $gateway-&gt;send(new SendDocumentRequest($participant, $payload, $idempotencyKey));
+
+$result-&gt;providerDocumentId()-&gt;value();
+$result-&gt;status()-&gt;value(); // ACCEPTED alebo REJECTED podľa odpovede API
+$result-&gt;timestamp()-&gt;value(); // pôvodný ISO 8601 text z odpovede SAPI
+$receivedAt = $result-&gt;receivedAt(); // Timestamp|null
+if ($receivedAt !== null) {
+    echo $receivedAt-&gt;value();
+}</code></pre></div>
+<p>Pri stave <code class="nb">ACCEPTED</code> musí odpoveď obsahovať aj <code class="nb">receivedAt</code>; pri stave <code class="nb">REJECTED</code> môže byť toto pole vynechané. <code class="nb">timestamp</code> je povinný pri oboch stavoch.</p>
+<p>Neznámy status od poskytovateľa sa zachová (<code class="nb">isKnown()</code> vráti <code class="nb">false</code>); nepovažujte ho za prijatý ani odmietnutý, ale ako neistý výsledok a stav overte cez tracking s rovnakým idempotency kľúčom.</p>
+<p>Odpoveď SAPI obsahuje ID dokladu, stav <code class="nb">ACCEPTED</code> alebo <code class="nb">REJECTED</code> a časové údaje typu <code class="nb">Timestamp</code>. <code class="nb">Timestamp</code> rozširuje <code class="nb">DateTimeImmutable</code>, preto ho možno použiť aj tam, kde sa očakáva <code class="nb">DateTimeInterface</code>.</p>
+<p><code class="nb">Timestamp::value()</code> vráti pôvodný text, kým <code class="nb">dateTimeImmutable()</code> poskytne parsovaný okamih. Odpoveď neposkytuje samostatné pole s textom odmietnutia. HTTP chyba sa hlási cez <code class="nb">ProviderErrorResponseException</code>, ktorej telo sprístupňuje <code class="nb">body()</code>.</p>
+<p><code class="nb">ACCEPTED</code> potvrdzuje technické prijatie, nie validáciu obsahu, doručenie príjemcovi ani právny účinok. Ďalší stav čítajte cez tracking provider alebo webhooky. Konektor posiela payload ako UTF-8 XML.</p>
+<p>Payload môže obsahovať voliteľný SHA-256 checksum v lowercase hex nad presnými bajtmi XML; pri zadaní sa jeho hodnota kontroluje. Maximálna veľkosť XML payloadu je 10 MB.</p>
+<h2 id="hromadné-odosielanie-cez-peppol-gateway"><span class="mw-h">Hromadné odosielanie cez Peppol Gateway</span><a class="anchor" href="#hromadné-odosielanie-cez-peppol-gateway" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Sending-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Peppol Gateway batch odoslanie je dostupné cez <code>$client-&gt;peppolGatewayDocumentSubmission()</code>. Volanie prijíma <code class="nb">SendDocumentsRequest</code>, ktorý obsahuje participant-a odosielateľa, zoznam <code class="nb">OutboundGatewayDocument</code> a stabilný <code class="nb">IdempotencyKey</code>.</p>
+<p>Používa <code>POST /<wbr>v1/<wbr>send-documents</code>, hlavičky <code class="nb">Idempotency-Key</code> vo formáte UUID a <code class="nb">X-Peppol-Participant-Id</code> a JSON telo s poľom <code class="nb">documents</code>. Ak serializované telo prekročí limit, <code class="nb">RequestBodyTooLargeException</code> vznikne ešte pred HTTP volaním.</p>
+<p>Opis požiadavky uvádza tieto limity a pravidlá:</p>
+<ul>
+<li>najmenej 1 a najviac 100 dokumentov v jednej požiadavke (<code class="nb">SendDocumentsRequest</code> prázdnu dávku odmietne <code class="nb">InvalidInputException</code> ešte pred volaním providera);</li>
+<li>najviac 10 MB na XML payload;</li>
+<li>konektor pred odoslaním vynucuje konfigurovateľný limit serializovaného JSON tela, predvolene 100 MiB; nastavuje sa cez <code class="nb">runtime.http.request_max_bytes</code> alebo <code class="nb">EFAKTURA_HTTP_REQUEST_MAX_BYTES</code>. Limit má podporovaný rozsah 1 bajt až 1 GiB. Nasadenie poskytovateľa môže mať nižší limit cez <code>app.<wbr>outbound.<wbr>send-documents.<wbr>max-request-size</code>;</li>
+<li>položka má typ <code class="nb">UBL_XML</code> alebo <code class="nb">SBDH_XML</code>; pri <code class="nb">UBL_XML</code> sa uvádza <code class="nb">receiverParticipantId</code>, pri <code class="nb">SBDH_XML</code> sa má odvodiť zo SBDH.</li>
+</ul>
+<p>Živá Peppol Gateway OpenAPI schéma definuje úspešnú odpoveď <code class="nb">200</code> ako <code class="nb">SendDocumentsResponse</code> s povinnými poľami <code class="nb">count</code> a <code class="nb">identifiers</code>. Endpoint mapuje túto schému cez <code class="nb">SendDocumentsResultFactory</code> priamo na Core <code class="nb">SendDocumentsResult</code>.</p>
+<p>OpenAPI uvádza aj chybové odpovede <code class="nb">400</code>, <code class="nb">401</code>, <code class="nb">403</code>, <code class="nb">409</code>, <code class="nb">413</code> a <code class="nb">500</code>. Neurčuje však výsledok jednotlivých položiek pri čiastočnom úspechu, preto typovaný výsledok zachováva súhrnný počet a vrátené identifikátory.</p>
+<p><code class="nb">SendDocumentsResult::count()</code> vracia počet prijatých dokumentov a <code class="nb">identifiers()</code> typované Gateway ID (<code class="nb">ProviderDocumentId</code>), ktoré možno použiť pri načítaní stavu cez tracking provider. Odpoveď neposkytuje samostatný výsledok pre každú položku.</p>
+<p>Pre rovnakú dávku zachovajte a pri opakovanom volaní použite ten istý idempotency kľúč; konektor odoslanie automaticky neopakuje, pretože timeout môže nastať po prijatí dávky Gateway-om.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\Documents\OutboundGatewayDocument;
+use DreaM1\EfakturaConnector\Core\Documents\SendDocumentsRequest;
+use DreaM1\EfakturaConnector\Core\Xml\XmlPayloadFormat;
+
+$sender = Participant::parse('9915:sender-id');
+$receiver = Participant::parse('9915:receiver-id');
+$invoiceXml = file_get_contents('invoice.xml');
+$sbdhXml = file_get_contents('sbdh.xml');
+
+$submission = $client-&gt;peppolGatewayDocumentSubmission();
+$request = new SendDocumentsRequest(
+    $sender,
+    [
+        new OutboundGatewayDocument(XmlPayloadFormat::UBL_XML, $invoiceXml, $receiver),
+        new OutboundGatewayDocument(XmlPayloadFormat::SBDH_XML, $sbdhXml),
+    ],
+    IdempotencyKeyGenerator::generate()
+);
+
+$result = $submission-&gt;send($request);
+$result-&gt;count();
+$result-&gt;identifiers()[0]-&gt;value();</code></pre></div>
+<p>Pri opakovaní po nejednoznačnom výsledku znovu použite pôvodný <code class="nb">IdempotencyKey</code>, nie nový UUID. UBL payload vyžaduje <code class="nb">receiverParticipantId</code>; pri SBDH sa príjemca určuje z XML obálky.</p>
+<p>Lokálny OpenAPI snapshot testovacieho prostredia potvrdzuje batch cestu <code class="nb">/v1/send-documents</code> a odpoveď <code class="nb">200</code>. Pred nasadením overte aktuálny OpenAPI kontrakt prostredia, s ktorým bude aplikácia komunikovať.</p>
+<h2 id="kontroly-pred-odoslaním"><span class="mw-h">Kontroly pred odoslaním</span><a class="anchor" href="#kontroly-pred-odoslaním" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Sending-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Konektor poskytuje samostatné kontroly, ktoré hostiteľ zoradí podľa svojho workflow:</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Kontrola</th><th>Volanie</th><th>Význam</th></tr></thead><tbody><tr><td><code class="nb">RecipientCapabilityCheck</code></td><td><code>POST /<wbr>v1/<wbr>discovery/<wbr>receives</code></td><td>Zistí, či príjemca podporuje daný typ dokumentu a proces.</td></tr><tr><td><code class="nb">PeppolGatewayDocumentValidationCheck</code></td><td><code>POST /<wbr>v1/<wbr>validate-document</code></td><td>Požiada Gateway o validáciu toho istého payloadu, ktorý sa bude odosielať.</td></tr></tbody></table></div>
+<p>Záporný výsledok úspešnej kontroly vyvolá <code class="nb">DocumentPreflightException</code> alebo jej konkrétnu podtriedu. HTTP chyba (napríklad 400) je <code class="nb">ProviderErrorResponseException</code>; výnimka zachová pôvodné telo a <code class="nb">ApiConnector</code> k nej pripojí rozpoznanú provider error obálku cez <code class="nb">errorEnvelope()</code>.</p>
+<p>Hostiteľ rozhoduje, ako význam chyby spracovať a zobraziť.</p>
+<p>Hostiteľ môže tieto samostatné operácie poskladať do prípravného toku: vytvoriť alebo načítať UBL, podľa potreby spustiť lokálne XSD/Schematron kontroly, overiť prijímateľa cez Discovery, vzdialene skontrolovať payload a až potom odoslať ten istý payload cez SAPI.</p>
+<p>Ak medzi prípravou a odoslaním uplynie čas, hostiteľ môže vzdialenú validáciu zopakovať bezprostredne pred odoslaním. Konektor toto poradie ani opakovanie nevykonáva automaticky.</p>
+<h2 id="idempotencia-a-neistý-výsledok"><span class="mw-h">Idempotencia a neistý výsledok</span><a class="anchor" href="#idempotencia-a-neistý-výsledok" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Sending-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Pri odoslaní vždy používajte stabilný UUID idempotency key uložený pri pokuse. Rovnaký kľúč s rovnakým payloadom vráti pôvodnú odpoveď; rovnaký kľúč s iným payloadom vráti <code>409 Conflict</code>.</p>
+<p><code class="nb">SendDocumentRequest</code> nesie <code class="nb">IdempotencyKey</code>; jeho factory overí UUID formát pri vytvorení hodnoty.</p>
+<p>Kľúč kompatibilný s OpenAPI kontraktom vytvoríte cez <code class="nb">IdempotencyKeyGenerator</code>. Vytvorte ho raz pre nové logické odoslanie, uložte ho spolu s pokusom a pri opakovaní použite uloženú hodnotu:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">
+$idempotencyKey = IdempotencyKeyGenerator::generate();
+$result = $gateway-&gt;send(new SendDocumentRequest($participant, $payload, $idempotencyKey));</code></pre></div>
+<p>Pri retry znovu nevolajte <code class="nb">generate()</code>; pošlite rovnaký kľúč a identický payload.</p>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p>Ak vznikne <code class="nb">ProviderConnectionException</code> alebo iná chyba, výsledok odoslania môže byť neistý: požiadavka mohla doraziť, aj keď odpoveď neprišla.</p></div></div>
+<p>Na rozlíšenie použite <code>$exception-&gt;requestMayHaveReachedProvider()</code>: pri <code class="nb">false</code> (odložená požiadavka, nedostupný token, otvorený circuit breaker, zlyhanie pred odoslaním) sa nič neodoslalo a odoslanie môžete bezpečne zopakovať.</p>
+<p>Ak už máte <code class="nb">providerDocumentId</code>, pred opakovaním skontrolujte stav cez <code class="nb">DocumentTrackingProviderInterface</code>. Tracking endpoint vyžaduje toto ID a nevie vyhľadať doklad podľa čísla faktúry ani idempotency kľúča.</p>
+<p>Ak sa odpoveď stratila skôr, než ste ID získali, zopakujte presne uložený payload s pôvodným idempotency key; idempotentná odpoveď vám vráti pôvodné ID a potom môžete stav overiť cez tracking.</p>
+<p>Zmenený payload musí mať nový kľúč.</p>
+<h2 id="hranice-zodpovednosti"><span class="mw-h">Hranice zodpovednosti</span><a class="anchor" href="#hranice-zodpovednosti" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Sending-Documents.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Konektor nevyberá faktúru z databázy, negeneruje aplikačný koncept a neurčuje obchodné pravidlá pre odosielanie. Hostiteľ zabezpečí validáciu, stavový workflow, uloženie hodnoty idempotency key a výsledku od poskytovateľa.</p>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li><a href="UBL-Documents.html">Čítanie a zápis UBL</a></li>
+<li><a href="Validation.html">Lokálna validácia</a></li>
+<li><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></li>
+<li><a href="Errors-Retry-and-Idempotency.html">Výnimky, retry a idempotencia</a></li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#tok-prípravy-a-odoslania"><span class="n">1</span> <span class="x">Tok prípravy a odoslania</span></a></li><li class="t2"><a href="#payload"><span class="n">2</span> <span class="x">Payload</span></a></li><li class="t2"><a href="#priame-odoslanie-ubl-draftu"><span class="n">3</span> <span class="x">Priame odoslanie UBL draftu</span></a></li><li class="t2"><a href="#odoslanie-cez-sapi"><span class="n">4</span> <span class="x">Odoslanie cez SAPI</span></a></li><li class="t2"><a href="#hromadné-odosielanie-cez-peppol-gateway"><span class="n">5</span> <span class="x">Hromadné odosielanie cez Peppol Gateway</span></a></li><li class="t2"><a href="#kontroly-pred-odoslaním"><span class="n">6</span> <span class="x">Kontroly pred odoslaním</span></a></li><li class="t2"><a href="#idempotencia-a-neistý-výsledok"><span class="n">7</span> <span class="x">Idempotencia a neistý výsledok</span></a></li><li class="t2"><a href="#hranice-zodpovednosti"><span class="n">8</span> <span class="x">Hranice zodpovednosti</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Validation.html"><small>← Predchádzajúca</small><b>Lokálna validácia</b></a><a class="nx" href="Receiving-Documents.html"><small>Ďalšia →</small><b>Príjem dokladov</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Validation.html">Lokálna validácia</a></li><li><a href="Receiving-Documents.html">Príjem dokladov</a></li><li><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a></li><li><a href="UBL-Documents.html">Čítanie a zápis UBL</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li><li><a href="Laravel.html">Laravel bridge</a></li><li><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a></li><li><a href="UBL-Documents.html">Čítanie a zápis UBL</a></li><li><a href="Validation.html">Lokálna validácia</a></li><li><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></li><li><a href="Source-Alignment.html">API špecifikácie a pokrytie</a></li><li><a href="Errors-Retry-and-Idempotency.html">Výnimky, retry a idempotencia</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-práca-s-dokladmi">Práca s dokladmi</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Sending-Documents.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Sending-Documents.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

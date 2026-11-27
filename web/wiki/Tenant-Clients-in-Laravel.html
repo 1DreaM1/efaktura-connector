@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Táto stránka opisuje výber OAuth klienta z modelu zákazníka. Ak sú poverenia známe pri nasadení, nakonfigurujte pomenované profily a vyberajte ich cez SapiClientRegistryInterface .">
+<title>OAuth poverenia zákazníka v Laraveli – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html" aria-current="page">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Tenant-Clients-in-Laravel.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Tenant-Clients-in-Laravel.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Tenant-Clients-in-Laravel.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-laravel-a-zákazníci">Laravel a zákazníci</a></div><h1 class="title">OAuth poverenia zákazníka v Laraveli</h1><div class="sub"><span class="chip">Čítanie ≈ 4 min</span><span class="chip">3 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead">Táto stránka opisuje výber OAuth klienta z modelu zákazníka. Ak sú poverenia známe pri nasadení, nakonfigurujte pomenované profily a vyberajte ich cez <code class="nb">SapiClientRegistryInterface</code>.</p>
+<p><code class="nb">TenantEFakturaClientResolver</code> použite vtedy, keď má každý zákazník vlastné poverenia uložené v databáze.</p>
+<p>Každý PHP blok je samostatný offline skript. Po <code>composer install</code> uložte ho ako <code class="nb">docs/wiki/offline-example.php</code> a z koreňa repozitára spustite <code>php docs/<wbr>wiki/<wbr>offline-example.<wbr>php</code>. Skripty používajú syntetické poverenia a nevolajú provider API.</p>
+<p>Prvý ukazuje iba kontrakt adaptéra; v Laravel aplikácii ho implementuje chránený model alebo jeho adaptér.</p>
+<h2 id="tok-tenantového-klienta"><span class="mw-h">Tok tenantového klienta</span><a class="anchor" href="#tok-tenantového-klienta" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Tenant-Clients-in-Laravel.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<pre class="mermaid">sequenceDiagram
+    participant Request as HTTP požiadavka
+    participant App as Hostiteľská aplikácia
+    participant Customer as Autorizovaný model zákazníka
+    participant Resolver as TenantEFakturaClientResolver
+    participant SAPI as SAPI-SK
+    Request-&gt;&gt;App: požiadavka používateľa
+    App-&gt;&gt;App: autentifikovať a autorizovať zákazníka
+    App-&gt;&gt;Resolver: forTenant(autorizovaný model)
+    Resolver-&gt;&gt;Customer: prečítať OAuth ID, secret a scope
+    Resolver--&gt;&gt;App: SapiClientInterface pre poverenia zákazníka
+    App-&gt;&gt;SAPI: operácia s Participant dodaným samostatne</pre>
+<p>Resolver nevyberá zákazníka z HTTP parametra a neurčuje, ku ktorému zákazníkovi má používateľ prístup. To musí aplikácia overiť pred volaním <code class="nb">forTenant()</code>.</p>
+<h2 id="kontrakt-modelu"><span class="mw-h">Kontrakt modelu</span><a class="anchor" href="#kontrakt-modelu" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Tenant-Clients-in-Laravel.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Model alebo jeho adaptér musí implementovať <code class="nb">TenantEFakturaCredentialsInterface</code> z Laravel bridge. Poskytuje tieto hodnoty:</p>
+<ul>
+<li><code class="nb">efakturaClientKey()</code> — stabilný, neprázdny a necitlivý kľúč zákazníka. Resolver z neho odvodí hashovaný názov klienta a nevracia samotný kľúč v <code class="nb">SapiClientInterface::name()</code>.</li>
+<li><code class="nb">efakturaClientId()</code> a <code class="nb">efakturaClientSecret()</code> — OAuth údaje vydané poskytovateľom. Model vráti secret v dešifrovanej podobe iba pre túto operáciu.</li>
+<li><code class="nb">efakturaClientScope()</code> — povinný explicitný scope vydaný poskytovateľom; zadajte iba oprávnenia potrebné pre zákazníka.</li>
+</ul>
+<p><code class="nb">base_url</code> sa berie z profilu predvoleného klienta v konfigurácii <code class="nb">efaktura-connector</code>, takže tenanti hovoria s rovnakým prostredím ako predvolený profil. Resolver nevyhľadáva model v databáze a nerozhoduje o oprávneniach používateľa.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">&lt;?php
+use DreaM1\EfakturaConnector\Laravel\Contracts\TenantEFakturaCredentialsInterface;
+
+require dirname(__DIR__, 2) . '/vendor/autoload.php';
+
+final class WikiOfflineTenantCredentials implements TenantEFakturaCredentialsInterface
+{
+    public function efakturaClientKey(): string
+    {
+        return 'tenant-demo';
+    }
+
+    public function efakturaClientId(): string
+    {
+        return 'offline-demo-client';
+    }
+
+    public function efakturaClientSecret(): string
+    {
+        return 'offline-demo-secret';
+    }
+
+    public function efakturaClientScope(): string
+    {
+        return 'document:send';
+    }
+}
+
+$tenant = new WikiOfflineTenantCredentials();
+echo 'Synthetic tenant key: ', $tenant-&gt;efakturaClientKey(), PHP_EOL;</code></pre></div>
+<p>Secret šifruj pri zápise do databázy.</p>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p>Atribút zároveň skry v JSON odpovediach a nikdy ho neloguj.</p></div></div>
+<p>Resolver pred vytvorením klienta overí URL, ID, secret aj scope; pri neplatnej konfigurácii vyhodí konfiguračnú výnimku bez volania poskytovateľa.</p>
+<h2 id="výber-klienta"><span class="mw-h">Výber klienta</span><a class="anchor" href="#výber-klienta" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Tenant-Clients-in-Laravel.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Po autorizácii zákazníka odovzdaj jeho model resolveru. Nasledujúci offline skript zostaví klienta s ukážkovým URL a povereniami, ale nevyvolá žiadnu operáciu nad API:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">&lt;?php
+use DreaM1\EfakturaConnector\ConnectorFactory;
+use DreaM1\EfakturaConnector\Core\Configuration\SapiClientConfigurationInterface;
+use DreaM1\EfakturaConnector\Core\Contracts\SapiClientFactoryInterface;
+use DreaM1\EfakturaConnector\Core\Contracts\SapiClientInterface;
+use DreaM1\EfakturaConnector\Laravel\Connection\TenantEFakturaClientResolver;
+use DreaM1\EfakturaConnector\Laravel\Contracts\TenantEFakturaCredentialsInterface;
+
+require dirname(__DIR__, 2) . '/vendor/autoload.php';
+
+final class WikiOfflineResolverTenant implements TenantEFakturaCredentialsInterface
+{
+    public function efakturaClientKey(): string
+    {
+        return 'tenant-demo';
+    }
+
+    public function efakturaClientId(): string
+    {
+        return 'offline-demo-client';
+    }
+
+    public function efakturaClientSecret(): string
+    {
+        return 'offline-demo-secret';
+    }
+
+    public function efakturaClientScope(): string
+    {
+        return 'document:send';
+    }
+}
+
+$factory = new class implements SapiClientFactoryInterface {
+    private ConnectorFactory $connectorFactory;
+
+    public function __construct()
+    {
+        $this-&gt;connectorFactory = new ConnectorFactory();
+    }
+
+    public function create(
+        string $name,
+        SapiClientConfigurationInterface $configuration
+    ): SapiClientInterface {
+        return $this-&gt;connectorFactory-&gt;createSapiClient($name, $configuration);
+    }
+};
+$client = (new TenantEFakturaClientResolver($factory, 'https://example.test'))
+    -&gt;forTenant(new WikiOfflineResolverTenant());
+
+$submission = $client-&gt;documentSubmissionGateway();
+$tracking = $client-&gt;documentTrackingProvider();
+echo 'Constructed offline services: ', get_class($submission), ', ', get_class($tracking), PHP_EOL;</code></pre></div>
+<p>Participant ostáva vstupom konkrétnej operácie aj pri klientovi zostavenom z tenantových poverení:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">&lt;?php
+use DreaM1\EfakturaConnector\Core\Documents\ListReceivedDocumentsRequest;
+use DreaM1\EfakturaConnector\Core\Documents\ReceivedDocumentPage;
+use DreaM1\EfakturaConnector\Core\Pagination\PageSize;
+use DreaM1\EfakturaConnector\Domain\EFaktura\Participant;
+
+require dirname(__DIR__, 2) . '/vendor/autoload.php';
+
+$participant = Participant::parse('9915:tenant-demo');
+$request = new ListReceivedDocumentsRequest($participant, null, PageSize::fromInt(50));
+$offlineProvider = new class {
+    public function getInboxPage(ListReceivedDocumentsRequest $request): ReceivedDocumentPage
+    {
+        echo 'Prepared synthetic inbox request for ', $request-&gt;participant()-&gt;value(), PHP_EOL;
+
+        return new ReceivedDocumentPage([], null);
+    }
+};
+$page = $offlineProvider-&gt;getInboxPage($request);
+echo 'Synthetic page contains ', count($page-&gt;documents()), ' documents.', PHP_EOL;</code></pre></div>
+<p>V aplikácii nahraďte <code class="nb">$offlineProvider</code> službou <code class="nb">$client-&gt;receivedDocumentProvider()</code> a použite participanta získaného z autorizovaného tenantového kontextu.</p>
+<p>Nepreberaj identitu zákazníka z neovereného aliasu požiadavky. Resolver používa presne model, ktorý mu aplikácia odovzdá. Ak sa poverenia zákazníka zmenia, ďalšie volanie <code class="nb">forTenant()</code> načíta nové hodnoty; resolver si klientov ani modely neponecháva v pamäti.</p>
+<p>Token cache zostáva zdieľaná podľa konektora, ale jej kľúč je odvodený z provider URL, client ID, secretu a scope. Laravel adaptér ukladá token šifrovane. Participant sa aj naďalej odovzdáva osobitne pri participant-scoped operácii; nie je súčasťou OAuth poverení.</p>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li><a href="Laravel.html">Laravel bridge</a></li>
+<li><a href="Configuration.html">Konfigurácia</a></li>
+<li><a href="Transport-and-Authentication.html">HTTP transport a autentifikácia</a></li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#tok-tenantového-klienta"><span class="n">1</span> <span class="x">Tok tenantového klienta</span></a></li><li class="t2"><a href="#kontrakt-modelu"><span class="n">2</span> <span class="x">Kontrakt modelu</span></a></li><li class="t2"><a href="#výber-klienta"><span class="n">3</span> <span class="x">Výber klienta</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Laravel.html"><small>← Predchádzajúca</small><b>Laravel bridge</b></a><a class="nx" href="Practical-Scenarios.html"><small>Ďalšia →</small><b>Praktické scenáre a diagramy</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Laravel.html">Laravel bridge</a></li><li><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li><li><a href="Configuration.html">Konfigurácia</a></li><li><a href="Laravel.html">Laravel bridge</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-laravel-a-zákazníci">Laravel a zákazníci</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Tenant-Clients-in-Laravel.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Tenant-Clients-in-Laravel.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fafafc">
+<meta name="description" content="Zoznam 28 implementovaných operácií: SAPI-SK, Peppol Gateway a Integrator API.">
+<title>API · eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('efk-theme');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Preskočiť na obsah</a>
+<div class="progress" id="bar"></div>
+<header class="site">
+  <div class="wrap nav">
+    <a class="logo" href="index.html"><i>€</i>eFaktúra <span>Connector</span></a>
+    <nav class="menu" id="menu" aria-label="Hlavná navigácia"><a href="index.html">Prehľad</a><a href="architektura.html">Architektúra</a><a href="toky.html">Toky dokladov</a><a href="ukazky.html">Ukážky kódu</a><a href="validacia.html">Validácia</a><a href="api.html" aria-current="page">API</a><a href="integrator.html">Integrator</a><a href="nastavenie.html">Nastavenie</a><a href="prevadzka.html">Prevádzka</a><a href="wiki/index.html">Wiki</a></nav>
+    <div class="right">
+      <button class="icon-btn" id="theme" type="button" aria-label="Téma">◐</button>
+      <a class="btn pri sm hide-s" href="https://github.com/1DreaM1/efaktura-connector">GitHub ↗</a>
+      <button class="icon-btn burger" id="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menu">☰</button>
+    </div>
+  </div>
+</header>
+<main id="main">
+
+<div class="phead"><div class="mesh"><div class="dots"></div></div><div class="wrap"><div class="crumbs"><a href="index.html">Prehľad</a> / API poskytovateľa</div><span class="kick">API poskytovateľa</span><h1>Tri rozhrania, <span class="gt">typované výsledky.</span></h1><p class="sub">Konektor implementuje API spoločnosti Datahosting podľa jej SAPI-SK API, Peppol Gateway API v1 a desiatich operácií samostatného Integrator API. Hostiteľská aplikácia nastavuje adresu prostredia.</p><div class="stats" style="margin-top:36px;max-width:640px"><div><strong class="gt">6</strong><b>SAPI-SK</b></div><div><strong class="gt">12</strong><b>Gateway</b></div><div><strong class="gt">10</strong><b>Integrator</b></div><div><strong class="gt">28</strong><b>spolu</b></div></div></div></div>
+<div class="wrap">
+<section class="tight">
+<div data-tabs>
+  <div class="seg" role="tablist"><button role="tab" aria-selected="true" aria-controls="sapi">SAPI-SK · 6</button><button role="tab" aria-selected="false" aria-controls="gateway">Peppol Gateway · 12</button><button role="tab" aria-selected="false" aria-controls="integrator">Integrator API · 10</button></div>
+  <div role="tabpanel" id="sapi"><p class="lead" style="margin-top:22px">OAuth, odosielanie, doručená pošta.</p><div class="tw"><table><thead><tr><th>HTTP</th><th>Cesta</th><th>Účel</th></tr></thead><tbody><tr><td><span class="m POST">POST</span></td><td><span class="path">/sapi/auth/token</span></td><td>OAuth token získaný pomocou klientskych poverení.</td></tr><tr><td><span class="m GET">GET</span></td><td><span class="path">/sapi/auth/token/status</span></td><td>Stav aktuálneho tokenu a odporúčanie jeho obnovy.</td></tr><tr><td><span class="m POST">POST</span></td><td><span class="path">/sapi/document/send</span></td><td>Odoslanie UBL dokumentu.</td></tr><tr><td><span class="m GET">GET</span></td><td><span class="path">/sapi/document/receive</span></td><td>Stránka doručenej pošty.</td></tr><tr><td><span class="m GET">GET</span></td><td><span class="path">/sapi/document/receive/{documentId}</span></td><td>Stiahnutie XML prijatého dokladu.</td></tr><tr><td><span class="m POST">POST</span></td><td><span class="path">/sapi/document/receive/{documentId}/acknowledge</span></td><td>Technické potvrdenie prevzatia.</td></tr></tbody></table></div></div>
+  <div role="tabpanel" id="gateway" hidden><p class="lead" style="margin-top:22px">Zistenie podpory, stav, webhooky.</p><div class="tw"><table><thead><tr><th>HTTP</th><th>Cesta</th><th>Účel</th></tr></thead><tbody><tr><td><span class="m POST">POST</span></td><td><span class="path">/v1/discovery/receives</span></td><td>Podpora príjemcu pre typ a proces.</td></tr><tr><td><span class="m POST">POST</span></td><td><span class="path">/v1/validate-document</span></td><td>Vzdialená validácia obsahu dokladu.</td></tr><tr><td><span class="m POST">POST</span></td><td><span class="path">/v1/send-documents</span></td><td>Dávkové odoslanie dokumentov cez Gateway s Idempotency-Key (najviac 100 dokumentov).</td></tr><tr><td><span class="m GET">GET</span></td><td><span class="path">/v1/participants/{participantId}</span></td><td>Profil a zverejnené schopnosti účastníka.</td></tr><tr><td><span class="m GET">GET</span></td><td><span class="path">/v1/sent-documents/{identifier}</span></td><td>Stav odoslaného dokumentu.</td></tr><tr><td><span class="m GET">GET</span></td><td><span class="path">/v1/sent-documents/{identifier}/message-level-statuses</span></td><td>Zoznam MLS správ.</td></tr><tr><td><span class="m GET">GET</span></td><td><span class="path">/v1/sent-documents/{identifier}/message-level-statuses/{statusIdentifier}/content</span></td><td>Obsah jednej MLS správy.</td></tr><tr><td><span class="m POST">POST</span></td><td><span class="path">/v1/webhooks</span></td><td>Registrácia webhooku.</td></tr><tr><td><span class="m GET">GET</span></td><td><span class="path">/v1/webhooks</span></td><td>Stránkovaný zoznam webhookov.</td></tr><tr><td><span class="m GET">GET</span></td><td><span class="path">/v1/webhooks/{webhookId}</span></td><td>Detail webhooku.</td></tr><tr><td><span class="m PATCH">PATCH</span></td><td><span class="path">/v1/webhooks/{webhookId}</span></td><td>Úprava webhooku.</td></tr><tr><td><span class="m DELETE">DELETE</span></td><td><span class="path">/v1/webhooks/{webhookId}</span></td><td>Odstránenie webhooku.</td></tr></tbody></table></div></div>
+  <div role="tabpanel" id="integrator" hidden><p class="lead" style="margin-top:22px">Klienti, účastníci, súhrny a PDS. <a href="integrator.html" style="color:var(--p1);font-weight:600">Správa integrátora →</a></p><div class="tw"><table><thead><tr><th>HTTP</th><th>Cesta</th><th>Účel</th></tr></thead><tbody><tr><td><span class="m GET">GET</span></td><td><span class="path">/v1/integrators/{integratorId}/clients</span></td><td>Stránkovaný zoznam OAuth klientov.</td></tr><tr><td><span class="m POST">POST</span></td><td><span class="path">/v1/integrators/{integratorId}/clients</span></td><td>Vytvorenie OAuth klienta.</td></tr><tr><td><span class="m GET">GET</span></td><td><span class="path">/v1/integrators/{integratorId}/clients/{clientId}</span></td><td>Detail OAuth klienta.</td></tr><tr><td><span class="m DELETE">DELETE</span></td><td><span class="path">/v1/integrators/{integratorId}/clients/{clientId}</span></td><td>Odstránenie OAuth klienta.</td></tr><tr><td><span class="m PUT">PUT</span></td><td><span class="path">/v1/integrators/{integratorId}/clients/{clientId}/participants</span></td><td>Náhrada participant oprávnení klienta.</td></tr><tr><td><span class="m PUT">PUT</span></td><td><span class="path">/v1/integrators/{integratorId}/clients/{clientId}/secret</span></td><td>Rotácia OAuth secretu.</td></tr><tr><td><span class="m GET">GET</span></td><td><span class="path">/v1/integrators/{integratorId}/participants</span></td><td>Stránkovaný zoznam participantov.</td></tr><tr><td><span class="m GET">GET</span></td><td><span class="path">/v1/integrators/{integratorId}/document-summary</span></td><td>Mesačný súhrn počtov dokladov.</td></tr><tr><td><span class="m POST">POST</span></td><td><span class="path">/v1/integrators/{integratorId}/participants/{participantId}/activations</span></td><td>Požiadavka na aktiváciu participant kontraktu.</td></tr><tr><td><span class="m POST">POST</span></td><td><span class="path">/v1/integrators/{integratorId}/pds/subjects</span></td><td>Odoslanie dávky PDS subjects s podpisovým poverením.</td></tr></tbody></table></div></div>
+</div>
+<div class="note info rv"><span>Počty označujú implementované operácie vrstvy Infrastructure. OAuth token endpoint <code>POST /sapi/auth/token</code> používa konektor interne. Dávkové odoslanie <code>POST /v1/send-documents</code> prijíma najviac 100 dokumentov (každý do 10 MB; typ <code>UBL_XML</code> alebo <code>SBDH_XML</code>). Detail webhooku <code>GET /v1/webhooks/{webhookId}</code> je dostupný cez Core kontrakt <code>WebhookRegistryInterface::get()</code>.</span></div>
+<div class="links" style="justify-content:flex-start;margin-top:26px"><a class="btn" href="wiki/API-Reference.html">Referenčné cesty a typy ↗</a><a class="btn" href="../docs/eFaktura/api/openapi.json">OpenAPI kontrakt ↗</a></div>
+</section>
+</div>
+<div class="wrap"><div class="pager"><a href="validacia.html"><small>← Predchádzajúca</small><b>Validácia</b></a><a class="nx" href="integrator.html"><small>Ďalšia →</small><b>Integrator</b></a></div></div>
+</main>
+<footer class="site">
+  <div class="wrap">
+    <div class="fgrid">
+      <div><a class="logo" href="index.html"><i>€</i>eFaktúra <span>Connector</span></a><p>Frameworkovo nezávislá PHP knižnica pre SAPI-SK, Peppol Gateway a Integrator API. MIT licencia.</p></div>
+      <div><h5>Produkt</h5><a href="architektura.html">Architektúra</a><a href="toky.html">Toky dokladov</a><a href="ukazky.html">Ukážky kódu</a><a href="validacia.html">Validácia</a></div>
+      <div><h5>Referencia</h5><a href="api.html">API operácie</a><a href="integrator.html">Integrator</a><a href="nastavenie.html">Nastavenie</a><a href="prevadzka.html">Prevádzka</a></div>
+      <div><h5>Zdroje</h5><a href="dokumentacia.html">Dokumentácia</a><a href="https://github.com/1DreaM1/efaktura-connector">GitHub</a><a href="wiki/index.html">Wiki</a><a href="../LICENSE">Licencia MIT</a></div>
+    </div>
+    <div class="fbot"><span>© eFaktúra Connector · MIT licencia</span><span>Statická stránka · CSS a JavaScript v priečinku assets</span></div>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+</body>
+</html>

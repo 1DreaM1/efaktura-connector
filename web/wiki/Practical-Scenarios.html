@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Táto stránka ponúka rýchly vizuálny prehľad práce s dokladmi. Konkrétne kontrakty a úplné príklady nájdete v návodoch na UBL , validáciu , odosielanie , príjem a tracking a webhooky .">
+<title>Praktické scenáre a diagramy – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html" aria-current="page">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Practical-Scenarios.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Practical-Scenarios.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Practical-Scenarios.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-práca-s-dokladmi">Práca s dokladmi</a></div><h1 class="title">Praktické scenáre a diagramy</h1><div class="sub"><span class="chip">Čítanie ≈ 6 min</span><span class="chip">7 sekcií</span><span class="chip">Upravené 26. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead">Táto stránka ponúka rýchly vizuálny prehľad práce s dokladmi. Konkrétne kontrakty a úplné príklady nájdete v návodoch na <a href="UBL-Documents.html">UBL</a>, <a href="Validation.html">validáciu</a>, <a href="Sending-Documents.html">odosielanie</a>, <a href="Receiving-Documents.html">príjem</a> a <a href="Tracking-and-Webhooks.html">tracking a webhooky</a>.</p>
+<p>Každý PHP blok je samostatný offline skript. Po <code>composer install</code> uložte blok ako <code class="nb">docs/wiki/offline-example.php</code> a z koreňa repozitára spustite <code>php docs/<wbr>wiki/<wbr>offline-example.<wbr>php</code>.</p>
+<p>Skripty načítajú Composer autoloader, používajú syntetické údaje a náhradné služby; neposielajú HTTP požiadavky. V hostiteľskej aplikácii nahraďte tieto náhrady skutočnými klientskymi službami.</p>
+<div class="alert info" role="note"><div class="ai" aria-hidden="true">i</div><div class="ac"><div class="at">Poznámka</div><p>Hostiteľská aplikácia zabezpečuje výber dokladu, uloženie XML a idempotency key, rozhodnutie o potvrdení príjmu aj obchodné workflow.</p></div></div>
+<h2 id="mapa-práce-s-dokladom"><span class="mw-h">Mapa práce s dokladom</span><a class="anchor" href="#mapa-práce-s-dokladom" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Practical-Scenarios.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<pre class="mermaid">flowchart TD
+    Start([Hostiteľská aplikácia]) --&gt; Input{Čo už máte?}
+    Input --&gt;|UblDocumentDraft| Writer[UblDocumentWriter]
+    Writer --&gt; Payload[Pripravený XML payload]
+    Input --&gt;|Hotové XML| Payload
+    Payload --&gt; Local{Lokálna kontrola?}
+    Local --&gt;|Voliteľne| LocalCheck[XSD / Schematron]
+    Local --&gt;|Preskočiť| Discovery{Overiť príjemcu?}
+    LocalCheck --&gt; Discovery
+    Discovery --&gt;|Voliteľne| Discover[Peppol Discovery]
+    Discovery --&gt;|Preskočiť| Remote{Vzdialená kontrola?}
+    Discover --&gt; Remote
+    Remote --&gt;|Voliteľne| Validate[Peppol Gateway validácia]
+    Remote --&gt;|Preskočiť| Send{Odoslať?}
+    Validate --&gt; Send
+    Send --&gt;|Jeden doklad| Sapi[SAPI odoslanie]
+    Send --&gt;|Dávka| Batch[Peppol Gateway batch]
+    Sapi --&gt; Accepted[Technická odpoveď]
+    Batch --&gt; Accepted
+    Accepted --&gt; FollowUp[Samostatný tracking alebo webhook]</pre>
+<p>Kontroly sú samostatné volania. Konektor ich nespúšťa automaticky pred odoslaním. Ak robíte vzdialenú validáciu, odovzdajte jej ten istý <code class="nb">OutboundDocumentPayload</code>, ktorý následne pošlete.</p>
+<h2 id="ktorú-cestu-použiť"><span class="mw-h">Ktorú cestu použiť?</span><a class="anchor" href="#ktorú-cestu-použiť" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Practical-Scenarios.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<div class="tw"><table class="wikitable"><thead><tr><th>Potrebujete…</th><th>Použite</th><th>Potom</th></tr></thead><tbody><tr><td>Vytvoriť UBL Invoice alebo CreditNote</td><td><code class="nb">UblDocumentDraft</code> a UBL writer</td><td>XML môžete samostatne načítať alebo validovať.</td></tr><tr><td>Poslať jeden doklad</td><td>SAPI <code class="nb">DocumentSubmissionGatewayInterface</code></td><td>Výsledok sledujte cez tracking alebo webhook.</td></tr><tr><td>Poslať viac dokladov v jednej požiadavke</td><td>Peppol Gateway batch submission</td><td>Uložte identifikátory a stabilný idempotency key.</td></tr><tr><td>Načítať prijaté doklady</td><td><code class="nb">ReceivedDocumentProviderInterface</code></td><td>Stiahnite a bezpečne spracujte obsah; potvrdenie je samostatné.</td></tr><tr><td>Zistiť doručenie alebo chybu</td><td>Tracking a MLS, prípadne webhook</td><td>Udalosti spracúvajte idempotentne.</td></tr></tbody></table></div>
+<h2 id="ukážka-skontrolovať-a-odoslať-ten-istý-payload"><span class="mw-h">Ukážka: skontrolovať a odoslať ten istý payload</span><a class="anchor" href="#ukážka-skontrolovať-a-odoslať-ten-istý-payload" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Practical-Scenarios.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>V aplikácii pripravte payload raz cez UBL writer a použite ho na kontrolu aj odoslanie. Samostatný offline príklad zostaví payload zo syntetických hodnôt a obe sieťové služby nahradí lokálnymi falošnými službami.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">&lt;?php
+use DreaM1\EfakturaConnector\Core\Documents\IdempotencyKeyGenerator;
+use DreaM1\EfakturaConnector\Core\Documents\DocumentSubmissionResult;
+use DreaM1\EfakturaConnector\Core\Documents\OutboundDocumentPayload;
+use DreaM1\EfakturaConnector\Core\Documents\SendDocumentRequest;
+use DreaM1\EfakturaConnector\Core\Documents\ValidateDocumentRequest;
+use DreaM1\EfakturaConnector\Core\Documents\Sha256Checksum;
+use DreaM1\EfakturaConnector\Core\Contracts\DocumentSubmissionGatewayInterface;
+use DreaM1\EfakturaConnector\Core\Contracts\ProviderDocumentValidationCheckInterface;
+use DreaM1\EfakturaConnector\Core\Ubl\PeppolDocumentTypeIdentifierBuilder;
+use DreaM1\EfakturaConnector\Domain\EFaktura\Participant;
+use DreaM1\EfakturaConnector\Domain\EFaktura\PeppolProcessIdentifier;
+use DreaM1\EfakturaConnector\Domain\EFaktura\ProviderDocumentId;
+use DreaM1\EfakturaConnector\Domain\EFaktura\ProviderDocumentStatus;
+use DreaM1\EfakturaConnector\Domain\EFaktura\SubmittedDocumentId;
+use DreaM1\EfakturaConnector\Domain\Ubl\PeppolBillingProfile;
+use DreaM1\EfakturaConnector\Support\Timestamp;
+
+require dirname(__DIR__, 2) . '/vendor/autoload.php';
+
+final class WikiOfflineValidationCheck implements ProviderDocumentValidationCheckInterface
+{
+    public function check(ValidateDocumentRequest $request): void
+    {
+        echo 'Offline validation received ', $request-&gt;payload()-&gt;documentId()-&gt;value(), PHP_EOL;
+    }
+}
+
+final class WikiOfflineSubmissionGateway implements DocumentSubmissionGatewayInterface
+{
+    public function send(SendDocumentRequest $request): DocumentSubmissionResult
+    {
+        echo 'Offline submission received ', $request-&gt;payload()-&gt;documentId()-&gt;value(), PHP_EOL;
+
+        return new DocumentSubmissionResult(
+            ProviderDocumentId::fromString('offline-provider-id'),
+            ProviderDocumentStatus::fromString(ProviderDocumentStatus::ACCEPTED),
+            Timestamp::fromDateTimeImmutable(new DateTimeImmutable('2026-11-26T12:00:01+00:00'))
+        );
+    }
+}
+
+$senderParticipant = Participant::parse('9915:sender-demo');
+$receiverParticipant = Participant::parse('9915:receiver-demo');
+$xml = '&lt;Invoice xmlns=&quot;urn:oasis:names:specification:ubl:schema:xsd:Invoice-2&quot;&gt;&lt;ID&gt;OFFLINE-001&lt;/ID&gt;&lt;/Invoice&gt;';
+$payload = new OutboundDocumentPayload(
+    SubmittedDocumentId::fromString('OFFLINE-001'),
+    PeppolDocumentTypeIdentifierBuilder::forDocument('Invoice'),
+    PeppolProcessIdentifier::fromString(PeppolBillingProfile::PROCESS_ID),
+    $senderParticipant,
+    $receiverParticipant,
+    Timestamp::fromDateTimeImmutable(new DateTimeImmutable('2026-11-26T12:00:00+00:00')),
+    $xml,
+    Sha256Checksum::fromContent($xml)
+);
+$providerValidation = new WikiOfflineValidationCheck();
+$gateway = new WikiOfflineSubmissionGateway();
+$idempotencyKey = IdempotencyKeyGenerator::generate();
+
+$providerValidation-&gt;check(
+    new ValidateDocumentRequest($senderParticipant, $payload)
+);
+
+$result = $gateway-&gt;send(
+    new SendDocumentRequest($senderParticipant, $payload, $idempotencyKey)
+);
+
+if ($result-&gt;status()-&gt;value() === 'ACCEPTED') {
+    echo &quot;Synthetic ACCEPTED result; production tracking is a separate call.\n&quot;;
+}</code></pre></div>
+<p>Lokálne triedy <code class="nb">WikiOfflineValidationCheck</code> a <code class="nb">WikiOfflineSubmissionGateway</code> iba prijmú typované Core requesty a vrátia syntetický výsledok. V produkcii payload pripravte cez <code>$client-&gt;ublDraftSubmission()-&gt;preparePayload(.<wbr>.<wbr>.<wbr>)</code> a použite skutočné klientské služby.</p>
+<p>Pri timeout-e zachovajte presný payload a pôvodný idempotency key.</p>
+<h2 id="ukážka-čítať-inbox-a-až-potom-potvrdiť"><span class="mw-h">Ukážka: čítať inbox a až potom potvrdiť</span><a class="anchor" href="#ukážka-čítať-inbox-a-až-potom-potvrdiť" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Practical-Scenarios.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<pre class="mermaid">sequenceDiagram
+    participant App as Hostiteľská aplikácia
+    participant SAPI as SAPI-SK
+    participant Store as Úložisko hostiteľa
+    App-&gt;&gt;SAPI: getInboxPage(participant, pageToken)
+    SAPI--&gt;&gt;App: metadáta + nextPageToken
+    loop Každý dokument
+        App-&gt;&gt;SAPI: getDocumentPayload(reference)
+        SAPI--&gt;&gt;App: XML + metadáta
+        App-&gt;&gt;App: voliteľne načítať UBL alebo validovať
+        App-&gt;&gt;Store: bezpečne spracovať a uložiť
+        Store--&gt;&gt;App: uloženie potvrdené
+        App-&gt;&gt;SAPI: acknowledge(reference)
+    end
+    App-&gt;&gt;App: pokračovať, kým nextPageToken nie je null</pre>
+<p>Praktický dôsledok: zlyhanie pri ukladaní má zastaviť alebo odložiť potvrdenie, aby hostiteľ mohol dokument znovu načítať. <code class="nb">acknowledge()</code> je technické potvrdenie príjmu, nie schválenie ani zaúčtovanie faktúry.</p>
+<p>Stránkovaný príklad s konkrétnymi typmi je v <a href="Receiving-Documents.html">návode na príjem</a>.</p>
+<h2 id="ako-čítať-výsledok-odoslania"><span class="mw-h">Ako čítať výsledok odoslania</span><a class="anchor" href="#ako-čítať-výsledok-odoslania" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Practical-Scenarios.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<pre class="mermaid">stateDiagram-v2
+    state &quot;Pripravený payload&quot; as Prepared
+    state &quot;Request odoslaný&quot; as Submitted
+    state &quot;Technicky prijatý&quot; as Accepted
+    state &quot;Odmietnutý&quot; as Rejected
+    state &quot;Neistý výsledok&quot; as Unknown
+    state &quot;Čaká na MLS&quot; as Pending
+    state &quot;Doručený&quot; as Delivered
+    state &quot;Prenos zlyhal&quot; as Failed
+    state &quot;Preposlaný, bez konečného výsledku&quot; as Forwarded
+    [*] --&gt; Prepared
+    Prepared --&gt; Submitted: SAPI request
+    Submitted --&gt; Accepted: ACCEPTED
+    Submitted --&gt; Rejected: REJECTED
+    Submitted --&gt; Unknown: timeout alebo výpadok spojenia
+    Unknown --&gt; Submitted: rovnaký payload + rovnaký idempotency key
+    Accepted --&gt; Pending
+    Pending --&gt; Delivered: MLS AP
+    Pending --&gt; Failed: MLS RE
+    Pending --&gt; Forwarded: MLS AB</pre>
+<div class="tw"><table class="wikitable"><thead><tr><th>Výsledok</th><th>Čo hovorí</th><th>Rozumný ďalší krok</th></tr></thead><tbody><tr><td><code class="nb">ACCEPTED</code> zo SAPI</td><td>Požiadavka bola technicky prijatá.</td><td>Uložiť provider ID a sledovať konečný stav.</td></tr><tr><td><code class="nb">REJECTED</code> zo SAPI</td><td>SAPI vrátilo odmietnutie odoslania.</td><td>Spracovať odpoveď podľa pravidiel hostiteľa.</td></tr><tr><td>MLS <code class="nb">AP</code></td><td>Peppol potvrdil doručenie.</td><td>Označiť ako doručené podľa workflow aplikácie.</td></tr><tr><td>MLS <code class="nb">RE</code></td><td>Doručenie zlyhalo.</td><td>Preskúmať MLS a rozhodnúť o oprave alebo novom odoslaní.</td></tr><tr><td>MLS <code class="nb">AB</code></td><td>Správa bola preposlaná, konečný výsledok ešte nie je známy.</td><td>Pokračovať v trackingu.</td></tr><tr><td>Timeout bez provider ID</td><td>Výsledok môže byť neistý.</td><td>Zopakovať uložený request s pôvodným key; nevytvoriť nový.</td></tr></tbody></table></div>
+<p>Kódy MLS a ich typované pomocné metódy sú opísané v <a href="Tracking-and-Webhooks.html">návode na tracking</a>. Webhook aj polling môžu oznámiť tú istú zmenu, preto hostiteľ ukladá udalosti deduplikovane a stav aktualizuje idempotentne.</p>
+<h2 id="rýchla-kontrola-ubl-nálezov"><span class="mw-h">Rýchla kontrola UBL nálezov</span><a class="anchor" href="#rýchla-kontrola-ubl-nálezov" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Practical-Scenarios.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Nasledujúci skript zostaví syntetický validačný výsledok s jedným varovaním. XML sa bezpečne parsuje, ale validačný stage je zámerne offline náhrada; produkčný <code class="nb">LocalUblValidationInterface</code> spustí nakonfigurované lokálne kontroly.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">&lt;?php
+use DreaM1\EfakturaConnector\Core\Contracts\LocalUblValidationInterface;
+use DreaM1\EfakturaConnector\Core\Ubl\UblXmlDocument;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\LimitedValidationIssues;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\LocalUblValidationResult;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\UblValidationFinding;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\UblValidationGuidance;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\UblValidationIssueInterface;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\UblValidationLocation;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\UblValidationSeverity;
+use DreaM1\EfakturaConnector\Core\Ubl\Validation\UblValidationStepResult;
+
+require dirname(__DIR__, 2) . '/vendor/autoload.php';
+
+final class WikiOfflineValidationIssue implements UblValidationIssueInterface
+{
+    public function severity(): UblValidationSeverity
+    {
+        return UblValidationSeverity::warning();
+    }
+
+    public function toArray(): array
+    {
+        return ['message' =&gt; 'Synthetic warning for this offline example.'];
+    }
+
+    public function toFinding(string $stageId): UblValidationFinding
+    {
+        return new UblValidationFinding(
+            $stageId,
+            $this,
+            'DEMO-WARNING',
+            'Synthetic warning for this offline example.',
+            new UblValidationLocation(),
+            [],
+            $this-&gt;severity(),
+            new UblValidationGuidance(
+                'https://example.test/rules/demo',
+                'Review this synthetic warning.'
+            )
+        );
+    }
+}
+
+$syntheticResult = LocalUblValidationResult::fromStepResults([
+    'offline-demo' =&gt; new UblValidationStepResult(
+        new LimitedValidationIssues([new WikiOfflineValidationIssue()], 0)
+    ),
+]);
+$localValidator = new class($syntheticResult) implements LocalUblValidationInterface {
+    private LocalUblValidationResult $result;
+
+    public function __construct(LocalUblValidationResult $result)
+    {
+        $this-&gt;result = $result;
+    }
+
+    public function validateDocument(UblXmlDocument $document): LocalUblValidationResult
+    {
+        return $this-&gt;result;
+    }
+};
+$ublDocument = UblXmlDocument::fromXml(
+    '&lt;Invoice xmlns=&quot;urn:oasis:names:specification:ubl:schema:xsd:Invoice-2&quot;&gt;&lt;ID&gt;OFFLINE-001&lt;/ID&gt;&lt;/Invoice&gt;'
+);
+
+$result = $localValidator-&gt;validateDocument($ublDocument);
+
+if (!$result-&gt;isValid()) {
+    echo &quot;Validation contains an error or incomplete step.\n&quot;;
+}
+
+if (!$result-&gt;isComplete()) {
+    echo &quot;At least one validation step is incomplete.\n&quot;;
+}
+
+foreach ($result-&gt;issues() as $issue) {
+    $guidance = $issue-&gt;guidance();
+    if ($guidance !== null) {
+        echo $guidance-&gt;referenceUrl(), ': ', $guidance-&gt;recommendedAction(), PHP_EOL;
+    }
+}</code></pre></div>
+<p>Nálezy majú závažnosť <code class="nb">error</code>, <code class="nb">warning</code> alebo <code class="nb">info</code>. Varovania a informačné nálezy samy osebe nespôsobia, že <code class="nb">isValid()</code> vráti <code class="nb">false</code>. Reader iba bezpečne načíta podporovaný UBL; XSD a Schematron kontroly treba spustiť osobitne.</p>
+<h2 id="časté-zámenné-kroky"><span class="mw-h">Časté zámenné kroky</span><a class="anchor" href="#časté-zámenné-kroky" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Practical-Scenarios.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<ul>
+<li>Načítanie XML nie je lokálna ani vzdialená validácia.</li>
+<li><code class="nb">ACCEPTED</code> zo SAPI nie je potvrdenie doručenia príjemcovi.</li>
+<li>Zoznam a stiahnutie dokumentu z inboxu ho nepotvrdia automaticky.</li>
+<li>Webhook najprv overte nad pôvodnými raw body bajtmi; až potom parsujte JSON.</li>
+<li>Pri opakovaní toho istého odoslania zachovajte payload aj idempotency key.</li>
+</ul>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li><a href="UBL-Documents.html">Čítanie a zápis UBL</a></li>
+<li><a href="Validation.html">Lokálna validácia</a></li>
+<li><a href="Sending-Documents.html">Odosielanie dokladov</a></li>
+<li><a href="Receiving-Documents.html">Príjem dokladov</a></li>
+<li><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></li>
+<li><a href="Errors-Retry-and-Idempotency.html">Výnimky, retry a idempotencia</a></li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#mapa-práce-s-dokladom"><span class="n">1</span> <span class="x">Mapa práce s dokladom</span></a></li><li class="t2"><a href="#ktorú-cestu-použiť"><span class="n">2</span> <span class="x">Ktorú cestu použiť?</span></a></li><li class="t2"><a href="#ukážka-skontrolovať-a-odoslať-ten-istý-payload"><span class="n">3</span> <span class="x">Ukážka: skontrolovať a odoslať ten istý payload</span></a></li><li class="t2"><a href="#ukážka-čítať-inbox-a-až-potom-potvrdiť"><span class="n">4</span> <span class="x">Ukážka: čítať inbox a až potom potvrdiť</span></a></li><li class="t2"><a href="#ako-čítať-výsledok-odoslania"><span class="n">5</span> <span class="x">Ako čítať výsledok odoslania</span></a></li><li class="t2"><a href="#rýchla-kontrola-ubl-nálezov"><span class="n">6</span> <span class="x">Rýchla kontrola UBL nálezov</span></a></li><li class="t2"><a href="#časté-zámenné-kroky"><span class="n">7</span> <span class="x">Časté zámenné kroky</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Tenant-Clients-in-Laravel.html"><small>← Predchádzajúca</small><b>OAuth poverenia zákazníka</b></a><a class="nx" href="UBL-Documents.html"><small>Ďalšia →</small><b>Čítanie a zápis UBL</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></li><li><a href="UBL-Documents.html">Čítanie a zápis UBL</a></li><li><a href="Validation.html">Lokálna validácia</a></li><li><a href="Sending-Documents.html">Odosielanie dokladov</a></li><li><a href="Receiving-Documents.html">Príjem dokladov</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-práca-s-dokladmi">Práca s dokladmi</a></div>
+<div class="meta">Naposledy upravené: 26. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Practical-Scenarios.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Practical-Scenarios.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

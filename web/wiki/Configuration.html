@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Konfigurácia">
+<title>Konfigurácia – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html" aria-current="page">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Configuration.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Configuration.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Configuration.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-začíname">Začíname</a></div><h1 class="title">Konfigurácia</h1><div class="sub"><span class="chip">Čítanie ≈ 17 min</span><span class="chip">7 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><h2 id="ako-sa-vyberá-klient-a-konfigurácia"><span class="mw-h">Ako sa vyberá klient a konfigurácia</span><a class="anchor" href="#ako-sa-vyberá-klient-a-konfigurácia" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Configuration.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<pre class="mermaid">flowchart LR
+    Profiles[Pomenované profily klientov] --&gt; A[tenant-a: base_url, client ID, secret, scope]
+    Profiles --&gt; B[tenant-b: base_url, client ID, secret, scope]
+    Alias[Alias vybraný aplikáciou] --&gt; Registry[SapiClientRegistryInterface]
+    A --&gt; Registry
+    B --&gt; Registry
+    Registry --&gt; Client[SapiClientInterface]
+    Participant[Participant z tenantového kontextu] --&gt; Operation[Konkrétna operácia]
+    Client --&gt; Operation
+    Runtime[runtime timeouty, retry a limity] --&gt; Http[HTTP execution stack]
+    Client --&gt; Http</pre>
+<p>Profil určuje provider URL, OAuth poverenia a scope; participant je samostatný vstup operácie. <code class="nb">runtime</code> nastavuje limity vykonávania a nie je súčasťou identity klienta.</p>
+<h2 id="sapiclientsconfiguration"><span class="mw-h"><code class="nb">SapiClientsConfiguration</code></span><a class="anchor" href="#sapiclientsconfiguration" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Configuration.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">SapiClientsConfiguration</code> načíta pomenované profily klientov. Každý profil má vlastnú <code class="nb">base_url</code>, takže jedna aplikácia môže naraz hovoriť s testovacím aj produkčným prostredím; <code class="nb">base_url</code> na najvyššej úrovni konfigurácie sa odmietne.</p>
+<p><code class="nb">default_client</code> určuje profil používaný predvolenými service bindingmi. Každý profil musí mať explicitný scope vydaný poskytovateľom; konektor už nežiada send aj receive oprávnenia automaticky.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\Configuration\SapiClientsConfiguration;
+
+$clients = SapiClientsConfiguration::fromArray([
+    'default_client' =&gt; 'tenant-a',
+    'clients' =&gt; [
+        'tenant-a' =&gt; [
+            'base_url' =&gt; getenv('EFAKTURA_TENANT_A_BASE_URL'),
+            'client_id' =&gt; getenv('EFAKTURA_TENANT_A_CLIENT_ID'),
+            'client_secret' =&gt; getenv('EFAKTURA_TENANT_A_CLIENT_SECRET'),
+            'client_scope' =&gt; getenv('EFAKTURA_TENANT_A_CLIENT_SCOPE') ?: '',
+        ],
+        'tenant-b' =&gt; [
+            'base_url' =&gt; getenv('EFAKTURA_TENANT_B_BASE_URL'),
+            'client_id' =&gt; getenv('EFAKTURA_TENANT_B_CLIENT_ID'),
+            'client_secret' =&gt; getenv('EFAKTURA_TENANT_B_CLIENT_SECRET'),
+            'client_scope' =&gt; getenv('EFAKTURA_TENANT_B_CLIENT_SCOPE') ?: '',
+        ],
+    ],
+]);
+
+$clients-&gt;assertReady();
+$tenantAConfiguration = $clients-&gt;client('tenant-a');</code></pre></div>
+<div class="tw"><table class="wikitable"><thead><tr><th>Kľúč</th><th>Význam</th></tr></thead><tbody><tr><td><code class="nb">clients.&lt;alias&gt;.base_url</code></td><td>HTTPS serverová URL z OpenAPI pre daný profil. Odstránia sa koncové lomky, no ľubovoľná cesta v URL zostane zachovaná.<br>Pre testovacie prostredie použite koreň <code class="nb">https://test-sapisk.datahosting.sk</code>, bez <code class="nb">/sapi</code>; endpointy pripájajú celé cesty <code class="nb">/sapi/...</code> a <code class="nb">/v1/...</code>.</td></tr><tr><td><code class="nb">clients</code></td><td>Mapa aliasov na samostatné profily OAuth poverení.</td></tr><tr><td><code class="nb">default_client</code></td><td>Alias profilu používaný predvolenými service bindingmi.</td></tr><tr><td><code class="nb">client_id</code></td><td>OAuth client ID vydané poskytovateľom.</td></tr><tr><td><code class="nb">client_secret</code></td><td>OAuth client secret; uchovávajte ho v secret store alebo chránenom environmente.</td></tr><tr><td><code class="nb">client_scope</code></td><td>Povinný scope povolený OAuth klientovi. Môže obsahovať <code class="nb">document:send</code>, <code class="nb">document:receive</code> alebo obe hodnoty oddelené medzerou. Zadajte iba oprávnenia, ktoré klient potrebuje; konektor nemá implicitný scope.</td></tr></tbody></table></div>
+<p><code class="nb">SapiClientsConfiguration</code> odmieta neznáme kľúče a validuje aliasy, profily a predvolený alias. <code class="nb">assertReady()</code> overí URL, poverenia a scope všetkých profilov bez sieťového volania; zavolajte ho v deployment checku ešte pred sprístupnením API.</p>
+<p><code>SapiClientConfigurationInterface::<wbr>assertReady()</code> kontroluje jeden profil. <code class="nb">baseUrl()</code> vracia normalizovaný <code class="nb">ProviderBaseUrl</code>; <code class="nb">clientId()</code> validovaný <code class="nb">OAuthClientId</code>; <code class="nb">clientSecret()</code> redigovaný <code class="nb">OAuthClientSecret</code>; a <code class="nb">clientScope()</code> validovaný <code class="nb">OAuthScope</code>.</p>
+<p><code class="nb">ConnectorRuntimeConfigurationInterface</code> sprístupňuje typované HTTP limity, retry a circuit-breaker politiky, backpressure cooldown a validačné limity.</p>
+<p>Skladá sa z dvoch užších kontraktov: <code class="nb">HttpRuntimeConfigurationInterface</code> (HTTP transport) a <code>LocalValidationRuntimeConfigurationInterface</code> (limity lokálnej Schematron validácie); služba, ktorá potrebuje len jednu oblasť, má závisieť od užšieho kontraktu.</p>
+<p>Laravel bridge drží výber tried, vrstiev request execution a validačných zdrojov v <code class="nb">LaravelServiceConfiguration</code>.</p>
+<p>Laravel používa jeden publikovaný súbor s oddielmi <code class="nb">clients</code>, <code class="nb">default_client</code>, <code class="nb">integrator_api</code>, <code class="nb">runtime</code> a <code class="nb">laravel</code>.</p>
+<p>PDS signing secret možno nastaviť v <code class="nb">integrator_api.pds.signing_secret</code>; je oddelený od Integrator API tokenu, Laravel ho sprístupní ako <code class="nb">PdsSigningConfiguration</code> a PDS požiadavke sa odovzdáva osobitne.</p>
+<p>Každý klientský profil má vlastný <code class="nb">SapiTokenProvider</code> a autentifikovaný API reťazec. Registry predvolene skladá executor stack pre každý profil; ak aplikácia poskytne alebo už rozlíšila vlastný HTTP executor, tento stack sa zdieľa.</p>
+<p>Token cache a koordinácia 429 cooldownu sa môžu zdieľať. Cache kľúč oddeľuje tokeny podľa URL, client ID, secretu a scope.</p>
+<p>Číselné limity a prevádzkové politiky patria do <code class="nb">runtime</code>; <code class="nb">laravel.request_execution</code> určuje základný executor, zapnuté vrstvy a backend HTTP locku; <code class="nb">laravel.validation</code> určuje poradie validačných krokov, cesty k zdrojom, pracovný adresár, Java binárku a adresár concurrency locku.</p>
+<p><code class="nb">laravel.services</code> mapuje predvolené service bindingy na vlastné triedy vrátane <code class="nb">SapiClientFactoryInterface</code> a <code class="nb">SchematronConcurrencyLimiterInterface</code>.</p>
+<h3 id="minimálna-publikovaná-konfigurácia"><span class="mw-h">Minimálna publikovaná konfigurácia</span><a class="anchor" href="#minimálna-publikovaná-konfigurácia" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Profil <code class="nb">clients.default</code> nesie provider URL, poverenia a explicitný scope; <code class="nb">default_client</code> ho vyberie pre priame service bindingy.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">return [
+    'default_client' =&gt; 'default',
+    'clients' =&gt; [
+        'default' =&gt; [
+            'base_url' =&gt; env('EFAKTURA_BASE_URL', ''),
+            'client_id' =&gt; env('EFAKTURA_CLIENT_ID', ''),
+            'client_secret' =&gt; env('EFAKTURA_CLIENT_SECRET', ''),
+            'client_scope' =&gt; env('EFAKTURA_CLIENT_SCOPE', ''),
+        ],
+    ],
+];</code></pre></div>
+<p>Po úprave publikovaného súboru obnovte Laravel config cache.</p>
+<p>Pred nasadením pridajte do vlastného deployment checku alebo Artisan príkazu explicitnú kontrolu pripravenosti. Načíta konfiguráciu a overí URL, ID, secret a scope všetkých profilov; neposiela požiadavku poskytovateľovi:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">app(SapiClientsConfiguration::class)-&gt;assertReady();</code></pre></div>
+<p>Samotné <code class="nb">config:cache</code> hodnoty neoveruje. Pri jeho použití chráňte prístup k vygenerovanému <code class="nb">bootstrap/cache/config.php</code>, ktorý obsahuje aj nakonfigurované poverenia.</p>
+<h3 id="pomenovaní-oauth-klienti"><span class="mw-h">Pomenovaní OAuth klienti</span><a class="anchor" href="#pomenovaní-oauth-klienti" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Vyberte klienta podľa aliasu cez <code class="nb">SapiClientRegistryInterface</code>. Výber poverení zostáva explicitný a participant sa odovzdáva samostatne každému participant-scoped volaniu.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Core\Contracts\SapiClientRegistryInterface;
+
+$client = app(SapiClientRegistryInterface::class)-&gt;client('tenant-a');
+$submission = $client-&gt;documentSubmissionGateway();
+$tracking = $client-&gt;documentTrackingProvider();
+$profile = $client-&gt;profile(); // bez OAuth secretu</code></pre></div>
+<p>Priamy Laravel binding, napríklad <code class="nb">DocumentSubmissionGatewayInterface</code>, používa klienta určeného cez <code class="nb">default_client</code>.</p>
+<div class="alert tip" role="note"><div class="ai" aria-hidden="true">★</div><div class="ac"><div class="at">Tip</div><p>Použite registry, keď jedna aplikácia obsluhuje viac OAuth identít súčasne.</p></div></div>
+<h3 id="oauth-poverenia-zákazníka-v-databáze"><span class="mw-h">OAuth poverenia zákazníka v databáze</span><a class="anchor" href="#oauth-poverenia-zákazníka-v-databáze" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Ak má každý zákazník vlastné OAuth poverenia uložené v modeli, implementujte na modeli Laravel kontrakt <code class="nb">TenantEFakturaCredentialsInterface</code> a použite <code class="nb">TenantEFakturaClientResolver</code>.</p>
+<p>Model poskytne stabilný interný kľúč, client ID, secret a voliteľný scope; <code class="nb">base_url</code> sa preberá zo spoločnej konfigurácie konektora. Secret ukladajte šifrovane a skryte ho pri serializácii modelu.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Laravel\Connection\TenantEFakturaClientResolver;
+
+$client = app(TenantEFakturaClientResolver::class)-&gt;forTenant($authorizedCustomer);
+$submission = $client-&gt;documentSubmissionGateway();</code></pre></div>
+<p>Resolver používa model, ktorý mu odovzdáte; zákazníka a jeho oprávnenia preto najprv vyberte v hostiteľskej aplikácii. Tokeny sa ukladajú cez nakonfigurovaný <code class="nb">SapiTokenCacheInterface</code> s kľúčom odvodeným od URL, poverení a scope.</p>
+<p>Kontrakt modelu a celý príklad sú v návode <a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka v Laraveli</a>.</p>
+<p>Bez Laravelu zložte registry z validovanej konfigurácie, zdieľanej HTTP execution vrstvy, token cache a UBL writeru. Registry potom drží samostatný autentifikačný reťazec pre každý alias:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Connection\SapiClientFactory;
+use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Connection\SapiClientRegistry;
+
+// Prvý argument je callback, ktorý pre profil klienta vráti HTTP executor; pri zdieľanom executore vráti vždy ten istý.
+$factory = new SapiClientFactory(
+    static function () use ($httpRequestExecutor) {
+        return $httpRequestExecutor;
+    },
+    $tokenCache,
+    $ublDocumentWriter
+);
+$registry = new SapiClientRegistry($clients, $factory);
+$tenantA = $registry-&gt;client('tenant-a');</code></pre></div>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p><code class="nb">base_url</code> každého profilu musí byť bezpečná HTTPS adresa s hostiteľom; nesmie obsahovať prihlasovacie údaje, query ani fragment.</p></div></div>
+<p>Chýbajúce poverenia alebo scope nebránia štartu aplikácie, ale <code class="nb">assertReady()</code> ich odmietne pred nasadením; prvé API použitie bez neho tiež skončí <code class="nb">ConfigurationException</code> ešte pred sieťovým volaním.</p>
+<p>Neznáme konfiguračné kľúče, neplatné číselné runtime nastavenia a connect timeout dlhší než celkový request timeout sa odmietnu pri parsovaní.</p>
+<p>Ako <code class="nb">base_url</code> nastavte serverovú URL podľa OpenAPI daného prostredia. Konfigurácia zachová cestovú časť URL a odstráni iba koncové lomky, preto ju pri štandardnom nasadení nastavte na koreň bez <code class="nb">/sapi</code>.</p>
+<p>Ak reverzná proxy používa spoločný prefix pre SAPI aj Gateway, môžete ho zahrnúť do <code class="nb">base_url</code>; endpointové cesty <code class="nb">/sapi/...</code> a <code class="nb">/v1/...</code> sa pripoja zaň. Prefix <code class="nb">/sapi</code> ani <code class="nb">/v1</code> nepoužívajte ako spoločný.</p>
+<p>Testovacie OpenAPI používajú <code class="nb">https://test-sapisk.datahosting.sk</code> bez prefixu.</p>
+<h3 id="file-locky-vo-windows"><span class="mw-h">File locky vo Windows</span><a class="anchor" href="#file-locky-vo-windows" aria-label="Odkaz na sekciu">¶</a></h3>
+<p>Na Windows <code class="nb">flock()</code> koordinuje procesy iba na lokálnom súborovom systéme, ktorý túto funkciu podporuje. PHP tu nevie overiť NTFS ACL, vlastníka, POSIX práva ani počet hardlinkov; bezpečnosť preto závisí od prístupových práv adresára so zámkami.</p>
+<p>Predvolené <code class="nb">%TEMP%</code> používajte iba vtedy, ak jeho ACL obmedzujú prístup na účty workerov.</p>
+<p>Pri <code>laravel.<wbr>request_<wbr>execution.<wbr>execution_<wbr>lock.<wbr>driver=file</code> nastavte <code>laravel.<wbr>request_<wbr>execution.<wbr>execution_<wbr>lock.<wbr>temporary_<wbr>directory</code> a pre Schematron <code>laravel.<wbr>validation.<wbr>concurrency_<wbr>lock_<wbr>directory</code> na dedikovaný adresár, ktorého ACL povoľuje prístup iba príslušnému servisnému účtu.</p>
+<p>File locky nekorelujú viac hostov ani nepodporovaný zdieľaný filesystem. Windows job v CI spúšťa testy reálnej medziprocesovej koordinácie.</p>
+<h2 id="predpoklady-u-poskytovateľa"><span class="mw-h">Predpoklady u poskytovateľa</span><a class="anchor" href="#predpoklady-u-poskytovateľa" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Configuration.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Pred použitím musí byť participant zaregistrovaný a mať aktivované potrebné služby v príslušnom prostredí. Bežné SAPI a Gateway volania používajú SAPI OAuth client-credentials token.</p>
+<p>Samostatný Integrator API klient používa integrátorský token na správu OAuth klientov a participant prístupov, zoznam participantov a požiadavky na aktiváciu kontraktu. Tento token nenahrádza OAuth klienta účastníka.</p>
+<p>Integrator API má samostatnú konfiguráciu v oddiele <code class="nb">integrator_api</code>; jej <code class="nb">base_url</code> je samostatná a predvolene preberá hodnotu premennej <code class="nb">EFAKTURA_BASE_URL</code>. Nastavte <code class="nb">EFAKTURA_INTEGRATOR_ID</code> a <code class="nb">EFAKTURA_INTEGRATOR_API_TOKEN</code> v prostredí.</p>
+<p>PDS signing secret nastavte cez <code class="nb">EFAKTURA_PDS_SIGNING_SECRET</code>; Laravel ho načíta do <code class="nb">integrator_api.pds.signing_secret</code> a typovane ho poskytne cez <code class="nb">app(PdsSigningConfiguration::class)</code>.</p>
+<p>Laravel aplikácia získa nakonfigurovaného klienta cez <code>app(IntegratorAccountClientInterface::<wbr>class)</code>. Úplný príklad je v <a href="Integrator-API.html">návode Integrator API</a>.</p>
+<p>Testovacie a produkčné prostredie nastavte oddelene: použite zodpovedajúcu <code class="nb">base_url</code>, OAuth poverenia aj participant ID.</p>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p>Úspech v testovacom prostredí sám osebe nepotvrdzuje aktiváciu ani oprávnenia v produkcii.</p></div></div>
+<p><code class="nb">Participant</code> má syntaktický tvar <code class="nb">schéma:hodnota</code>; samotný parser neoveruje schému v číselníku. SAPI/Gateway requesty vytvorené cez <code class="nb">ApiRequest::forParticipant()</code> a <code class="nb">OutboundDocumentPayload</code> akceptujú iba aktívne a registrovateľné schémy pribaleného OpenPeppol zoznamu <a href="https://docs.peppol.eu/edelivery/codelists/" class="ext" rel="noopener">9.7</a>.</p>
+<div class="alert tip" role="note"><div class="ai" aria-hidden="true">★</div><div class="ac"><div class="at">Tip</div><p>Použite identifikátor pridelený vašim API povereniam; pri odoslaní sa hodnota v hlavičke musí zhodovať so <code class="nb">metadata.senderParticipantId</code> v tele.</p></div></div>
+<p>Integrator API requesty používajú samostatné participant ID reťazce a ich DTO lokálne kontrolujú iba neprázdnu hodnotu. Príklady s <code class="nb">0245</code> sú produkčné; eFaktúra Sandbox používa testovaciu schému <code class="nb">9915</code> (<a href="https://developers.efaktura.sk/sk/docs/sandbox" class="ext" rel="noopener">dokumentácia</a>).</p>
+<h2 id="participant"><span class="mw-h">Participant</span><a class="anchor" href="#participant" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Configuration.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Participant nie je globálna súčasť konfigurácie. Každé volanie s kontextom účastníka dostane <code class="nb">Participant</code> osobitne. Pri odoslaní sa participant odvodzuje z odosielateľa v <code class="nb">OutboundDocumentPayload</code>; pri inboxe, stave, MLS a webhookoch je argumentom služby.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Domain\EFaktura\Participant;
+
+$participant = Participant::parse('0245:1234567890');
+// alebo: Participant::fromPeppolIdentifier($input) -&gt; ?Participant</code></pre></div>
+<p><code class="nb">parse()</code> vyhodí <code class="nb">InvalidInputException</code> (podtyp <code class="nb">InvalidArgumentException</code>), ak hodnota nemá tvar <code class="nb">štvorciferná-schéma:hodnota</code>. <code class="nb">fromPeppolIdentifier()</code> vráti <code class="nb">null</code>. Kontrolný súčet slovenského DIČ nie je súčasťou všeobecnej kontroly tvaru Participant.</p>
+<p>Hlavičku <code class="nb">X-Peppol-Participant-Id</code> nastaví <code class="nb">ApiRequest::forParticipant()</code>.</p>
+<h2 id="vlastné-rozhrania-hostiteľa"><span class="mw-h">Vlastné rozhrania hostiteľa</span><a class="anchor" href="#vlastné-rozhrania-hostiteľa" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Configuration.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Predvolený HTTP executor používa procesový <code class="nb">InMemoryCircuitBreaker</code> a procesový <code class="nb">InMemoryHttpRequestBackpressure</code>.</p>
+<p>Pre viac inštancií vytvorte zdieľané implementácie <code class="nb">CircuitBreakerInterface</code> a <code class="nb">HttpRequestBackpressureInterface</code> a odovzdajte ich cez <code class="nb">HttpRequestExecutorOptions</code> do <code>DefaultHttpRequestExecutorFactory::<wbr>create()</code>.</p>
+<p>Voliteľný <code class="nb">SapiTokenRefreshLockInterface</code> koordinuje obnovu tokenu po cache miss. Ak sa dlhý retry odloží, <code class="nb">ProviderApiException::retryAt()</code> vráti čas z <code class="nb">Retry-After</code>; <code class="nb">RequestDeferredException::retryAt()</code> určí, kedy možno bezpečne opakovať požiadavku, ktorá ešte neodišla do siete.</p>
+<p>Vlastný breaker implementuje <code class="nb">CircuitBreakerInterface</code>: <code class="nb">acquireExecutionPermit()</code> atomicky povolí požiadavku (alebo rezervuje jedinú sondu v polootvorenom stave) a ku každej požiadavke vráti permit viazaný na generáciu breakera; výsledok hlásia metódy <code class="nb">record*ForPermit()</code>.</p>
+<p>Takto fungujú aj vstavané breakery. Podrobnosti o spracovaní stavov a výsledkov sú v časti <a href="Errors-Retry-and-Idempotency.html#backpressure-a-circuit-breaker">Backpressure a circuit breaker</a>.</p>
+<p>Pri ručnom skladaní bez Laravelu načítajte oddiel <code class="nb">runtime</code> cez <code>ConnectorRuntimeConfiguration::<wbr>fromArray()</code> a odovzdajte výsledok do <code>DefaultHttpRequestExecutorFactory::<wbr>createFromRuntimeConfiguration()</code>.</p>
+<p>Factory použije nastavené timeouty pre svoj predvolený cURL executor, retry a cooldown nastavenia prenesie do stacku a predvolenému in-memory circuit breakeru nastaví nakonfigurovanú politiku.</p>
+<p>Závislosti ako vlastný základný executor alebo breaker nastavte cez <code class="nb">HttpRequestExecutorOptions</code>; ich vlastné nastavenia ostávajú na hostiteľovi.</p>
+<p>Zdroj času pre <code class="nb">Retry-After</code>, zdieľaný 429 cooldown a predvolený in-memory backpressure určuje <code class="nb">withClock()</code> s implementáciou <code>Infrastructure\<wbr>EFaktura\<wbr>Clock\<wbr>ClockInterface</code>; bez neho sa použije <code class="nb">SystemClock</code>.</p>
+<p>Rovnaké rozhranie prijíma aj <code class="nb">SapiTokenProvider</code> pri výpočte expirácie tokenu. Vlastné hodiny sú určené najmä na deterministické testy.</p>
+<p>Ak chcete použiť aj nakonfigurovaný limit tela Gateway dávky, odovzdajte tú istú runtime konfiguráciu ako siedmy argument <code class="nb">SapiClientFactory</code> po voliteľnom refresh locku, metrike a request-executor factory.</p>
+<p>Pri samostatnom použití bez Laravel bridge hostiteľ skladá služby ručne a poskytuje:</p>
+<ul>
+<li><code class="nb">SapiTokenCacheInterface</code> na načítanie, uloženie a odstránenie OAuth tokenu;</li>
+<li><code class="nb">HttpRequestExecutorInterface</code> alebo vlastnú implementáciu transportu;</li>
+<li>podľa potreby vlastné logovanie, perzistenciu webhookov a aplikačný workflow.</li>
+</ul>
+<p>Kľúč token cache zostavuje <code class="nb">SapiTokenProvider</code> z URL, klientskych údajov a scope. Cache vrstva ukladá token pod dodaným kľúčom; tajomstvá nepatria do zdrojového kódu.</p>
+<p><code class="nb">SapiTokenProvider</code> cacheuje access token do jeho expirácie a pri potrebe získava nový cez <code class="nb">/sapi/auth/token</code> s client credentials. Laravel bridge uložený token šifruje.</p>
+<p><code class="nb">forget(SapiToken)</code> odstráni iba lokálnu položku zamietnutého tokenu; API neponúka vzdialené renew ani revoke operácie.</p>
+<h2 id="laravel-konfigurácia"><span class="mw-h">Laravel konfigurácia</span><a class="anchor" href="#laravel-konfigurácia" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Configuration.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Laravel bridge predvolene používa <code class="nb">CurlRequestExecutor</code>, ktorý vytvára nový cURL handle pre každé volanie. Dlhšie žijúce queue alebo Octane workery môžu v zverejnenom <code class="nb">config/efaktura-connector.php</code> nastaviť alternatívny base executor:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">use DreaM1\EfakturaConnector\Infrastructure\EFaktura\Api\Transport\Execution\PooledCurlRequestExecutor;
+
+return [
+    'laravel' =&gt; [
+        'request_execution' =&gt; [
+            'executor' =&gt; PooledCurlRequestExecutor::class,
+        ],
+    ],
+];</code></pre></div>
+<p>Nakonfigurovaná trieda musí implementovať <code class="nb">HttpRequestExecutorInterface</code>. Oba cURL executory pri požiadavke s telom potlačia automatickú hlavičku <code>Expect: 100-continue</code>, aby odoslanie dokumentu nečakalo na potvrdenie servera.</p>
+<p><code class="nb">PooledCurlRequestExecutor</code> ponecháva jeden easy handle a jeho connection cache počas života Laravel singletonu; používajte ho iba pri sekvenčnom spracovaní v dlho žijúcom worker procese.</p>
+<p>Timeouty <code class="nb">runtime.http.connect_timeout_seconds</code> a <code class="nb">runtime.http.request_timeout_seconds</code> sa aplikujú na predvolené aj pooled cURL implementácie. Detaily sú v <a href="Transport-and-Authentication.html#http-executor">HTTP transport dokumentácii</a>.</p>
+<p>Runtime konfigurácia zahŕňa HTTP connect/request timeouty a limity request/response tiel, retry, circuit breaker, backpressure, validačné nálezy a Schematron.</p>
+<p>Premenné prostredia sú rozdelené podľa oblasti:</p>
+<ul>
+<li>HTTP a retry: <code class="nb">EFAKTURA_HTTP_CONNECT_TIMEOUT_SECONDS</code>, <code class="nb">EFAKTURA_HTTP_REQUEST_TIMEOUT_SECONDS</code>, <code class="nb">EFAKTURA_HTTP_RESPONSE_MAX_BYTES</code>, <code class="nb">EFAKTURA_HTTP_REQUEST_MAX_BYTES</code>, <code class="nb">EFAKTURA_HTTP_RETRY_ENABLED</code>, <code class="nb">EFAKTURA_HTTP_RETRY_MAX_ATTEMPTS</code>, <code class="nb">EFAKTURA_HTTP_RETRY_BASE_DELAY_MS</code>, <code class="nb">EFAKTURA_HTTP_RETRY_MAX_DELAY_MS</code> a <code>EFAKTURA_<wbr>HTTP_<wbr>RETRY_<wbr>MAX_<wbr>INLINE_<wbr>DELAY_<wbr>MS</code>.</li>
+<li>Circuit breaker a backpressure: <code class="nb">EFAKTURA_CIRCUIT_BREAKER_ENABLED</code>, <code class="nb">EFAKTURA_HTTP_BACKPRESSURE_ENABLED</code>, <code class="nb">EFAKTURA_HTTP_EXECUTION_LOCK_ENABLED</code>, <code>EFAKTURA_<wbr>CIRCUIT_<wbr>BREAKER_<wbr>FAILURE_<wbr>THRESHOLD</code> (počet zlyhaných operácií vrátane ich retry, nie jednotlivých pokusov), <code>EFAKTURA_<wbr>CIRCUIT_<wbr>BREAKER_<wbr>FAILURE_<wbr>WINDOW_<wbr>SECONDS</code>, <code class="nb">EFAKTURA_CIRCUIT_BREAKER_OPEN_SECONDS</code> a <code>EFAKTURA_<wbr>HTTP_<wbr>RATE_<wbr>LIMIT_<wbr>FALLBACK_<wbr>COOLDOWN_<wbr>SECONDS</code>.</li>
+<li>Validácia: <code class="nb">EFAKTURA_VALIDATION_MAX_ISSUES</code> a premenné <code class="nb">EFAKTURA_SCHEMATRON_*</code>.</li>
+<li>Koordinácia cez Laravel cache: <code class="nb">EFAKTURA_CACHE_STORE</code> vyberá spoločný store; <code class="nb">EFAKTURA_HTTP_EXECUTION_LOCK_STORE</code> ho môže prepísať iba pre HTTP request lock.</li>
+</ul>
+<p>Retry povoľuje 1 až 10 celkových pokusov vrátane prvého volania; oneskorenia môžu byť nula a <code class="nb">max_delay_ms</code> musí byť možné bezpečne previesť na mikrosekundy.</p>
+<p>Ostatné číselné limity musia byť kladné; report je najviac 128 MiB, chybový výstup 1 MiB, detail chyby 4096 znakov a validačný výsledok 1000 issues. Retry sa stále uplatní iba na požiadavky, ktorých <code class="nb">ApiRequest</code> povoľuje bezpečné opakovanie.</p>
+<p>Laravel-only voľby majú tieto environment premenne: HTTP lock používa <code class="nb">EFAKTURA_HTTP_EXECUTION_LOCK_DRIVER</code>, <code class="nb">EFAKTURA_HTTP_EXECUTION_LOCK_STORE</code>, <code>EFAKTURA_<wbr>HTTP_<wbr>EXECUTION_<wbr>LOCK_<wbr>LEASE_<wbr>SECONDS</code>, <code>EFAKTURA_<wbr>HTTP_<wbr>EXECUTION_<wbr>LOCK_<wbr>WAIT_<wbr>SECONDS</code> a <code class="nb">EFAKTURA_HTTP_EXECUTION_LOCK_DIRECTORY</code>.</p>
+<p>Cestu k Java a validačným zdrojom nastavujú <code class="nb">EFAKTURA_JAVA_BINARY</code>, <code class="nb">EFAKTURA_VALIDATION_RESOURCE_DIRECTORY</code> a <code class="nb">EFAKTURA_VALIDATION_WORKING_DIRECTORY</code>.</p>
+<p>Schematron používa <code>EFAKTURA_<wbr>SCHEMATRON_<wbr>MAX_<wbr>CONCURRENT_<wbr>VALIDATIONS</code>, <code>EFAKTURA_<wbr>SCHEMATRON_<wbr>PROCESS_<wbr>TIMEOUT_<wbr>SECONDS</code>, <code class="nb">EFAKTURA_SCHEMATRON_MAX_REPORT_BYTES</code>, <code>EFAKTURA_<wbr>SCHEMATRON_<wbr>MAX_<wbr>ERROR_<wbr>OUTPUT_<wbr>BYTES</code>, <code>EFAKTURA_<wbr>SCHEMATRON_<wbr>MAX_<wbr>ERROR_<wbr>DETAIL_<wbr>CHARACTERS</code> a <code class="nb">EFAKTURA_SCHEMATRON_LOCK_DIRECTORY</code>.</p>
+<p>Vrstvy request executora sa zapínajú v oddiele <code class="nb">runtime</code>, vedľa svojej politiky, a platia aj bez Laravelu (<code class="nb">createFromRuntimeConfiguration()</code> ich uplatní): <code class="nb">runtime.retry.enabled</code>, <code class="nb">runtime.circuit_breaker.enabled</code>, <code class="nb">runtime.backpressure.enabled</code> a <code class="nb">runtime.backpressure.execution_lock</code>.</p>
+<p>Všetky sú predvolene zapnuté. <code class="nb">execution_lock</code> sa uplatní iba vtedy, keď je zapnutý aj <code class="nb">backpressure</code>; pri vypnutom backpressure je zámok vždy vypnutý.</p>
+<p>Laravel-špecifické <code class="nb">laravel.request_execution.logging</code> a <code class="nb">laravel.request_execution.metrics</code> rozhodujú, či sa pripojí predvolený Laravel logger a metriky; HTTP metriky sa navyše pridajú až po registrácii <code class="nb">ConnectorMetricsInterface</code>.</p>
+<div class="tw"><table class="wikitable"><thead><tr><th>Vrstva</th><th>Kľúč</th><th>Env premenná</th></tr></thead><tbody><tr><td>retry</td><td><code class="nb">runtime.retry.enabled</code></td><td><code class="nb">EFAKTURA_HTTP_RETRY_ENABLED</code></td></tr><tr><td>circuit breaker</td><td><code class="nb">runtime.circuit_breaker.enabled</code></td><td><code class="nb">EFAKTURA_CIRCUIT_BREAKER_ENABLED</code></td></tr><tr><td>backpressure (cooldown po 429)</td><td><code class="nb">runtime.backpressure.enabled</code></td><td><code class="nb">EFAKTURA_HTTP_BACKPRESSURE_ENABLED</code></td></tr><tr><td>execution lock</td><td><code class="nb">runtime.backpressure.execution_lock</code></td><td><code class="nb">EFAKTURA_HTTP_EXECUTION_LOCK_ENABLED</code></td></tr><tr><td>HTTP logging</td><td><code class="nb">laravel.request_execution.logging</code></td><td><code class="nb">EFAKTURA_HTTP_LOGGING_ENABLED</code></td></tr><tr><td>HTTP metrics</td><td><code class="nb">laravel.request_execution.metrics</code></td><td><code class="nb">EFAKTURA_HTTP_METRICS_ENABLED</code></td></tr></tbody></table></div>
+<p>Príklad výberu cache store a časových limitov pre request lock:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">'laravel' =&gt; [
+    'cache_store' =&gt; 'redis', // spoločný cache store pre bridge
+    'request_execution' =&gt; [
+        'execution_lock' =&gt; [
+            'driver' =&gt; 'cache',
+            'store' =&gt; null, // null zdedí laravel.cache_store
+            'lease_seconds' =&gt; null, // null odvodí lease z request timeoutu
+            'wait_seconds' =&gt; 120,
+        ],
+    ],
+],</code></pre></div>
+<p><code class="nb">laravel.cache_store</code> predvolene používa Laravel default store a vyberá store pre šifrovanú token cache, token refresh lock, cooldown po HTTP 429, circuit breaker a HTTP request lock.</p>
+<p><code>laravel.<wbr>request_<wbr>execution.<wbr>execution_<wbr>lock.<wbr>store</code> môže osobitne prepísať store len pre HTTP request lock. Jeho <code class="nb">driver</code> predvolene používa <code class="nb">cache</code>, teda <code class="nb">Cache::lock()</code> ak ho Laravel a zvolený store podporujú; inak sa použije lokálny súborový zámok.</p>
+<p><code class="nb">lease_seconds</code> určuje platnosť cache zámku (predvolene <code class="nb">null</code>, teda timeout jedného HTTP pokusu plus päťsekundová rezerva) a <code class="nb">wait_seconds</code> (predvolene 120) maximálne čakanie na jeho získanie.</p>
+<p>Pri vytvorení cache locku bridge odvodí lease z timeoutu jedného HTTP pokusu plus päťsekundovej rezervy; ak je <code class="nb">lease_seconds</code> zadaný výslovne, overí, že pokrýva timeout jedného HTTP pokusu plus päťsekundovú rezervu (zámok sa pred čakaním retry vrstvy uvoľní, takže retry nastavenia lease neovplyvňujú).</p>
+<p>Kontrola funguje pre vstavané cURL executory; pri vlastnom executore sa s predvoleným cache lockom konfigurácia odmietne, pretože jeho rozhranie neurčuje horný limit behu.</p>
+<div class="alert tip" role="note"><div class="ai" aria-hidden="true">★</div><div class="ac"><div class="at">Tip</div><p>Použite file driver alebo vlastnú implementáciu <code>ScopedHttpRequestExecutionLockInterface</code>.</p></div></div>
+<p>Príliš krátky lease vyhodí <code class="nb">InvalidArgumentException</code>.</p>
+<p>Hodnoty možno nastaviť cez <code class="nb">EFAKTURA_CACHE_STORE</code>, <code class="nb">EFAKTURA_HTTP_EXECUTION_LOCK_DRIVER</code>, <code class="nb">EFAKTURA_HTTP_EXECUTION_LOCK_STORE</code>, <code>EFAKTURA_<wbr>HTTP_<wbr>EXECUTION_<wbr>LOCK_<wbr>LEASE_<wbr>SECONDS</code> a <code>EFAKTURA_<wbr>HTTP_<wbr>EXECUTION_<wbr>LOCK_<wbr>WAIT_<wbr>SECONDS</code>.</p>
+<p>Ak store podporuje atomické zámky a je zdieľaný, koordinuje aj workery na rôznych hostoch. Bez lock API sa použije lokálny súborový zámok; ak sa zámok nepodarí získať alebo cache zlyhá, request sa nespustí a vyhodí sa <code class="nb">RequestCoordinationException</code>.</p>
+<p>Pri <code class="nb">driver=file</code> konektor namiesto cache používa PHP <code class="nb">flock()</code>; <code class="nb">temporary_directory</code> určuje jeho adresár a Laravel <code class="nb">basePath()</code> spolu s OS používateľom izoluje nezávislé aplikácie.</p>
+<p>Ak nastavíte <code class="nb">temporary_directory</code>, nastavte aj <code class="nb">driver=file</code>; inak konfigurácia zlyhá namiesto tichého ignorovania cesty. Pri samostatnom použití Core možno vlastnú implementáciu odovzdať cez <code>HttpRequestExecutorOptions::<wbr>withExecutionLock()</code>.</p>
+<p><code class="nb">laravel.validation.resource_directory</code>, <code class="nb">working_directory</code>, <code class="nb">java_binary</code> a <code class="nb">concurrency_lock_directory</code> upravujú validačné zdroje, pracovný adresár, spustiteľnú Java binárku a umiestnenie concurrency lockov.</p>
+<p><code class="nb">null</code> ponechá bundled zdroje, Laravel <code class="nb">basePath()</code>, Java z <code class="nb">JAVA_HOME</code>/<code class="nb">PATH</code> a predvolený lock adresár <code>sys_<wbr>get_<wbr>temp_<wbr>dir()/<wbr>efaktura-schematron-locks</code>.</p>
+<p>Procesy používajúce rovnaký lock adresár na tom istom hoste zdieľajú jednu sadu slotov a musia mať rovnaký limit; pracovný adresár tento rozsah nemení.</p>
+<p>Predvolené limitovanie výstupu Schematron reportu a chybového výstupu chráni pamäť procesu; možno ho prispôsobiť cez <code class="nb">runtime.schematron.max_report_bytes</code>, <code class="nb">max_error_output_bytes</code> a <code class="nb">max_error_detail_characters</code>.</p>
+<p>Laravel predvolene používa <code class="nb">Cache::lock()</code> podľa rovnakého kľúča kvóty ako backpressure, ak ho Laravel a zvolený store podporujú; inak používa lokálny súborový zámok.</p>
+<p>SAPI/Gateway transport nastaví nepriame ID nakonfigurovaného OAuth klienta a scope; Integrator transport vytvorí samostatné ID z URL a integrator ID (token doň nevstupuje, takže rotácia tokenu zachová cooldown aj zámok).</p>
+<p>Ak request nemá explicitný scope kľúč, použije sa hash hlavičky <code class="nb">Authorization</code>. Požiadavky s rovnakým kľúčom sa serializujú cez kontrolu cooldownu a jeden pokus; zámok sa uvoľní pred čakaním retry vrstvy.</p>
+<p>Iné kľúče môžu bežať súbežne. Zdieľaný Laravel cache backend môže koordinovať aj viac hostov.</p>
+<p>Pri <code class="nb">driver=file</code> alebo pri chýbajúcom API cache lockov sa namiesto toho použije lokálny <code class="nb">flock()</code> v systémovom temp adresári; zámok koordinuje len workery s rovnakou kanonickou cestou aplikácie a OS používateľom.</p>
+<p>Pri samostatnom skladaní Core sa použije file-lock fallback alebo vlastný <code>ScopedHttpRequestExecutionLockInterface</code> nastavený cez <code>HttpRequestExecutorOptions::<wbr>withExecutionLock()</code>. Do uloženého kľúča sa zapisuje iba hash; surový token ani secret sa v ňom nezverejní.</p>
+<p>Laravel bridge používa vybraný <code class="nb">laravel.cache_store</code> na uchovanie obnovy OAuth tokenu, cooldownu po odpovedi 429, stavu circuit breakera a predvolene aj HTTP request locku.</p>
+<p>Cache locky umožňujú koordináciu naprieč hostmi; pri Laravel 5.6 alebo store bez tejto podpory sa používa lokálny file lock. Token refresh a ďalšie best-effort cache vrstvy pri výpadku pokračujú bez zámku; pri zlyhaní HTTP request locku sa samotný request nespustí.</p>
+<p>Bridge načíta <code class="nb">config/efaktura-connector.php</code> do pomenovaných profilov klientov, Integrator API konfigurácie a typed runtime/Laravel nastavení.</p>
+<p><code class="nb">base_url</code> profilu <code class="nb">default</code> používa <code class="nb">EFAKTURA_BASE_URL</code>; profil ďalej používa <code class="nb">EFAKTURA_CLIENT_ID</code>, <code class="nb">EFAKTURA_CLIENT_SECRET</code> a <code class="nb">EFAKTURA_CLIENT_SCOPE</code>; ďalšie profily pridajte do mapy <code class="nb">clients</code> a alias vyberte cez <code class="nb">SapiClientRegistryInterface</code>.</p>
+<p>Integrator API používa <code class="nb">EFAKTURA_INTEGRATOR_BASE_URL</code> (predvolene hodnota <code class="nb">EFAKTURA_BASE_URL</code>), <code class="nb">EFAKTURA_INTEGRATOR_ID</code> a <code class="nb">EFAKTURA_INTEGRATOR_API_TOKEN</code>; PDS podpis používa samostatné <code class="nb">EFAKTURA_PDS_SIGNING_SECRET</code>.</p>
+<p><code class="nb">EFAKTURA_DEFAULT_CLIENT</code> určuje profil pre priame Laravel service bindingy.</p>
+<p>HTTP timeouty a retry možno nastaviť cez <code class="nb">EFAKTURA_HTTP_CONNECT_TIMEOUT_SECONDS</code> (predvolene 10 sekúnd), <code class="nb">EFAKTURA_HTTP_REQUEST_TIMEOUT_SECONDS</code> (45 sekúnd), <code class="nb">EFAKTURA_HTTP_RETRY_MAX_ATTEMPTS</code> (3 pokusy) a <code class="nb">EFAKTURA_HTTP_RETRY_BASE_DELAY_MS</code> (500 ms).</p>
+<p>Retry sa uplatní iba na požiadavky označené ako bezpečné. Súbor možno zverejniť:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-sh" data-lang="sh">php artisan vendor:publish --tag=config</code></pre></div>
+<p>Laravel bridge viaže predvolenú cache tokenu do Laravel Cache a token ukladá šifrovane cez Laravel Crypt. Inštalácia musí mať nakonfigurovaný <code class="nb">APP_KEY</code> a bezpečné cache úložisko. Aplikácia môže bindings nahradiť vlastnými implementáciami.</p>
+<p>Laravel konfigurácia obsahuje <code class="nb">laravel.validation.stages</code>: usporiadaný zoznam tried implementujúcich <code class="nb">UblValidationStageInterface</code>. Predvolené poradie je UBL XSD, doplnková kontrola BR-CO-25 a Peppol Schematron.</p>
+<p>Schematron vydania <code class="nb">2026-Q4-MR</code> obsahuje aj slovenské pravidlá <code class="nb">SK-R-001</code> až <code class="nb">SK-R-007</code>, preto samostatný <code class="nb">PeppolSlovakBillingValidationStage</code> nie je predvolený. Pridajte ho do vlastnej pipeline len vtedy, ak Schematron nepokrýva tieto pravidlá.</p>
+<p>Ak zoznam prepíšete, uveďte všetky kroky, ktoré majú bežať; prázdny zoznam parser odmietne. Kontajner vytvorí každú triedu kroku, takže jej závislosti môže automaticky injektovať.</p>
+<p>Každý krok musí mať stabilné, jedinečné a neprázdne ID, ktoré PHP nepremení na celočíselný kľúč (napríklad <code class="nb">schema</code> alebo <code class="nb">peppol_schematron</code>). Vlastné kroky a výsledky opisuje <a href="Validation.html">lokálna validácia</a>.</p>
+<p>Predvolený <code class="nb">PeppolBillingHeaderValidationStage</code> dopĺňa Peppol Schematron jedinou kontrolou BR-CO-25: kladná faktúra musí mať dátum splatnosti alebo platobné podmienky.</p>
+<p>Pribalený Schematron toto pravidlo samostatne neobsahuje; ostatné hlavičkové kontroly vykonáva Schematron, takže sa neopakujú. Stage vynechajte iba vtedy, ak BR-CO-25 kontrolujete iným spôsobom.</p>
+<p>Vlastný krok môže implementovať aj <code>UblValidationRuleVersionProviderInterface</code>; pipeline potom jeho mapu verzií vloží do metadát kroku. Trvanie a stav výsledku doplní automaticky.</p>
+<p>Bez Laravelu sa konfigurácia tried nepoužíva. Pri ručnom skladaní odovzdajte <code class="nb">LocalUblValidator</code> neprázdny zoznam inštancií krokov; príklad je v <a href="Validation.html">lokálnej validácii</a>.</p>
+<h2 id="participant-pri-viacerých-zákazníkoch"><span class="mw-h">Participant pri viacerých zákazníkoch</span><a class="anchor" href="#participant-pri-viacerých-zákazníkoch" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Configuration.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Ak aplikácia obsluhuje viac participantov, vyberte <code class="nb">Participant</code> z kontextu konkrétneho dokladu alebo tenant konfigurácie pre každé volanie. Nepredpokladajte, že identita je súčasťou OAuth konfigurácie.</p>
+<p>Odosielateľ faktúry musí zodpovedať oprávneniam OAuth klienta u poskytovateľa.</p>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li><a href="Installation.html">Inštalácia</a></li>
+<li><a href="Laravel.html">Laravel bridge</a></li>
+<li><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></li>
+<li><a href="Transport-and-Authentication.html">HTTP transport a autentifikácia</a></li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#ako-sa-vyberá-klient-a-konfigurácia"><span class="n">1</span> <span class="x">Ako sa vyberá klient a konfigurácia</span></a></li><li class="t2"><a href="#sapiclientsconfiguration"><span class="n">2</span> <span class="x">SapiClientsConfiguration</span></a></li><li class="t3"><a href="#minimálna-publikovaná-konfigurácia"><span class="n">2.1</span> <span class="x">Minimálna publikovaná konfigurácia</span></a></li><li class="t3"><a href="#pomenovaní-oauth-klienti"><span class="n">2.2</span> <span class="x">Pomenovaní OAuth klienti</span></a></li><li class="t3"><a href="#oauth-poverenia-zákazníka-v-databáze"><span class="n">2.3</span> <span class="x">OAuth poverenia zákazníka v databáze</span></a></li><li class="t3"><a href="#file-locky-vo-windows"><span class="n">2.4</span> <span class="x">File locky vo Windows</span></a></li><li class="t2"><a href="#predpoklady-u-poskytovateľa"><span class="n">3</span> <span class="x">Predpoklady u poskytovateľa</span></a></li><li class="t2"><a href="#participant"><span class="n">4</span> <span class="x">Participant</span></a></li><li class="t2"><a href="#vlastné-rozhrania-hostiteľa"><span class="n">5</span> <span class="x">Vlastné rozhrania hostiteľa</span></a></li><li class="t2"><a href="#laravel-konfigurácia"><span class="n">6</span> <span class="x">Laravel konfigurácia</span></a></li><li class="t2"><a href="#participant-pri-viacerých-zákazníkoch"><span class="n">7</span> <span class="x">Participant pri viacerých zákazníkoch</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Installation.html"><small>← Predchádzajúca</small><b>Inštalácia</b></a><a class="nx" href="Transport-and-Authentication.html"><small>Ďalšia →</small><b>Transport a autentifikácia</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Installation.html">Inštalácia</a></li><li><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li><li><a href="Installation.html">Inštalácia a požiadavky</a></li><li><a href="Transport-and-Authentication.html">HTTP transport a autentifikácia</a></li><li><a href="Laravel.html">Laravel bridge</a></li><li><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka v Laraveli</a></li><li><a href="Project-Structure.html">Štruktúra balíka a hranice modulov</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-začíname">Začíname</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Configuration.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Configuration.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

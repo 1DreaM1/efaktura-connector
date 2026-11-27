@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Inštalácia a požiadavky">
+<title>Inštalácia a požiadavky – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html" aria-current="page">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Installation.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Installation.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Installation.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-začíname">Začíname</a></div><h1 class="title">Inštalácia a požiadavky</h1><div class="sub"><span class="chip">Čítanie ≈ 3 min</span><span class="chip">7 sekcií</span><span class="chip">Upravené 27. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><h2 id="požiadavky"><span class="mw-h">Požiadavky</span><a class="anchor" href="#požiadavky" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Installation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<ul>
+<li>PHP 7.4 alebo novšie.</li>
+<li>Ak sa používa Laravel bridge, Composer voliteľne navrhuje <code class="nb">illuminate/support</code> v rozsahu <code>^5.<wbr>6 || ^8.<wbr>83 || ^9.<wbr>0 || ^10.<wbr>0 || ^11.<wbr>0 || ^12.<wbr>0 || ^13.<wbr>0</code>. PHP verzia musí spĺňať požiadavky zvolenej verzie Laravelu. CI testuje bridge na Laravel 5.6, 8 a 13; jadro balíka testuje od PHP 7.4.</li>
+<li>PHP rozšírenia: <code class="nb">curl</code>, <code class="nb">ctype</code>, <code class="nb">dom</code>, <code class="nb">hash</code>, <code class="nb">json</code>, <code class="nb">libxml</code> a <code class="nb">mbstring</code>.</li>
+<li>Java 11 alebo novšia a dostupné funkcie PHP <code class="nb">proc_open</code> a <code class="nb">flock</code>, ak aplikácia spúšťa lokálnu Schematron validáciu. <code class="nb">flock</code> a zapisovateľný temp adresár sú potrebné aj pri Laravel verzii alebo cache store bez atómových cache lockov.</li>
+<li>Composer na správu závislostí.</li>
+</ul>
+<p>Java sa hľadá najprv v <code class="nb">JAVA_HOME/bin</code> (na Windows <code class="nb">java.exe</code>) a potom v <code class="nb">PATH</code> procesu PHP. Pre Apache alebo IIS nastavte premenné prostredia pre samotný worker; konfigurácia interaktívneho shellu nemusí byť dostupná webovému procesu.</p>
+<h2 id="inštalácia-cez-composer"><span class="mw-h">Inštalácia cez Composer</span><a class="anchor" href="#inštalácia-cez-composer" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Installation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Po zverejnení balíka na <a href="https://packagist.org/packages/dream1/efaktura-connector" class="ext" rel="noopener">Packagist</a> ho nainštalujte v koreňovom adresári hostiteľskej aplikácie:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-sh" data-lang="sh">composer require dream1/efaktura-connector</code></pre></div>
+<h2 id="inštalácia-z-githubu-pred-zverejnením-na-packagist"><span class="mw-h">Inštalácia z GitHubu pred zverejnením na Packagist</span><a class="anchor" href="#inštalácia-z-githubu-pred-zverejnením-na-packagist" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Installation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Kým balík nie je na Packagist-e, pridajte repozitár do <code class="nb">composer.json</code> hostiteľskej aplikácie a vyžiadajte vetvu <code class="nb">main</code>:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-json" data-lang="json">{
+    &quot;repositories&quot;: [
+        { &quot;type&quot;: &quot;vcs&quot;, &quot;url&quot;: &quot;https://github.com/1DreaM1/efaktura-connector&quot; }
+    ]
+}</code></pre></div>
+<div class="codebox"><pre tabindex="0"><code class="language-sh" data-lang="sh">composer require dream1/efaktura-connector:dev-main</code></pre></div>
+<p>Explicitná požiadavka <code class="nb">:dev-main</code> funguje aj pri <code class="nb">minimum-stability</code> nastavenom na <code class="nb">stable</code>. Po vydaní verzie prejdite na <code>composer require dream1/<wbr>efaktura-connector</code> a odstráňte <code class="nb">repositories</code>.</p>
+<h2 id="po-inštalácii"><span class="mw-h">Po inštalácii</span><a class="anchor" href="#po-inštalácii" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Installation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><strong>Laravel.</strong> Service provider sa zaregistruje sám cez Composer package discovery. Ďalej:</p>
+<ol>
+<li>Zverejnite konfiguráciu: <code>php artisan vendor:publish --tag=efaktura-connector-config</code>. Súbor vznikne v <code class="nb">config/efaktura-connector.php</code> vašej aplikácie a práve ten upravujte (nie súbor vo <code class="nb">vendor/</code>).</li>
+<li>Do <code class="nb">.env</code> doplňte <code class="nb">EFAKTURA_BASE_URL</code>, <code class="nb">EFAKTURA_CLIENT_ID</code>, <code class="nb">EFAKTURA_CLIENT_SECRET</code> a <code class="nb">EFAKTURA_CLIENT_SCOPE</code> podľa údajov od poskytovateľa. Kompletný zoznam premenných je v <a href="Laravel.html#konfigurácia">Laravel bridge</a>, vysvetlenie, kde a ako hodnoty meniť, v <a href="Laravel.html#kde-a-ako-upraviť-hodnoty">Kde a ako upraviť hodnoty</a>.</li>
+<li>Po zmene spustite <code>php artisan config:clear</code> (pri <code class="nb">config:cache</code> ho spustite znova) a overte nastavenie príkazom <code>php artisan efaktura:check</code>.</li>
+</ol>
+<p><strong>Bez Laravelu.</strong> Konfiguráciu zostavíte v kóde cez <code class="nb">SapiClientsConfiguration</code> a klientov cez <code class="nb">ConnectorFactory</code>; postup je v <a href="Configuration.html">Konfigurácii</a> a v <a href="Public-API.html#samostatné-zostavenie-sapi-klienta">Verejnom PHP API</a>. Poverenia čítajte z vlastného úložiska tajomstiev alebo premenných prostredia.</p>
+<h2 id="autoload"><span class="mw-h">Autoload</span><a class="anchor" href="#autoload" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Installation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Composer registruje PSR-4 namespace:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-text" data-lang="text">DreaM1\EfakturaConnector\        → src/
+DreaM1\EfakturaConnector\Laravel\ → integrations/laravel/src/</code></pre></div>
+<p>Composer deklaruje pre voliteľný Laravel bridge Laravel 5.6 a 8.83–13; balík vyžaduje PHP 7.4 alebo novšie a PHP musí spĺňať aj požiadavky zvolenej verzie Laravelu. CI overuje bridge na Laravel 5.6/PHP 7.4 a Laravel 8/PHP 7.4, ako aj Laravel 13/PHP 8.4.</p>
+<p>Laravel načíta service provider cez Composer package discovery. Jadro nemá povinnú závislosť od Laravelu.</p>
+<p>Konfiguráciu bridge zverejníte príkazom <code>php artisan vendor:publish --tag=efaktura-connector-config</code>. Pôvodný tag <code class="nb">config</code> zostáva dostupný kvôli spätnej kompatibilite.</p>
+<h2 id="overenie-balíka"><span class="mw-h">Overenie balíka</span><a class="anchor" href="#overenie-balíka" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Installation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>V samostatnom checkoute nainštalujte vývojové závislosti a spustite PHPUnit:</p>
+<div class="codebox"><pre tabindex="0"><code class="language-sh" data-lang="sh">composer install
+composer test</code></pre></div>
+<p>Schematron testy, ktoré spúšťajú pribalený Saxon, vyžadujú Javu 11+, povolené <code class="nb">proc_open</code> a <code class="nb">flock</code>. Bez toho možno použiť XSD validáciu a ostatné časti konektora nezávisle.</p>
+<h2 id="validačné-zdroje"><span class="mw-h">Validačné zdroje</span><a class="anchor" href="#validačné-zdroje" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Installation.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>UBL schémy, CEN/EN 16931 a Peppol pravidlá, Saxon HE aj licenčné oznámenia sú súčasťou balíka v <code class="nb">resources/validation</code>. Hostiteľ ich nemusí kopírovať do vlastného adresára <code class="nb">resources</code>. Verzie a cesty sprístupňuje <code class="nb">ValidationResources</code>.</p>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li><a href="Configuration.html">Konfigurácia</a></li>
+<li><a href="Laravel.html">Laravel bridge</a></li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#požiadavky"><span class="n">1</span> <span class="x">Požiadavky</span></a></li><li class="t2"><a href="#inštalácia-cez-composer"><span class="n">2</span> <span class="x">Inštalácia cez Composer</span></a></li><li class="t2"><a href="#inštalácia-z-githubu-pred-zverejnením-na-packagist"><span class="n">3</span> <span class="x">Inštalácia z GitHubu pred zverejnením na Packagist</span></a></li><li class="t2"><a href="#po-inštalácii"><span class="n">4</span> <span class="x">Po inštalácii</span></a></li><li class="t2"><a href="#autoload"><span class="n">5</span> <span class="x">Autoload</span></a></li><li class="t2"><a href="#overenie-balíka"><span class="n">6</span> <span class="x">Overenie balíka</span></a></li><li class="t2"><a href="#validačné-zdroje"><span class="n">7</span> <span class="x">Validačné zdroje</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="index.html"><small>← Predchádzajúca</small><b>Domov</b></a><a class="nx" href="Configuration.html"><small>Ďalšia →</small><b>Konfigurácia</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="index.html">Domov</a></li><li><a href="Configuration.html">Konfigurácia</a></li><li><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li><li><a href="Configuration.html">Konfigurácia</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-začíname">Začíname</a></div>
+<div class="meta">Naposledy upravené: 27. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Installation.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Installation.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js"></script>
+</body>
+</html>

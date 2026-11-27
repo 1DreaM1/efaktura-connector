@@ -1,0 +1,321 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PHP_EXTENSIONS: ctype, curl, dom, hash, json, libxml, mbstring, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Validate GitHub Actions workflows
+        uses: docker://rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+        with:
+          args: -color
+
+  quality:
+    name: Quality checks (PHP 7.4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '7.4'
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Check validation resource inventory
+        run: php tools/check-validation-resources.php
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-7.4-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-7.4-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Audit locked dependencies
+        run: composer audit --locked
+
+      - name: Check PHP 7.4 core API stability
+        run: php tools/check-public-api.php
+
+      - name: Verify a clean Composer consumer
+        shell: pwsh
+        run: ./tools/test-composer-package.ps1
+
+      - name: Check PHP code style
+        run: composer check-style
+
+      - name: Check PHP formatting
+        run: composer check-format
+
+      - name: Run static analysis
+        run: composer analyse
+
+      # The PHP 7.4 lock resolves laravel/framework 8, the lowest Laravel line in the declared bridge
+      # support range; the separate laravel-bridge job covers the newest line.
+      - name: Run Laravel 8 bridge tests
+        run: vendor/bin/phpunit --configuration=phpunit.xml.dist --testsuite "Laravel Bridge"
+
+      - name: Run local SAPI retry simulations
+        run: php tools/simulate-sapi-submission-retries.php
+
+  backward-compatibility:
+    name: Public API compatibility (PHP 8.4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository and tags
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+
+      - name: Find the previous version tag
+        id: previous-tag
+        shell: bash
+        run: |
+          previous_tag="$(git tag --list 'v*' --sort=-version:refname | awk -v current="$GITHUB_REF_NAME" '$0 != current { print; exit }')"
+          echo "tag=$previous_tag" >> "$GITHUB_OUTPUT"
+          if [[ -z "$previous_tag" ]]; then
+            echo '::notice::No previous v* tag exists; skipping the compatibility comparison.'
+          fi
+
+      - name: Install backward compatibility checker
+        if: steps.previous-tag.outputs.tag != ''
+        run: |
+          composer global require --no-interaction roave/backward-compatibility-check:8.27.0
+          echo "$(composer global config bin-dir --absolute)" >> "$GITHUB_PATH"
+
+      - name: Compare with the previous version tag
+        if: steps.previous-tag.outputs.tag != ''
+        env:
+          FROM_TAG: ${{ steps.previous-tag.outputs.tag }}
+        run: |
+          # Releases below 1.0 may break compatibility in a minor version, so the comparison is informational there.
+          if [[ "$FROM_TAG" == v0.* ]]; then
+            roave-backward-compatibility-check --from="$FROM_TAG" || echo "::warning::Public API differs from $FROM_TAG; acceptable only for a 0.x minor release."
+          else
+            roave-backward-compatibility-check --from="$FROM_TAG"
+          fi
+
+  phpunit:
+    name: PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6']
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ matrix.php-version }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-${{ matrix.php-version }}-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      # Every PHP version runs the Schematron execution tests, so each needs the same pinned Java 11.
+      - name: Set up Java for local invoice validation
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      # On Linux with Java 11, symlinks, hard links and proc_open available, no test may skip silently.
+      # The Windows job below skips the POSIX permission tests by design, so it does not use this flag.
+      - name: Run test suite
+        run: composer test -- --fail-on-skipped
+
+  laravel-bridge:
+    name: Laravel 13 bridge on PHP 8.4
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          extensions: ctype, curl, dom, hash, json, libxml, mbstring, simplexml, tokenizer, xml, xmlwriter
+          tools: composer:v2
+          coverage: none
+
+      - name: Audit Laravel bridge test dependencies
+        working-directory: tools/laravel-bridge
+        run: composer audit --locked
+
+      - name: Run Laravel bridge tests
+        shell: pwsh
+        run: ./tools/test-laravel-bridge.ps1 -LaravelVersion '13'
+
+  laravel-bridge-5-6:
+    name: Laravel 5.6 bridge on PHP 7.4
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '7.4'
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          coverage: none
+
+      - name: Run Laravel 5.6 bridge tests
+        shell: pwsh
+        run: ./tools/test-laravel-bridge.ps1 -LaravelVersion '5.6'
+
+  site-sync:
+    name: Generated site matches sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+
+      - name: Rebuild the wiki and site
+        run: |
+          node tools/build-wiki.js
+          node tools/build-site.js
+
+      - name: Fail when generated pages are stale
+        run: git diff --exit-code -- web
+
+  windows-locks:
+    name: Windows file locks
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          coverage: none
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-8.4-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-8.4-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Verify file locks on Windows
+        run: php vendor/bin/phpunit --configuration=phpunit.xml.dist --filter 'FileHttpRequestExecutionLockTest|SecureLockFileStorageTest|FileSchematronConcurrencyLimiterTest'
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [actionlint, quality, phpunit, laravel-bridge, laravel-bridge-5-6, backward-compatibility, site-sync, windows-locks]
+    if: >-
+      github.event_name == 'push' &&
+      (startsWith(github.ref, 'refs/tags/v') ||
+       github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+    permissions:
+      contents: write
+      pull-requests: read
+      actions: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Create release from manually pushed version tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
+          # Releases created with GITHUB_TOKEN do not trigger the provenance workflow.
+          gh workflow run provenance.yml --ref "$GITHUB_REF_NAME" -f tag="$GITHUB_REF_NAME"
+
+      - name: Create release from merged pull request
+        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            await require('./.github/scripts/release.js')({ github, context, core });

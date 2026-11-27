@@ -1,0 +1,106 @@
+name: Coverage and mutation
+
+on:
+  pull_request:
+    paths: ['src/**', 'integrations/**', 'tests/**', 'composer.*', 'phpunit.xml.dist', 'infection.json5']
+  schedule:
+    - cron: '41 3 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deep-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PHP_EXTENSIONS: ctype, curl, dom, hash, json, libxml, mbstring, pdo_sqlite, simplexml, tokenizer, xml, xmlwriter
+
+jobs:
+  coverage:
+    name: Code coverage (PHP 8.3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.3'
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          tools: composer:v2
+          coverage: pcov
+
+      - name: Set up Java for local invoice validation
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-8.3-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-8.3-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run tests with coverage
+        run: vendor/bin/phpunit --configuration=phpunit.xml.dist --coverage-clover=coverage.xml --coverage-text
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-clover
+          path: coverage.xml
+          retention-days: 14
+
+  mutation:
+    name: Mutation testing (Infection)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    # Slow: skip on pull requests, run weekly or manually.
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.3'
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          tools: composer:v2
+          coverage: pcov
+
+      - name: Set up Java for local invoice validation
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Infection
+        run: composer test:mutation -- --threads=max --no-progress --only-covered
+
+      - name: Upload Infection report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: infection-report
+          path: infection.log
+          if-no-files-found: ignore
+          retention-days: 14

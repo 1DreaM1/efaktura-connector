@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fafafc">
+<meta name="description" content="Integrator API: OAuth klienti, prístupy účastníkov, aktivácie, mesačné súhrny a PDS subjects.">
+<title>Integrator · eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('efk-theme');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Preskočiť na obsah</a>
+<div class="progress" id="bar"></div>
+<header class="site">
+  <div class="wrap nav">
+    <a class="logo" href="index.html"><i>€</i>eFaktúra <span>Connector</span></a>
+    <nav class="menu" id="menu" aria-label="Hlavná navigácia"><a href="index.html">Prehľad</a><a href="architektura.html">Architektúra</a><a href="toky.html">Toky dokladov</a><a href="ukazky.html">Ukážky kódu</a><a href="validacia.html">Validácia</a><a href="api.html">API</a><a href="integrator.html" aria-current="page">Integrator</a><a href="nastavenie.html">Nastavenie</a><a href="prevadzka.html">Prevádzka</a><a href="wiki/index.html">Wiki</a></nav>
+    <div class="right">
+      <button class="icon-btn" id="theme" type="button" aria-label="Téma">◐</button>
+      <a class="btn pri sm hide-s" href="https://github.com/1DreaM1/efaktura-connector">GitHub ↗</a>
+      <button class="icon-btn burger" id="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menu">☰</button>
+    </div>
+  </div>
+</header>
+<main id="main">
+
+<div class="phead"><div class="mesh"><div class="dots"></div></div><div class="wrap"><div class="crumbs"><a href="index.html">Prehľad</a> / Správa integrátora</div><span class="kick">Správa integrátora</span><h1>Od registrácie klienta <span class="gt">po prístup účastníka.</span></h1><p class="sub">Integrator API slúži na správu OAuth klientov a ich účastníkov. Je to samostatná administratívna vrstva: vydaný klientsky secret sa používa pri neskoršom získaní OAuth tokenu pre SAPI a Peppol Gateway.</p><div class="toc"><a href="#autorizacia">Autorizácia</a><a href="#proces">Typický proces</a><a href="#metody">Metódy</a></div></div></div>
+<div class="wrap">
+<section id="autorizacia" class="tight"><div class=""><span class="kick">Samostatný klient a prístup</span><h2>Jeden integrátor. <span class="gt">Viac klientov a účastníkov.</span></h2><p class="lead">Hostiteľská aplikácia používa pri správe klientov hlavičku <code>X-Integrator-Token</code>. Účastník a jeho oprávnenia sa spravujú cez Integrator API; samotné fakturačné volania potom používajú OAuth klienta a samostatný objekt <code>Participant</code>.</p></div><div class="grid g3"><div class="cell rv"><small class="top">Správa účtov</small><h3>X-Integrator-Token</h3><p>Autorizuje bežné volania Integrator API.</p></div><div class="cell rv"><small class="top">Volania SAPI</small><h3>OAuth client ID + secret</h3><p>Klient získa Bearer token cez SAPI. Jeho secret príde iba pri vytvorení alebo rotácii.</p></div><div class="cell rv"><small class="top">Odoslanie PDS</small><h3>X-PDS-Secret</h3><p>Samostatné podpisové poverenie pre dávku PDS subjects.</p></div></div><div class="note info rv"><span><b>Nastavenie:</b> Laravel používa sekciu <code>integrator_api</code> a premenné <code>EFAKTURA_INTEGRATOR_BASE_URL</code>, <code>EFAKTURA_INTEGRATOR_ID</code> a <code>EFAKTURA_INTEGRATOR_API_TOKEN</code>. Bez Laravelu vytvorte klienta cez <code>IntegratorAccountClientFactory</code>. Použite URL a poverenia pre rovnaké prostredie.</span></div></section>
+
+<section id="proces"><div class=""><span class="kick">Typický proces</span><h2>Založte klienta, <span class="gt">potom aktivujte jeho prístup.</span></h2><p class="lead">Každý krok je samostatná operácia. Hostiteľ ukladá výsledky, secret store a stav onboardingu vo vlastnej aplikácii.</p></div><div class="flow" style="--n:5"><div class="step rv"><i>1</i><em>Vytvorenie</em><b>createClient()</b><small>POST klienta s hlavičkou X-Integrator-Token a stabilným Idempotency-Key.</small></div><div class="step rv"><i>2</i><em>Poverenia</em><b>Uložte client ID a secret</b><small>Secret z odpovede bezpečne uložte hneď; detail klienta ho neskôr nevráti.</small></div><div class="step rv"><i>3</i><em>Oprávnenia</em><b>Nastavte zoznam účastníkov</b><small>replaceClientParticipantAccess() nahrádza celý zoznam oprávnení klienta.</small></div><div class="step rv"><i>4</i><em>Aktivácia</em><b>Vyžiadajte kontrakt</b><small>requestParticipantActivation() s režimom SEND_ONLY alebo SEND_AND_RECEIVE.</small></div><div class="step rv"><i>5</i><em>Prevádzka</em><b>Volajte SAPI a Gateway</b><small>Klient získa OAuth token cez SAPI; Participant sa posiela pri konkrétnej operácii.</small></div></div><div class="note warn rv"><span>Rotácia secretu vráti novú jednorazovú hodnotu a automaticky sa neopakuje. Pri nejednoznačnom výsledku si stav overte pred ďalšou rotáciou. Poverenia integrátora, OAuth klienta a PDS nikdy nezapisujte do aplikačných logov.</span></div></section>
+
+<section id="metody"><div class=""><span class="kick">Operácie</span><h2>Štyri skupiny <span class="gt">metód.</span></h2></div><div class="grid g2"><div class="cell rv"><small class="top">1. OAuth klienti</small><h3>Správa klientov</h3><p><code>listClients()</code>, <code>createClient()</code>, <code>getClient()</code>, <code>rotateClientSecret()</code> a <code>deleteClient()</code>. Vytvorenie používa idempotency kľúč. Secret sa vracia iba pri vytvorení alebo rotácii.</p></div><div class="cell rv"><small class="top">2. Účastníci a prístupy</small><h3>Participanti</h3><p><code>listParticipants()</code>, <code>replaceClientParticipantAccess()</code> a <code>requestParticipantActivation()</code>. Pri nahradení pošlite celý požadovaný zoznam; aktiváciu vytvorte s trvalým idempotency UUID.</p></div><div class="cell rv"><small class="top">3. Mesačný prehľad</small><h3>Súhrn dokladov</h3><p><code>getDocumentSummary()</code> vracia počty dokladov pre mesiac vo formáte <code>yyyyMM</code>. Zoznamy klientov a účastníkov sa stránkujú pomocou pokračovacieho tokenu.</p></div><div class="cell rv"><small class="top">4. PDS subjects</small><h3>Dávka PDS</h3><p><code>submitPdsSubjects()</code> odošle typovanú dávku a použije samostatné podpisové poverenie v <code>X-PDS-Secret</code>. Ide o oddelený tok; Integrator API token sa do PDS požiadavky neposiela.</p></div></div><div class="links" style="justify-content:flex-start;margin-top:26px"><a class="btn" href="wiki/Integrator-API.html">Nastavenie, PHP príklady a bezpečnosť ↗</a><a class="btn" href="api.html#integrator">Zoznam operácií</a></div></section>
+</div>
+<div class="wrap"><div class="pager"><a href="api.html"><small>← Predchádzajúca</small><b>API</b></a><a class="nx" href="nastavenie.html"><small>Ďalšia →</small><b>Nastavenie</b></a></div></div>
+</main>
+<footer class="site">
+  <div class="wrap">
+    <div class="fgrid">
+      <div><a class="logo" href="index.html"><i>€</i>eFaktúra <span>Connector</span></a><p>Frameworkovo nezávislá PHP knižnica pre SAPI-SK, Peppol Gateway a Integrator API. MIT licencia.</p></div>
+      <div><h5>Produkt</h5><a href="architektura.html">Architektúra</a><a href="toky.html">Toky dokladov</a><a href="ukazky.html">Ukážky kódu</a><a href="validacia.html">Validácia</a></div>
+      <div><h5>Referencia</h5><a href="api.html">API operácie</a><a href="integrator.html">Integrator</a><a href="nastavenie.html">Nastavenie</a><a href="prevadzka.html">Prevádzka</a></div>
+      <div><h5>Zdroje</h5><a href="dokumentacia.html">Dokumentácia</a><a href="https://github.com/1DreaM1/efaktura-connector">GitHub</a><a href="wiki/index.html">Wiki</a><a href="../LICENSE">Licencia MIT</a></div>
+    </div>
+    <div class="fbot"><span>© eFaktúra Connector · MIT licencia</span><span>Statická stránka · CSS a JavaScript v priečinku assets</span></div>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+</body>
+</html>

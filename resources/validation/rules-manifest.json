@@ -1,0 +1,254 @@
+{
+    "manifest_version": 1,
+    "artifacts": [
+        {
+            "id": "ubl-xsd-2.1",
+            "category": "ubl-xsd",
+            "version": "2.1",
+            "source": "https://docs.oasis-open.org/ubl/os-UBL-2.1/UBL-2.1.html",
+            "license": "OASIS notices are retained in the source schema files.",
+            "files": [
+                {"path": "resources/validation/ubl-2.1/xsd/common/CCTS_CCT_SchemaModule-2.1.xsd", "sha256": "d5fcf183b62d1e23021f1f62a5b129c9e1ef1fc7c451cf3d2f23e3fe5a8efbfd"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-CommonAggregateComponents-2.1.xsd", "sha256": "2fd76c6bead543354c01bc40eab3e8188c25ee96b2a902456522ec6bab8b483e"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-CommonBasicComponents-2.1.xsd", "sha256": "0e71e086fbacb274b385fed385e29d7678ff9af6201f2975c3b51c298f51743a"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-CommonExtensionComponents-2.1.xsd", "sha256": "ad8d68885d9e72d73f2ba50f173a408366a1dcbe59b88aced65df95a8dc2a646"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-CommonSignatureComponents-2.1.xsd", "sha256": "4b1712f409695448e05288209792eef1980a5833fb13157b4b49d36ccc8a37a0"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-CoreComponentParameters-2.1.xsd", "sha256": "884dfb162e341ba7c67fce002c5f04af6082b4901e53777322463dbb81cf69f4"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-ExtensionContentDataType-2.1.xsd", "sha256": "b91487d4b9e9a6c2853998873ed510da16897530479b5af0565a3bcfdf5c97d3"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-QualifiedDataTypes-2.1.xsd", "sha256": "1a6182be542088f70d0351bbee1186d6b44ef86fac9a580622928ec989e558a9"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-SignatureAggregateComponents-2.1.xsd", "sha256": "f54c70a5c9f4892d553ad397cbda2affbf861fd56f095c9094e205613a403e83"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-SignatureBasicComponents-2.1.xsd", "sha256": "28207e7f2727857318a18ba6890fc158f4ac04eee1697285865111b50e2fad40"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-UnqualifiedDataTypes-2.1.xsd", "sha256": "dd5b4e58a49dad38f1ec72b9e0ac4913dcf51168886bb87e2335fb168736018b"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-XAdESv132-2.1.xsd", "sha256": "6cb9e71bef4d0de3baf5d1fa4268898ece0245d60d0ce22e76af92b7602089a3"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-XAdESv141-2.1.xsd", "sha256": "dbeb8eb9cde28083521551e27044200fdfe20280bb666dd052cf0de294ae14d4"},
+                {"path": "resources/validation/ubl-2.1/xsd/common/UBL-xmldsig-core-schema-2.1.xsd", "sha256": "4da8800539360f2352afaeb7b7bd553c78a437887eaa67e33ee5573dde331094"},
+                {"path": "resources/validation/ubl-2.1/xsd/maindoc/UBL-CreditNote-2.1.xsd", "sha256": "6b1efca5933d07c78e3eeea86a5c8cb08328cfe11762686d397669020bcbc5f9"},
+                {"path": "resources/validation/ubl-2.1/xsd/maindoc/UBL-Invoice-2.1.xsd", "sha256": "73a771d90790220181b0cb1a037b81b4baeea33c8bf2e3c8e12111090e644c6e"}
+            ]
+        },
+        {
+            "id": "cen-en16931-ubl-1.3.17",
+            "category": "cen-schematron",
+            "version": "1.3.17",
+            "published_at": "2026-10-12",
+            "source": "https://github.com/ConnectingEurope/eInvoicing-EN16931/releases/tag/validation-1.3.17",
+            "license": "EUPL 1.2; generated XSLT uses SchXslt under MIT.",
+            "files": [
+                {"path": "resources/validation/cen-1.3.17/CEN-EN16931-UBL.sch", "sha256": "eb27995ba7bace330475a0afd54a21bb0ebb050d55774949d5e10f65ecef7b95"},
+                {"path": "resources/validation/cen-1.3.17/CEN-EN16931-UBL.xsl", "sha256": "3c158f653a2dcf9236dbe9172a25cbfedbb594d83e4199f047d4cabda67e8209"}
+            ]
+        },
+        {
+            "id": "peppol-billing-3.0.22-2026-Q4-MR",
+            "category": "peppol-schematron",
+            "version": "3.0.22",
+            "release": "2026-Q4-MR",
+            "published_at": "2026-11-23",
+            "effective_from": "2027-02-24",
+            "source": "https://test-docs.peppol.eu/poacc/billing/3.0/2026-Q4-MR/files/PEPPOL-EN16931-UBL.sch",
+            "license": "EUPL 1.2; generated XSLT uses SchXslt under MIT.",
+            "files": [
+                {"path": "resources/validation/peppol-3.0.22-2026-Q4-MR/PEPPOL-EN16931-UBL.sch", "sha256": "907feae87454f181cf364da757a4e33d7c48ad9b72ef316601b364696524b230"},
+                {"path": "resources/validation/peppol-3.0.22-2026-Q4-MR/PEPPOL-EN16931-UBL.xsl", "sha256": "ddacc56940bf7dc7bf111599f36129b6828cf4abb62572612a4b05cd72cc6070"}
+            ]
+        },
+        {
+            "id": "iso-4217-currencies",
+            "category": "code-list",
+            "version": "2018-01-01",
+            "release": "2026-Q4-MR",
+            "source": "https://test-docs.peppol.eu/poacc/upgrade-3/2026-Q4-MR/codelist/ISO4217/",
+            "license": "Source terms are documented by the upstream code list.",
+            "files": [
+                {"path": "resources/code-lists/iso-4217-currencies.json", "sha256": "c644e9e559ea7e9b848a6f62066e9a0ff171b2bc8777f591427efae768e53aef"}
+            ]
+        },
+        {
+            "id": "peppol-eas-2026-Q4-MR",
+            "category": "code-list",
+            "version": "2026-Q4-MR",
+            "source": "https://test-docs.peppol.eu/poacc/billing/3.0/2026-Q4-MR/codelist/eas/",
+            "license": "Source terms are documented by the upstream code list.",
+            "files": [
+                {"path": "resources/code-lists/electronic-address-schemes.json", "sha256": "596daa4165bdb6468afcda3557b725925081349a04c46b01f6eb58b5f1660897"}
+            ]
+        },
+        {
+            "id": "peppol-billing-codelists-2026-Q4-MR",
+            "category": "code-list",
+            "version": "2026-Q4-MR",
+            "source": "https://test-docs.peppol.eu/poacc/billing/3.0/2026-Q4-MR/codelist/",
+            "license": "Source terms are documented by the upstream code lists.",
+            "files": [
+                {"path": "resources/code-lists/peppol-billing-3.0-2026-Q4-MR.json", "sha256": "eeef04f94edd43fc3ae4d1e3f97ab07971d9398a34ee86d0ba3ca85785848fe6"}
+            ]
+        },
+        {
+            "id": "unece-rec20-peppol-2026-Q4-MR",
+            "category": "code-list",
+            "version": "UN/ECE Revision 11e",
+            "release": "2026-Q4-MR",
+            "source": "https://test-docs.peppol.eu/poacc/billing/3.0/2026-Q4-MR/codelist/UNECERec20/",
+            "license": "Source terms are documented by the upstream code list.",
+            "files": [
+                {"path": "resources/code-lists/unece-rec20-names.json", "sha256": "1aebb3c047916560ce80c96ca5780a08196e9508a31eec983040fc18b561ccdd"}
+            ]
+        },
+        {
+            "id": "unit-aliases",
+            "category": "code-list",
+            "version": "unofficial",
+            "source": "resources/code-lists/README.md",
+            "license": "MIT (repository license).",
+            "files": [
+                {"path": "resources/code-lists/unit-aliases.json", "sha256": "d4d9b9d24497a59dfddda5ef188b94b269ee1e6b34aca728ea235cde5dc4267d"}
+            ]
+        }
+    ],
+    "toolchains": [
+        {
+            "id": "saxon-he-12.10",
+            "version": "12.10",
+            "source": "https://www.saxonica.com/download/java.xml",
+            "files": [
+                {"path": "resources/validation/saxon-he-12.10/saxon-he-12.10.jar", "sha256": "89bcd071666c3268ee8c5e91e9c9812ad52b3e49d38a3a971720fdb428bfeea9"},
+                {"path": "resources/validation/saxon-he-12.10/lib/jline-2.14.6.jar", "sha256": "97d1acaac82409be42e622d7a54d3ae9d08517e8aefdea3d2ba9791150c2f02d"},
+                {"path": "resources/validation/saxon-he-12.10/lib/xmlresolver-5.3.3-data.jar", "sha256": "b0c487ad2f3e558be8d829c916d2458d10aca6a5bafa7a4d0524b70845e48a5c"},
+                {"path": "resources/validation/saxon-he-12.10/lib/xmlresolver-5.3.3.jar", "sha256": "1fe4d5b92f708dcdb82dbce12919e0171e6b5ca62c6dca6220483625098feb5f"},
+                {"path": "resources/validation/saxon-he-12.10/notices/JAMESCLARK.txt", "sha256": "5ab9010ccbd4484cea8e06259b64d1bb2c2d44c5df39734966ffda88a435f64c"},
+                {"path": "resources/validation/saxon-he-12.10/notices/JLINE2.txt", "sha256": "0023908531e9ffcdde0799f18f7e7d592f0a30af904e4d024bb35177e4b26f19"},
+                {"path": "resources/validation/saxon-he-12.10/notices/LICENSE.txt", "sha256": "874469ffb0080c507bf801cc6f7c7c1679f0430a10209c9fab48823c2b47bedb"},
+                {"path": "resources/validation/saxon-he-12.10/notices/XML-Resolver-Apache-2.0.txt", "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"}
+            ]
+        }
+    ],
+    "compiler": {
+        "id": "schxslt",
+        "version": "1.10.1",
+        "source": "https://codeberg.org/SchXslt/schxslt/releases",
+        "archive_sha256": "e141fabd4804a0ea527945dc7253dd38f9ef8957d9b219b94e13d16859cff7f0"
+    },
+    "upstream_watch": [
+        {
+            "id": "cen-en16931",
+            "adapter": "github-latest-release",
+            "source": "https://github.com/ConnectingEurope/eInvoicing-EN16931/releases",
+            "endpoint": "https://api.github.com/repos/ConnectingEurope/eInvoicing-EN16931/releases/latest",
+            "current": "validation-1.3.17",
+            "version_assertion": {"path": "src/Infrastructure/EFaktura/Validation/ValidationResources.php", "constant": "CEN_RULES_VERSION", "prefix": "validation-"}
+        },
+        {
+            "id": "peppol-billing",
+            "adapter": "peppol-release-notes",
+            "source": "https://test-docs.peppol.eu/poacc/billing/3.0/release-notes/",
+            "endpoint": "https://test-docs.peppol.eu/poacc/billing/3.0/release-notes/",
+            "current": "3.0.22",
+            "version_assertion": {"path": "src/Infrastructure/EFaktura/Validation/ValidationResources.php", "constant": "PEPPOL_RULES_VERSION", "prefix": ""}
+        },
+        {
+            "id": "peppol-billing-schematron-content",
+            "adapter": "sha256",
+            "source": "https://test-docs.peppol.eu/poacc/billing/3.0/",
+            "endpoint": "https://test-docs.peppol.eu/poacc/billing/3.0/files/PEPPOL-EN16931-UBL.sch",
+            "artifact_path": "resources/validation/peppol-3.0.22-2026-Q4-MR/PEPPOL-EN16931-UBL.sch",
+            "current": "907feae87454f181cf364da757a4e33d7c48ad9b72ef316601b364696524b230"
+        },
+        {
+            "id": "peppol-edec-participant-schemes",
+            "adapter": "peppol-edec-codelists",
+            "source": "https://docs.peppol.eu/edelivery/codelists/",
+            "endpoint": "https://docs.peppol.eu/edelivery/codelists/",
+            "current": "9.7",
+            "version_assertion": {"path": "src/Domain/EFaktura/CodeList/ParticipantIdentifierSchemeCodeList.php", "constant": "VERSION", "prefix": ""}
+        }
+    ],
+    "version_assertions": [
+        {"path": "src/Core/Ubl/UblVersion.php", "constant": "VERSION", "value": "2.1"},
+        {"path": "src/Infrastructure/EFaktura/Validation/ValidationResources.php", "constant": "SAXON_VERSION", "value": "12.10"},
+        {"path": "src/Infrastructure/EFaktura/Validation/ValidationResources.php", "constant": "CEN_RULES_VERSION", "value": "1.3.17"},
+        {"path": "src/Infrastructure/EFaktura/Validation/ValidationResources.php", "constant": "PEPPOL_RULES_VERSION", "value": "3.0.22"},
+        {"path": "src/Infrastructure/EFaktura/Validation/ValidationResources.php", "constant": "PEPPOL_RULES_RELEASE", "value": "2026-Q4-MR"},
+        {"path": "src/Infrastructure/Ubl/CodeList/CodeListResources.php", "constant": "ISO_4217_CURRENCIES_VERSION", "value": "2018-01-01"},
+        {"path": "src/Infrastructure/Ubl/CodeList/CodeListResources.php", "constant": "ISO_4217_CURRENCIES_RELEASE", "value": "2026-Q4-MR"},
+        {"path": "src/Infrastructure/Ubl/CodeList/CodeListResources.php", "constant": "ELECTRONIC_ADDRESS_SCHEMES_RELEASE", "value": "2026-Q4-MR"},
+        {"path": "src/Infrastructure/Ubl/CodeList/CodeListResources.php", "constant": "PEPPOL_BILLING_CODE_LISTS_RELEASE", "value": "2026-Q4-MR"},
+        {"path": "src/Infrastructure/Ubl/CodeList/CodeListResources.php", "constant": "UNECE_REC20_VERSION", "value": "UN/ECE Revision 11e; Recommendation 21 codes use the Peppol X prefix"},
+        {"path": "src/Infrastructure/Ubl/CodeList/CodeListResources.php", "constant": "UNECE_REC20_RELEASE", "value": "2026-Q4-MR"},
+        {"path": "src/Domain/EFaktura/CodeList/ParticipantIdentifierSchemeCodeList.php", "constant": "VERSION", "value": "9.7"},
+        {"path": "src/Infrastructure/Ubl/CodeList/CountryCodeList.php", "constant": "PEPPOL_RELEASE", "value": "2026-Q4-MR"}
+    ],
+    "json_assertions": [
+        {"path": "resources/code-lists/iso-4217-currencies.json", "fields": {"version": "2018-01-01", "peppol_release": "2026-Q4-MR"}},
+        {"path": "resources/code-lists/electronic-address-schemes.json", "fields": {"version": "2026-Q4-MR"}},
+        {"path": "resources/code-lists/peppol-billing-3.0-2026-Q4-MR.json", "fields": {"peppol_release": "2026-Q4-MR"}},
+        {"path": "resources/code-lists/unece-rec20-names.json", "fields": {"version": "UN/ECE Revision 11e; Recommendation 21 codes use the Peppol X prefix", "peppol_release": "2026-Q4-MR"}}
+    ],
+    "implementations": [
+        {
+            "id": "peppol-draft-rules",
+            "sources": ["src/Infrastructure/Ubl/Validation/PeppolBillingDraftRules.php", "src/Infrastructure/Ubl/Validation/PeppolBillingAmount.php", "src/Infrastructure/Ubl/Validation/PeppolBillingIdentifiers.php"],
+            "tests": ["tests/Unit/Infrastructure/Ubl/PeppolBillingDraftRulesTest.php"]
+        },
+        {
+            "id": "peppol-header-rules",
+            "sources": ["src/Infrastructure/Ubl/Validation/PeppolBillingHeaderRules.php"],
+            "tests": ["tests/Unit/Infrastructure/Ubl/PeppolBillingHeaderRulesTest.php", "tests/Unit/Infrastructure/EFaktura/Validation/PeppolBillingHeaderValidationStageTest.php"]
+        },
+        {
+            "id": "peppol-slovak-rules",
+            "sources": ["src/Infrastructure/Ubl/Validation/PeppolSlovakBillingRules.php", "src/Infrastructure/EFaktura/Validation/PeppolSlovakBillingValidationStage.php"],
+            "tests": ["tests/Unit/Infrastructure/EFaktura/Validation/PeppolSlovakBillingValidationStageTest.php"]
+        },
+        {
+            "id": "participant-identifier-schemes",
+            "sources": ["src/Domain/EFaktura/CodeList/ParticipantIdentifierSchemeCodeList.php"],
+            "tests": ["tests/Unit/Domain/ParticipantIdentifierSchemeCodeListTest.php"]
+        },
+        {
+            "id": "country-code-list",
+            "sources": ["src/Infrastructure/Ubl/CodeList/CountryCodeList.php"],
+            "tests": ["tests/Unit/Infrastructure/Ubl/CountryCodeListTest.php"]
+        },
+        {
+            "id": "currency-code-list",
+            "sources": ["src/Infrastructure/Ubl/CodeList/CurrencyCodeList.php"],
+            "tests": ["tests/Unit/Infrastructure/Ubl/UblCodeListAndWriterTest.php"]
+        },
+        {
+            "id": "electronic-address-schemes",
+            "sources": ["src/Infrastructure/Ubl/CodeList/ElectronicAddressSchemeCodeList.php"],
+            "tests": ["tests/Unit/Infrastructure/Ubl/ElectronicAddressSchemeCodeListTest.php"]
+        },
+        {
+            "id": "peppol-billing-code-lists",
+            "sources": ["src/Infrastructure/Ubl/CodeList/PeppolBillingCodeList.php"],
+            "tests": ["tests/Unit/Infrastructure/Ubl/PeppolBillingCodeListTest.php"]
+        },
+        {
+            "id": "unit-code-list",
+            "sources": ["src/Infrastructure/Ubl/CodeList/UnitCodeList.php"],
+            "tests": ["tests/Unit/Infrastructure/Ubl/UblCodeListAndWriterTest.php"]
+        },
+        {
+            "id": "ubl-xsd-validator",
+            "sources": ["src/Infrastructure/EFaktura/Validation/Schema/UblSchemaValidator.php"],
+            "tests": ["tests/Unit/Infrastructure/EFaktura/Validation/Schema/UblSchemaValidatorTest.php"]
+        },
+        {
+            "id": "cen-schematron",
+            "sources": ["src/Infrastructure/EFaktura/Validation/Schematron/CenSchematronValidationStage.php"],
+            "tests": ["tests/Unit/Infrastructure/EFaktura/Validation/Schematron/CenSchematronValidationStageTest.php"]
+        },
+        {
+            "id": "peppol-schematron",
+            "sources": ["src/Infrastructure/EFaktura/Validation/Schematron/PeppolSchematronValidator.php"],
+            "tests": ["tests/Unit/Infrastructure/EFaktura/Validation/Schematron/PeppolSchematronValidatorTest.php", "tests/Unit/Infrastructure/EFaktura/Validation/Schematron/UblSchematronReportParserTest.php"]
+        }
+    ],
+    "managed_directories": [
+        {"path": "resources/validation/ubl-2.1/xsd", "extensions": ["xsd"]},
+        {"path": "resources/validation/cen-1.3.17", "extensions": ["sch", "xsl"]},
+        {"path": "resources/validation/peppol-3.0.22-2026-Q4-MR", "extensions": ["sch", "xsl"]},
+        {"path": "resources/code-lists", "extensions": ["json"]}
+    ]
+}

@@ -1,0 +1,12 @@
+/vendor/
+/.phpunit.result.cache
+/.phpstan-cache/
+/.idea/
+/.playwright-mcp/
+/.codex
+.env
+.env.*
+!.env.example
+/infection.log
+/infection.json
+/coverage.xml

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Táto stránka prepája bežné chyby s konkrétnymi kontrolami a podrobnejšími návodmi.">
+<title>Riešenie problémov – Wiki eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('wiki-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/wiki.css">
+</head>
+<body>
+<a class="skip" href="#content">Preskočiť na obsah</a>
+<header class="hd">
+  <button class="hbtn burger" id="burger" type="button" aria-label="Navigácia" aria-expanded="false" aria-controls="side">☰</button>
+  <a class="brand" href="index.html"><span class="emb">€</span><span class="bt"><b>Wiki</b><small>Konektor eFaktúr</small></span></a>
+  <form class="search" action="search.html" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Hľadať vo wiki ( / )" aria-label="Hľadať vo wiki" autocomplete="off">
+    <button type="submit" aria-label="Hľadať">⌕</button>
+    <div class="sug" id="sug" role="listbox" hidden></div>
+  </form>
+  <div class="hr"><button class="hbtn" id="theme" type="button" aria-label="Zmeniť tému">◐</button><a class="hlink" href="../index.html">Web balíka</a></div>
+</header>
+<div class="shell">
+<nav class="side" id="side" aria-label="Navigácia wiki">
+<div class="portal"><h3>Navigácia</h3><a href="index.html">Hlavná stránka</a><a href="vsetky-stranky.html">Všetky stránky</a><a href="search.html">Hľadať</a></div>
+<div class="portal"><h3>Začíname</h3><a href="Installation.html">Inštalácia</a><a href="Configuration.html">Konfigurácia</a><a href="Transport-and-Authentication.html">Transport a autentifikácia</a></div>
+<div class="portal"><h3>Laravel a zákazníci</h3><a href="Laravel.html">Laravel bridge</a><a href="Tenant-Clients-in-Laravel.html">OAuth poverenia zákazníka</a></div>
+<div class="portal"><h3>Práca s dokladmi</h3><a href="Practical-Scenarios.html">Praktické scenáre a diagramy</a><a href="UBL-Documents.html">Čítanie a zápis UBL</a><a href="Validation.html">Lokálna validácia</a><a href="Sending-Documents.html">Odosielanie dokladov</a><a href="Receiving-Documents.html">Príjem dokladov</a><a href="Tracking-and-Webhooks.html">Stav, Discovery a webhooky</a></div>
+<div class="portal"><h3>Referencia</h3><a href="API-Reference.html">Prehľad API</a><a href="Integrator-API.html">Integrator API</a><a href="Public-API.html">Verejné PHP API</a><a href="Versioning-and-Compatibility.html">Verzovanie a kompatibilita</a><a href="Request-Flow.html">Graf toku API requestov</a><a href="Data-Flow-and-Classes.html">Tok dát a triedy</a><a href="Project-Structure.html">Štruktúra balíka</a><a href="Source-Alignment.html">API špecifikácie a pokrytie</a><a href="Errors-Retry-and-Idempotency.html">Výnimky, opakovanie a idempotencia</a></div>
+<div class="portal"><h3>Prevádzka</h3><a href="Architecture-and-Testing.html">Architektúra a testovanie</a><a href="Troubleshooting.html" aria-current="page">Riešenie problémov</a></div>
+<div class="portal"><h3>Nástroje</h3><a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">Repozitár na GitHube ↗</a><a href="../../docs/eFaktura/api/openapi.json">OpenAPI špecifikácia</a><a href="../index.html">Web balíka</a></div>
+</nav>
+<div class="scrim" id="scrim"></div>
+<main class="page" id="main">
+<div class="tabs"><div class="tl"><a class="on" href="Troubleshooting.html">Stránka</a><a href="vsetky-stranky.html">Všetky stránky</a></div><div class="tr"><a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Troubleshooting.md" rel="noopener">Upraviť zdroj</a><a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Troubleshooting.md" rel="noopener">História</a></div></div>
+<article id="content">
+<div class="crumbs"><a href="index.html">Wiki</a><i>›</i><a href="vsetky-stranky.html#g-prevádzka">Prevádzka</a></div><h1 class="title">Riešenie problémov</h1><div class="sub"><span class="chip">Čítanie ≈ 5 min</span><span class="chip">11 sekcií</span><span class="chip">Upravené 26. 11. 2026</span></div>
+<div class="pagegrid"><div class="body"><p class="lead">Táto stránka prepája bežné chyby s konkrétnymi kontrolami a podrobnejšími návodmi.</p>
+<p>PHP ukážka nižšie je samostatný offline skript. Po <code>composer install</code> uložte ju ako <code class="nb">docs/wiki/offline-example.php</code> a spustite z koreňa repozitára príkazom <code>php docs/<wbr>wiki/<wbr>offline-example.<wbr>php</code>. Lokálna náhradná služba simuluje odloženú požiadavku; neposiela HTTP požiadavku.</p>
+<h2 id="rýchle-smerovanie-diagnostiky"><span class="mw-h">Rýchle smerovanie diagnostiky</span><a class="anchor" href="#rýchle-smerovanie-diagnostiky" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Troubleshooting.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<pre class="mermaid">flowchart TD
+    Symptom{Čo vidíte?}
+    Symptom --&gt;|Chýba URL alebo scope| Config[ConfigurationException: skontrolovať konfiguráciu a assertReady]
+    Symptom --&gt;|401 alebo token zlyhal| Auth[OAuth ID, secret, scope a prostredie]
+    Symptom --&gt;|HTTP 4xx/5xx| Http[ProviderErrorResponseException: status a prípadný error envelope]
+    Symptom --&gt;|429 alebo odloženie| Rate[Retry-After alebo RequestDeferredException.retryAt]
+    Symptom --&gt;|Timeout pri send| Send[Neistý výsledok: ponechať rovnaký payload a idempotency key]
+    Symptom --&gt;|Schematron chyba| Java[Java 11+, proc_open, flock a prístup k resources/temp]
+    Symptom --&gt;|Doklad sa vracia z inboxu| Inbox[Bezpečne uložiť pred acknowledge; synchronizácia musí byť idempotentná]</pre>
+<p>Diagram je prvý krok; nasledujúce časti stránky uvádzajú kontroly pre každú vetvu.</p>
+<h2 id="configurationexception-pri-prvom-volaní"><span class="mw-h"><code class="nb">ConfigurationException</code> pri prvom volaní</span><a class="anchor" href="#configurationexception-pri-prvom-volaní" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Troubleshooting.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Skontrolujte, či aplikácia poskytuje <code class="nb">base_url</code>, <code class="nb">client_id</code>, <code class="nb">client_secret</code> a neprázdny scope. <code class="nb">base_url</code> musí byť bezpečné HTTPS URL bez prihlasovacích údajov, query a fragmentu. V Laraveli skontrolujte načítaný <code class="nb">efaktura-connector</code> config a cache konfigurácie.</p>
+<h2 id="token-sa-nezískava-alebo-api-vracia-401"><span class="mw-h">Token sa nezískava alebo API vracia 401</span><a class="anchor" href="#token-sa-nezískava-alebo-api-vracia-401" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Troubleshooting.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<ul>
+<li>Overte platnosť OAuth client ID a secret u poskytovateľa.</li>
+<li>Overte scope priradený klientovi; default balíka nemusí byť povolený pre každý účet.</li>
+<li>Skontrolujte, či web worker vidí aktualizované environment premenné.</li>
+<li>Pri Laravel bridge skontrolujte cache store a <code class="nb">APP_KEY</code>; token cache šifruje hodnoty cez Laravel Crypt.</li>
+<li><code class="nb">TokenRequestException</code> môže obsahovať pôvodnú chybu v <code class="nb">getPrevious()</code>; citlivé údaje z nej nedávajte do používateľského výstupu.</li>
+</ul>
+<p>Pri obnove tokenu môže <code class="nb">RequestDeferredException</code> znamenať, že zdieľaný cooldown podržal tokenový request ešte pred sieťou.</p>
+<p>Zachyťte túto výnimku samostatne od <code class="nb">TokenRequestException</code> a naplánujte opakovanie podľa <code class="nb">retryAt()-&gt;unixTimestamp()</code>; pozrite aj <a href="Errors-Retry-and-Idempotency.html">prehľad výnimiek a retry</a>.</p>
+<h2 id="http-4xx5xx"><span class="mw-h">HTTP 4xx/5xx</span><a class="anchor" href="#http-4xx5xx" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Troubleshooting.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Pri <code class="nb">ProviderErrorResponseException</code> zaznamenajte status a bezpečne redigované telo. <code class="nb">ApiConnector</code> zachová surové telo a rozpoznanú JSON obálku sprístupní cez <code class="nb">errorEnvelope()</code>; hostiteľ rozhoduje o aplikačnom význame chybových polí.</p>
+<p>Pri validačných chybách skontrolujte <code class="nb">details</code> a correlation ID v obálke, ak sa ju podarilo rozpoznať. Overte, že cesta patrí správnemu SAPI, Gateway alebo Integrator API a že použité poverenia majú potrebné oprávnenia.</p>
+<h2 id="http-429-alebo-odložená-požiadavka"><span class="mw-h">HTTP 429 alebo odložená požiadavka</span><a class="anchor" href="#http-429-alebo-odložená-požiadavka" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Troubleshooting.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Ak retry vrstva vráti konečnú odpoveď HTTP 429, dostanete <code class="nb">ProviderErrorResponseException</code>; platná <code class="nb">Retry-After</code> sprístupní v <code class="nb">retryAt()</code> hodnotu <code class="nb">RetryDeadline</code>.</p>
+<p>Počas uloženého cooldownu ďalšia požiadavka v rovnakom transportnom scope vyvolá <code class="nb">RequestDeferredException</code> ešte pred odoslaním.</p>
+<p>SAPI/Gateway scope zostáva stabilný aj po obnove Bearer tokenu; Integrator API má vlastný hashovaný scope založený na URL a ID integrátora (token doň nevstupuje, rovnako ako do identity circuit breakera).</p>
+<p>Naplánujte opakovanie podľa <code class="nb">retryAt()-&gt;unixTimestamp()</code> namiesto okamžitého retry. Pri chýbajúcej alebo neplatnej <code class="nb">Retry-After</code> backpressure použije sekundový cooldown.</p>
+<div class="codebox"><pre tabindex="0"><code class="language-php" data-lang="php">&lt;?php
+use DreaM1\EfakturaConnector\Core\Documents\ListReceivedDocumentsRequest;
+use DreaM1\EfakturaConnector\Core\Documents\ReceivedDocumentPage;
+use DreaM1\EfakturaConnector\Core\Exceptions\RequestDeferredException;
+use DreaM1\EfakturaConnector\Core\Pagination\PageSize;
+use DreaM1\EfakturaConnector\Core\Retry\RetryDeadline;
+use DreaM1\EfakturaConnector\Domain\EFaktura\Participant;
+
+require dirname(__DIR__, 2) . '/vendor/autoload.php';
+
+$participant = Participant::parse('9915:tenant-demo');
+$request = new ListReceivedDocumentsRequest(
+    $participant,
+    null,
+    PageSize::fromInt(50)
+);
+$receivedDocumentProvider = new class {
+    public function getInboxPage(ListReceivedDocumentsRequest $request): ReceivedDocumentPage
+    {
+        throw new RequestDeferredException(
+            RetryDeadline::fromUnixTimestamp(time() + 60)
+        );
+    }
+};
+
+try {
+    $page = $receivedDocumentProvider-&gt;getInboxPage($request);
+} catch (RequestDeferredException $exception) {
+    $notBefore = $exception-&gt;retryAt()-&gt;unixTimestamp();
+    echo 'Synthetic request deferred until Unix timestamp ', $notBefore, PHP_EOL;
+}</code></pre></div>
+<h2 id="providerconnectionexception-počas-odosielania"><span class="mw-h"><code class="nb">ProviderConnectionException</code> počas odosielania</span><a class="anchor" href="#providerconnectionexception-počas-odosielania" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Troubleshooting.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<div class="alert warn" role="note"><div class="ai" aria-hidden="true">!</div><div class="ac"><div class="at">Pozor</div><p>Výsledok je neistý: provider mohol dokument dostať.</p></div></div>
+<p>Zachovajte pôvodný idempotency key a pred ďalším odoslaním načítajte stav cez <code class="nb">DocumentTrackingProviderInterface</code>. Nevytvárajte duplicitný pokus s novým kľúčom bez kontroly.</p>
+<h2 id="neplatná-odpoveď-2xx"><span class="mw-h">Neplatná odpoveď 2xx</span><a class="anchor" href="#neplatná-odpoveď-2xx" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Troubleshooting.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p><code class="nb">InvalidProviderResponseException</code> znamená, že HTTP požiadavka uspela, ale telo nezodpovedalo očakávanému API kontraktu. Zaznamenajte endpoint, status, bezpečne redigovanú odpoveď a verziu OpenAPI.</p>
+<p>Overte kompatibilitu poskytovateľského prostredia a verzie konektora.</p>
+<h2 id="schematron-validácia-nebeží"><span class="mw-h">Schematron validácia nebeží</span><a class="anchor" href="#schematron-validácia-nebeží" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Troubleshooting.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<ul>
+<li>Spustite <code>java -version</code> v prostredí webového procesu alebo nastavte <code class="nb">JAVA_HOME</code> tak, aby ho PHP proces videl.</li>
+<li>Overte Java 11 alebo novšiu.</li>
+<li>Skontrolujte, že PHP povoľuje <code class="nb">proc_open</code>.</li>
+<li>Skontrolujte, že PHP povoľuje <code class="nb">flock</code> a že systémový temp adresár podporuje súborové zámky.</li>
+<li>Skontrolujte prístup PHP procesu k <code class="nb">resources/validation</code> a systémovému temp adresáru.</li>
+<li>Ak sa zobrazí <code>Local Peppol validation concurrency limit is busy.</code>, uvoľnite validačnú frontu alebo zvýšte <code>runtime.<wbr>schematron.<wbr>max_<wbr>concurrent_<wbr>validations</code> / <code>EFAKTURA_<wbr>SCHEMATRON_<wbr>MAX_<wbr>CONCURRENT_<wbr>VALIDATIONS</code>. Sloty koordinujú procesy na tom istom hoste.</li>
+<li><code>PeppolSchematronValidationInterface::<wbr>validateDocument()</code> vracia <code class="nb">PeppolSchematronValidationResult</code>; pri rozhodovaní skontrolujte <code class="nb">isValid()</code>, <code class="nb">hasErrors()</code> a <code class="nb">omittedCount()</code>. Výnimka <code class="nb">LocalValidationInfrastructureException</code> znamená, že validáciu nebolo možné vykonať.</li>
+</ul>
+<h2 id="participant-alebo-discovery-neprejde"><span class="mw-h">Participant alebo Discovery neprejde</span><a class="anchor" href="#participant-alebo-discovery-neprejde" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Troubleshooting.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>Tvar Participant je <code class="nb">NNNN:hodnota</code>. Skontrolujte, že API volanie používa správneho participanta a že odosielateľ v dokumente zodpovedá oprávnenému klientovi. <code class="nb">RecipientUnsupportedException</code> je legitímny negatívny výsledok Discovery, nie transportná chyba.</p>
+<div class="alert tip" role="note"><div class="ai" aria-hidden="true">★</div><div class="ac"><div class="at">Tip</div><p>Použite Participant ID a server URL pridelené pre vaše testovacie API poverenia.</p></div></div>
+<p>V eFaktúra Sandboxe použite testovaciu schému <code class="nb">9915</code> v hlavičke aj v <code class="nb">metadata.senderParticipantId</code> a v raw UBL <code class="nb">EndpointID/@schemeID</code>; <code class="nb">0245</code> je produkčná schéma. Pozrite <a href="https://developers.efaktura.sk/sk/docs/sandbox" class="ext" rel="noopener">dokumentáciu Sandboxu</a>.</p>
+<p>Pre štandardné nasadenie nastavte <code class="nb">EFAKTURA_BASE_URL</code> na serverový koreň z OpenAPI; implementácia k nemu pripojí <code class="nb">/sapi/...</code> a <code class="nb">/v1/...</code>. Ak je API za reverznou proxy so spoločným prefixom, prefix sa zachová a pridá pred obe cesty.</p>
+<h2 id="prijatý-doklad-sa-v-inboxe-opakuje"><span class="mw-h">Prijatý doklad sa v inboxe opakuje</span><a class="anchor" href="#prijatý-doklad-sa-v-inboxe-opakuje" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Troubleshooting.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<p>SAPI zoznam, stiahnutie a acknowledge sú oddelené kroky. Potvrdenie spravte až po úspešnom bezpečnom uložení/spracovaní podľa aplikácie. Synchronizáciu navrhnite ako idempotentnú, lebo opakované načítanie stránky môže vrátiť rovnaké ID.</p>
+<h2 id="kde-hľadať-viac"><span class="mw-h">Kde hľadať viac</span><a class="anchor" href="#kde-hľadať-viac" aria-label="Odkaz na sekciu">¶</a><span class="edit">[<a href="https://github.com/1DreaM1/efaktura-connector/edit/main/docs/wiki/Troubleshooting.md" rel="noopener">upraviť zdroj</a>]</span></h2>
+<ul>
+<li>Poskytovateľský API kontrakt: <code class="nb">docs/eFaktura/api/openapi.json</code>.</li>
+<li>Pri kontrole ciest a polí sa riaďte <a href="https://test-sapisk.datahosting.sk/swagger-ui/index.html?urls.primaryName=SAPI-SK+API#/" class="ext" rel="noopener">SAPI-SK OpenAPI</a> a <a href="https://test-sapisk.datahosting.sk/swagger-ui/index.html?urls.primaryName=Peppol+Gateway+API+v1" class="ext" rel="noopener">Peppol Gateway v1 OpenAPI</a>; súhrn pokrytia balíka je v <a href="Source-Alignment.html">API špecifikáciách a pokrytí</a>.</li>
+<li>Verzie a údržba validačných zdrojov: <code class="nb">resources/validation/README.md</code>.</li>
+<li>UBL implementácia: <code class="nb">src/Infrastructure/Ubl</code> a <code class="nb">src/Domain/Ubl</code>.</li>
+<li>Prehľad vrstiev a tokov konektora: <a href="Architecture-and-Testing.html">Architektúra a hlavné toky</a>.</li>
+</ul>
+<details>
+<summary>Súvisiace návody</summary>
+
+<ul>
+<li><a href="Errors-Retry-and-Idempotency.html">Výnimky, retry a idempotencia</a></li>
+<li><a href="Transport-and-Authentication.html">HTTP transport a autentifikácia</a></li>
+<li><a href="Validation.html">Lokálna validácia</a></li>
+</ul>
+</details>
+</div><aside class="rail"><nav class="toc" id="toc" aria-label="Obsah stránky"><div class="toch"><b>Obsah</b> <button type="button" id="toct" aria-expanded="true">skryť</button></div><ol><li class="t2"><a href="#rýchle-smerovanie-diagnostiky"><span class="n">1</span> <span class="x">Rýchle smerovanie diagnostiky</span></a></li><li class="t2"><a href="#configurationexception-pri-prvom-volaní"><span class="n">2</span> <span class="x">ConfigurationException pri prvom volaní</span></a></li><li class="t2"><a href="#token-sa-nezískava-alebo-api-vracia-401"><span class="n">3</span> <span class="x">Token sa nezískava alebo API vracia 401</span></a></li><li class="t2"><a href="#http-4xx5xx"><span class="n">4</span> <span class="x">HTTP 4xx/5xx</span></a></li><li class="t2"><a href="#http-429-alebo-odložená-požiadavka"><span class="n">5</span> <span class="x">HTTP 429 alebo odložená požiadavka</span></a></li><li class="t2"><a href="#providerconnectionexception-počas-odosielania"><span class="n">6</span> <span class="x">ProviderConnectionException počas odosielania</span></a></li><li class="t2"><a href="#neplatná-odpoveď-2xx"><span class="n">7</span> <span class="x">Neplatná odpoveď 2xx</span></a></li><li class="t2"><a href="#schematron-validácia-nebeží"><span class="n">8</span> <span class="x">Schematron validácia nebeží</span></a></li><li class="t2"><a href="#participant-alebo-discovery-neprejde"><span class="n">9</span> <span class="x">Participant alebo Discovery neprejde</span></a></li><li class="t2"><a href="#prijatý-doklad-sa-v-inboxe-opakuje"><span class="n">10</span> <span class="x">Prijatý doklad sa v inboxe opakuje</span></a></li><li class="t2"><a href="#kde-hľadať-viac"><span class="n">11</span> <span class="x">Kde hľadať viac</span></a></li></ol></nav></aside></div>
+<div class="pn"><a href="Architecture-and-Testing.html"><small>← Predchádzajúca</small><b>Architektúra a testovanie</b></a></div><section class="also"><h2 class="plain">Pozri aj</h2><ul><li><a href="Architecture-and-Testing.html">Architektúra a testovanie</a></li></ul><h2 class="plain">Odkazuje sem</h2><ul><li><a href="index.html">Konektor eFaktúr</a></li><li><a href="Validation.html">Lokálna validácia</a></li><li><a href="Errors-Retry-and-Idempotency.html">Výnimky, retry a idempotencia</a></li><li><a href="Architecture-and-Testing.html">Architektúra a hlavné toky</a></li></ul></section>
+</article>
+<footer class="ft"><div class="cats"><b>Kategória:</b> <a href="vsetky-stranky.html#g-prevádzka">Prevádzka</a></div>
+<div class="meta">Naposledy upravené: 26. 11. 2026 · <a href="https://github.com/1DreaM1/efaktura-connector/blob/main/docs/wiki/Troubleshooting.md" rel="noopener">zdrojový súbor</a> · <a href="https://github.com/1DreaM1/efaktura-connector/commits/main/docs/wiki/Troubleshooting.md" rel="noopener">história</a></div><p class="lic">Wiki je súčasťou repozitára <a href="https://github.com/1DreaM1/efaktura-connector" rel="noopener">dream1/efaktura-connector</a> a šíri sa pod licenciou MIT. Stránky sa generujú zo zdrojov <code>docs/wiki</code> príkazom <code>node tools/build-wiki.js</code>.</p></footer>
+</main>
+</div>
+<script src="assets/search-index.js"></script>
+<script src="assets/wiki.js" data-mermaid="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+</body>
+</html>

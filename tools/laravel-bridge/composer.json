@@ -1,0 +1,34 @@
+{
+    "name": "dream1/efaktura-connector-laravel-bridge-test",
+    "description": "Isolated Composer project for Laravel 13 bridge tests on PHP 8.4 and newer.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "ext-ctype": "*",
+        "ext-curl": "*",
+        "ext-dom": "*",
+        "ext-hash": "*",
+        "ext-json": "*",
+        "ext-libxml": "*",
+        "ext-mbstring": "*",
+        "laravel/framework": "^13.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^13.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "DreaM1\\EfakturaConnector\\": "../../src/",
+            "DreaM1\\EfakturaConnector\\Laravel\\": "../../integrations/laravel/src/",
+            "DreaM1\\EfakturaConnector\\Tests\\": "../../tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {},
+        "sort-packages": true
+    },
+    "scripts": {
+        "test:integration": "@php vendor/bin/phpunit --no-configuration --bootstrap vendor/autoload.php ../../tests/Laravel"
+    }
+}

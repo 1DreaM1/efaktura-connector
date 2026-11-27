@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fafafc">
+<meta name="description" content="Frameworkovo nezávislá PHP knižnica pre SAPI-SK, Peppol Gateway a Integrator API s UBL 2.1 a lokálnou validáciou.">
+<title>Prehľad · eFaktúra Connector</title>
+<script>try{var t=localStorage.getItem('efk-theme');if(t&&t!=='auto')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Preskočiť na obsah</a>
+<div class="progress" id="bar"></div>
+<header class="site">
+  <div class="wrap nav">
+    <a class="logo" href="index.html"><i>€</i>eFaktúra <span>Connector</span></a>
+    <nav class="menu" id="menu" aria-label="Hlavná navigácia"><a href="index.html" aria-current="page">Prehľad</a><a href="architektura.html">Architektúra</a><a href="toky.html">Toky dokladov</a><a href="ukazky.html">Ukážky kódu</a><a href="validacia.html">Validácia</a><a href="api.html">API</a><a href="integrator.html">Integrator</a><a href="nastavenie.html">Nastavenie</a><a href="prevadzka.html">Prevádzka</a><a href="wiki/index.html">Wiki</a></nav>
+    <div class="right">
+      <button class="icon-btn" id="theme" type="button" aria-label="Téma">◐</button>
+      <a class="btn pri sm hide-s" href="https://github.com/1DreaM1/efaktura-connector">GitHub ↗</a>
+      <button class="icon-btn burger" id="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menu">☰</button>
+    </div>
+  </div>
+</header>
+<main id="main">
+
+<div class="hero">
+  <div class="mesh"><div class="dots"></div></div>
+  <div class="wrap">
+    <span class="badge"><b>DataHosting API</b> SAPI-SK + Peppol + Integrator</span>
+    <h1>Fakturácia <span class="gt">bez integračného chaosu.</span></h1>
+    <p class="sub">Nezávislá PHP knižnica pre SAPI-SK a Peppol Gateway. Podporuje Peppol BIS Billing 3.0, čítanie a zápis faktúr a dobropisov UBL 2.1 aj lokálnu kontrolu podľa EN 16931 a slovenských pravidiel. Obchodné spracovanie a ukladanie údajov zabezpečuje hostiteľská aplikácia.</p>
+    <div class="cta"><a class="btn pri" href="architektura.html">Preskúmať možnosti →</a><a class="btn" href="api.html">Pozrieť API</a></div>
+    <div class="install" id="copy" role="button" tabindex="0" title="Kliknutím skopírujete"><code><span class="d">$</span> composer require dream1/efaktura-connector:dev-main</code><em id="cs">kopírovať</em></div><small style="display:block;margin-top:8px;opacity:.7">Najprv pridajte GitHub VCS repozitár do composer.json (pozri Nastavenie).</small>
+    <div class="pills"><span>Peppol BIS Billing 3.0</span><span>UBL 2.1 · Invoice / CreditNote</span><span>SAPI-SK + Peppol Gateway</span><span>PHP 7.4+ · Laravel voliteľný</span></div>
+
+    <div class="pipe rv"><div><b>Váš doklad</b><small>UBL 2.1 · Invoice / CreditNote</small></div><div><b>eFaktúra Connector</b><small>OAuth · transport · typované API</small></div><div><b>SAPI + Peppol Gateway</b><small>odoslanie · stav · príjem</small></div></div>
+
+    <div class="win" data-tabs>
+      <div class="win-top"><i></i><i></i><i></i>
+        <div class="dtabs" role="tablist">
+          <button role="tab" aria-selected="true" aria-controls="h1p">príprava a kontroly</button>
+          <button role="tab" aria-selected="false" aria-controls="h2p">odoslanie</button>
+          <button role="tab" aria-selected="false" aria-controls="h3p">príjem</button>
+        </div>
+      </div>
+      <div role="tabpanel" id="h1p"><pre class="inline" data-hl data-lines="5-7" tabindex="0">// 1. lokálna príprava (bez volania siete)
+$payload = $drafts->preparePayload($sender, $receiver, $draft, $createdAt);
+
+// 2. voliteľné kontroly: každá je samostatné volanie API
+$client->recipientCapabilityCheck()->check($payload);
+$client->providerDocumentValidationCheck()
+       ->check(new ValidateDocumentRequest($sender, $payload));</pre></div>
+      <div role="tabpanel" id="h2p" hidden><pre class="inline" data-hl data-lines="2" tabindex="0">// kľúč uložte spolu s draftom; pri opakovaní použite ten istý
+$result = $gateway->send(new SendDocumentRequest($sender, $payload, $key));
+
+echo $result->status()->value();   // ACCEPTED = technické prijatie, nie doručenie
+
+// Pri neistom výsledku zopakujte presný payload s tým istým kľúčom.</pre></div>
+      <div role="tabpanel" id="h3p" hidden><pre class="inline" data-hl data-lines="8" tabindex="0">$page = $inbox->getInboxPage(new ListReceivedDocumentsRequest($participant, $pageToken));
+
+foreach ($page->documents() as $metadata) {
+    $reference = new ReceivedDocumentReference($participant, $metadata->documentId(), $context);
+    $payload   = $inbox->getDocumentPayload($reference);
+
+    // uložte idempotentne ...
+    $inbox->acknowledge($reference);   // až po úspešnom uložení
+}</pre></div>
+    </div>
+
+    <div class="stats rv">
+      <div><strong class="gt">3</strong><b>skupiny API</b><span>SAPI-SK · Gateway · Integrator</span></div>
+      <div><strong class="gt">28</strong><b>implementovaných operácií</b><span>6 SAPI · 12 Gateway · 10 Integrator</span></div>
+      <div><strong class="gt">3</strong><b>základné vrstvy</b><span>Core · Domain · Infrastructure</span></div>
+      <div><strong class="gt">7.4+</strong><b>PHP bez frameworku</b><span>Integrácia Laravelu je voliteľná</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+<section id="moznosti"><div class="head-c"><span class="kick">01 — 06 / Možnosti</span><h2>Jedna knižnica. <span class="gt">Technické kroky e&#8209;faktúry.</span></h2><p class="lead">Konektor poskytuje samostatné operácie a ich výsledky. Hostiteľská aplikácia riadi obchodný proces, ukladanie údajov, plánovanie, používateľské správy aj prijímanie webhookov cez HTTP.</p></div><div class="grid g3"><a href="toky.html#fl-send" class="cell rv"><div class="ico ">⇄</div><h3>Odosielanie a vzdialená kontrola</h3><p>Posiela obsah UBL cez SAPI. Pred odoslaním možno samostatne overiť podporu príjemcu v sieti Peppol a zavolať validačnú službu Gateway.</p><span class="more">Tok odoslania →</span></a><a href="toky.html#fl-inbox" class="cell rv"><div class="ico b">✉</div><h3>Doručená pošta</h3><p>Načítava doručenú poštu po stránkach, sťahuje XML a umožňuje technicky potvrdiť prevzatie prijatého dokladu.</p><span class="more">Tok príjmu →</span></a><a href="api.html#gateway" class="cell rv"><div class="ico g">◎</div><h3>Stav a správy MLS</h3><p>Číta stav odoslaných dokladov a správy MLS vrátane obsahu konkrétneho potvrdenia.</p><span class="more">Operácie Gateway →</span></a><a href="toky.html#fl-webhook" class="cell rv"><div class="ico o">⚑</div><h3>Webhooky</h3><p>Registruje, mení, stránkuje a odstraňuje webhooky a spracúva obálku udalosti. HTTP prijímanie webhookov a overenie podpisu zabezpečuje hostiteľská aplikácia.</p><span class="more">Tok webhookov →</span></a><a href="ukazky.html" class="cell rv"><div class="ico ">❖</div><h3>Čítanie a zápis UBL</h3><p>Bezpečne načíta faktúru alebo dobropis do doménových hodnôt a zapíše nemenný návrh dokladu do UBL 2.1 XML. Pribalené číselníky poskytujú typované lookupy.</p><span class="more">Ukážky kódu →</span></a><a href="validacia.html" class="cell rv"><div class="ico b">✓</div><h3>Lokálna validácia</h3><p>Kontroluje UBL 2.1 XSD, BR-CO-25 a CEN EN 16931 1.3.17 spolu s Peppol BIS Billing 3.0.22 vrátane slovenských pravidiel SK-R-001 až SK-R-007.</p><span class="more">Validácia →</span></a></div></section>
+
+<section id="hranica"><div class="head-c"><span class="kick">Hranica zodpovednosti</span><h2>Knižnica robí operácie. <span class="gt">Vy robíte rozhodnutia.</span></h2></div><div class="grid g2">
+<div class="cell rv"><h3>Konektor poskytuje</h3><ul><li>Typované kontrakty a výsledky operácií</li><li>OAuth, transport, retry a istič obvodu</li><li>Čítanie a zápis UBL 2.1, lokálnu validáciu</li><li>Analyzátor obálky webhookov</li></ul></div>
+<div class="cell rv"><h3>Hostiteľská aplikácia rieši</h3><ul><li>Obchodný proces a schvaľovanie</li><li>Databázu, fronty úloh a plánovač</li><li>HTTP koncový bod pre webhooky a overenie podpisu</li><li>Používateľské správy a preklad chýb</li></ul></div></div></section>
+
+<section id="rozhrania"><div class="head-c"><span class="kick">Rozhrania</span><h2>Tri API. <span class="gt">Jeden konzistentný model.</span></h2><p class="lead">Konektor implementuje API spoločnosti Datahosting: SAPI-SK, Peppol Gateway API v1 a desať operácií samostatného Integrator API.</p></div><div class="grid g3"><a href="api.html#sapi" class="cell rv"><small class="top">OAuth · odosielanie · doručená pošta</small><h3>SAPI-SK</h3><p>6 operácií. OAuth token pre SAPI aj Gateway, odoslanie dokladu, doručená pošta a technické potvrdenie.</p><span class="more">Zoznam operácií →</span></a><a href="api.html#gateway" class="cell rv"><small class="top">Zistenie podpory · stav · webhooky</small><h3>Peppol Gateway</h3><p>12 operácií. Discovery príjemcu, vzdialená validácia, dávkové odoslanie, stav odoslania a MLS, správa webhookov.</p><span class="more">Zoznam operácií →</span></a><a href="integrator.html" class="cell rv"><small class="top">Klienti · účastníci · súhrny · PDS</small><h3>Integrator API</h3><p>10 operácií. OAuth klienti, prístupy participantov, aktivácie, mesačné súhrny a PDS subjects.</p><span class="more">Správa integrátora →</span></a></div></section>
+
+<div class="final rv"><h2>Od inštalácie k prvej faktúre <span style="color:#c9b6ff">za večer.</span></h2><p class="lead">Prejdite si toky dokladov, ukážky kódu pre Laravel aj čisté PHP a nastavenie prostredia.</p><div class="links"><a class="btn pri" href="nastavenie.html">Nastavenie →</a><a class="btn" href="ukazky.html">Ukážky kódu</a><a class="btn" href="toky.html">Toky dokladov</a><a class="btn" href="dokumentacia.html">Dokumentácia</a></div></div>
+</div>
+<div class="wrap"></div>
+</main>
+<footer class="site">
+  <div class="wrap">
+    <div class="fgrid">
+      <div><a class="logo" href="index.html"><i>€</i>eFaktúra <span>Connector</span></a><p>Frameworkovo nezávislá PHP knižnica pre SAPI-SK, Peppol Gateway a Integrator API. MIT licencia.</p></div>
+      <div><h5>Produkt</h5><a href="architektura.html">Architektúra</a><a href="toky.html">Toky dokladov</a><a href="ukazky.html">Ukážky kódu</a><a href="validacia.html">Validácia</a></div>
+      <div><h5>Referencia</h5><a href="api.html">API operácie</a><a href="integrator.html">Integrator</a><a href="nastavenie.html">Nastavenie</a><a href="prevadzka.html">Prevádzka</a></div>
+      <div><h5>Zdroje</h5><a href="dokumentacia.html">Dokumentácia</a><a href="https://github.com/1DreaM1/efaktura-connector">GitHub</a><a href="wiki/index.html">Wiki</a><a href="../LICENSE">Licencia MIT</a></div>
+    </div>
+    <div class="fbot"><span>© eFaktúra Connector · MIT licencia</span><span>Statická stránka · CSS a JavaScript v priečinku assets</span></div>
+  </div>
+</footer>
+<script src="assets/app.js"></script>
+</body>
+</html>
