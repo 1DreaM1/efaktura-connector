@@ -1,0 +1,34 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use synthetic data only. Never paste credentials, tokens, real invoices, personal data or unredacted provider logs.
+  - type: input
+    id: version
+    attributes:
+      label: Package version or commit
+    validations:
+      required: true
+  - type: input
+    id: php
+    attributes:
+      label: PHP version and framework
+      description: For example PHP 8.3 with Laravel 12, or no framework.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: A short script or steps using synthetic data.
+    validations:
+      required: true
