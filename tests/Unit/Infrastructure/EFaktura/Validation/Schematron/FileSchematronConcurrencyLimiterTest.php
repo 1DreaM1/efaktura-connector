@@ -110,7 +110,13 @@ class FileSchematronConcurrencyLimiterTest extends TestCase
         } catch (LocalValidationInfrastructureException $exception) {
             $this->assertStringContainsString('must not be a symbolic link', $exception->getMessage());
         } finally {
-            unlink($linkDirectory);
+            // Windows removes a directory symbolic link with rmdir(), not unlink().
+            if (DIRECTORY_SEPARATOR === '\\') {
+                rmdir($linkDirectory);
+            } else {
+                unlink($linkDirectory);
+            }
+
             rmdir($targetDirectory);
             rmdir($baseDirectory);
         }

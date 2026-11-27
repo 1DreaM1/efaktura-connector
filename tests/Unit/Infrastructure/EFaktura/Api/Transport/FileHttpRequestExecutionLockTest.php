@@ -49,7 +49,13 @@ class FileHttpRequestExecutionLockTest extends TestCase
 
         foreach (glob(ResourcePath::join($this->temporaryDirectory, 'efaktura-connector-http-*')) ?: [] as $path) {
             if (is_link($path)) {
-                unlink($path);
+                // Windows removes a directory symbolic link with rmdir(), not unlink().
+                if (DIRECTORY_SEPARATOR === '\\' && is_dir($path)) {
+                    rmdir($path);
+                } else {
+                    unlink($path);
+                }
+
                 continue;
             }
 
